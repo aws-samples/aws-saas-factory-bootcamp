@@ -1,0 +1,139 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: SERVICES BASE
+Parameters:
+  BaselineStackName:
+    Type: String
+    Description: BASELINE STACK NAME
+  QSS3BucketName:
+    Description: S3 bucket name for the Bootcamp assets. Bootcamp bucket name
+      can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    Description: S3 key prefix for the Bootcamp assets. Bootcamp key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+Resources:
+  Tenant:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/tenant-manager/tenant-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  User:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/user-manager/user-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  Auth:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/auth-manager/authentication-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  Reg:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/tenant-registration/registration-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  Product:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/product-manager/product-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  Order:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/order-manager/order-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  Sys:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/system-registration/system-workload.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+Outputs:
+  TENANTTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Tenant.Outputs.TASKDEFINITION
+  TENANTTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Tenant.Outputs.TASKROLE
+  TENANTTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Tenant.Outputs.TARGETGROUP
+  USERTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt User.Outputs.TASKDEFINITION
+  USERTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt User.Outputs.TASKROLE
+  USERTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt User.Outputs.TARGETGROUP
+  AUTHTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Auth.Outputs.TASKDEFINITION
+  AUTHTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Auth.Outputs.TASKROLE
+  AUTHTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Auth.Outputs.TARGETGROUP
+  REGTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Reg.Outputs.TASKDEFINITION
+  REGTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Reg.Outputs.TASKROLE
+  REGTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Reg.Outputs.TARGETGROUP
+  PRODUCTTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Product.Outputs.TASKDEFINITION
+  PRODUCTTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Product.Outputs.TASKROLE
+  PRODUCTTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Product.Outputs.TARGETGROUP
+  ORDERTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Order.Outputs.TASKDEFINITION
+  ORDERTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Order.Outputs.TASKROLE
+  ORDERTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Order.Outputs.TARGETGROUP
+  SYSTASKDEFINITION:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Sys.Outputs.TASKDEFINITION
+  SYSTASKROLE:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Sys.Outputs.TASKROLE
+  SYSTARGETGROUP:
+    Description: The URL endpoint for the product service
+    Value: !GetAtt Sys.Outputs.TARGETGROUP
+...

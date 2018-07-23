@@ -1,0 +1,28 @@
+{
+  "Name": "user_manager",
+  "version": "1.0.0",
+  "description": "Provide Login for Cognito",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "amazon-cognito-identity-js": "1.16.0",
+    "amazon-cognito-js": "1.1.0",
+    "aws-sdk": "2.24.0",
+    "body-parser": "latest",
+    "config": "1.25.1",
+    "express": "latest",
+    "winston": "latest"
+  },
+  "author": "Amazon Web Services",
+  "contributors": [
+    {
+      "name": "Tod Golding"
+    },
+    {
+      "name": "Judah Bernstein"
+    }
+  ],
+  "license": "Apache-2.0"
+}

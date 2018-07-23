@@ -1,0 +1,31 @@
+<h3>View Product</h3>
+<form role="form">
+  <div class="form-group">
+    <label class="control-label" for="sku">SKU</label>
+    <p ng-model="product.sku" ng-readonly="true" class="form-control" id="sku">{{product.sku}}</p>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="title">Title</label>
+    <p ng-model="product.title" ng-readonly="true" class="form-control" id="title">{{product.title}}</p>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="description">Description</label>
+    <textarea ng-model="product.description" ng-readonly="true" class="form-control" id="description">{{product.description}}</textarea>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="condition">Condition</label>
+    <p ng-model="product.condition" ng-readonly="true" class="form-control" id="condition">{{product.condition}}</p>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="conditionDescription">Condition Description</label>
+    <textarea ng-model="product.conditionDescription" ng-readonly="true" class="form-control" id="conditionDescription">{{product.conditionDescription}}</textarea>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="numberInStock">In Stock</label>
+    <p ng-model="product.numberInStock" ng-readonly="true" class="form-control" id="numberInStock">{{product.numberInStock}}</p>
+  </div>
+  <div class="form-group">
+    <label class="control-label" for="unitCost">Unit Cost</label>
+    <p ng-model="product.unitCost" ng-readonly="true" class="form-control" id="unitCost">{{product.unitCost | currency}}</p>
+  </div>
+</form>

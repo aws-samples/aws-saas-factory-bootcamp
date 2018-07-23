@@ -1,0 +1,42 @@
+<div ng-show="!hideRegistrationForm" class="col-md-6 col-md-offset-3">
+  <h2>Register</h2>
+  <form name="form" ng-submit="formSubmit()" role="form">
+    <div class="form-group"">
+      <label for="firstName">First name</label>
+      <input type="text" name="firstName" id="firstName" class="form-control" ng-model="tenant.firstName" required="" />
+    </div>
+    <div class="form-group">
+      <label for="lastName">Last name</label>
+      <input type="text" name="lastName" id="lastName" class="form-control" ng-model="tenant.lastName" required="" />
+    </div>
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <input type="text" name="email" id="email" class="form-control" ng-model="tenant.email" required="" />
+    </div>
+    <div class="form-group">
+      <label for="companyName">Company</label>
+      <input type="text" name="companyName" id="companyName" class="form-control" ng-model="tenant.companyName" required="" />
+    </div>
+    <div class="form-group">
+      <label for="plan">Plan</label>
+      <select class="form-control" id="plan" name="plan" ng-model="tenant.plan" ng-init="tenant.plan='Free Tier'" required="">
+        <option value='Free Tier'>Free Tier</option>
+        <option value='Standard Tier'>Standard Tier</option>
+        <option value='Professional Tier'>Professional Tier</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Register</button>
+      <a href="#!/login" class="btn btn-link">Cancel</a>
+      <br/>
+      <br/>
+      <div ng-if="error" class="alert alert-danger">{{ error }}</div>
+    </div>
+  </form>
+</div>
+<div ng-show="showSuccessMessage" class="col-md-8 col-md-offset-1">
+  <h3>Success</h3>
+  <p>Your account has been registered. An email with login instructions is on its way.</p>
+</div>
+
+

@@ -1,0 +1,33 @@
+<ng-include src="'views/order-nav.html'"></ng-include>
+<form role="form">
+  <div class="form-group">
+    <label for="productId">Product</label>
+    <select class="form-control" id="productId" ng-model="order.productId" ng-change="productChanged(productId)" required="">
+      <option ng-repeat="product in products" ng-value="product.productId">{{product.title}}</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="dateOrdered" class="control-label">Date Ordered</label>
+    <input type="date" ng-model="order.dateOrdered" class="form-control" id="dateOrdered" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="quantity" class="control-label">Quantity</label>
+    <input type="number" ng-model="order.quantity" class="form-control" id="quantity" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="unitCost" class="control-label">Unit Cost</label>
+    <input type="number" ng-model="order.unitCost" class="form-control" id="unitCost" required=""/>
+  </div>
+  <div class="form-group">
+    <label class="control-label">Total Cost</label>
+    <p>{{ (order.quantity && order.unitCost) ? order.quantity * order.unitCost : 0 | currency }}</p>
+  </div>
+  <div class="form-group">
+    <input type="submit" class="btn btn-primary" ng-click="saveOrder()" value="Save"/>
+    <input type="submit" class="btn btn-secondary" ng-click="cancel()" value="Cancel"/>
+    <br/>
+    <br/>
+    <div ng-if="error" class="alert alert-danger">{{ error }}</div>
+  </div>
+</form>
+

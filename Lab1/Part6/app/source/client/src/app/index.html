@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+    <!-- build:css(.) styles/vendor.css -->
+    <!-- bower:css -->
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <!-- endbower -->
+    <!-- endbuild -->
+    <!-- build:css(.tmp) styles/main.css -->
+    <link rel="stylesheet" href="styles/main.css">
+    <!-- endbuild -->
+  </head>
+  <body ng-app="clientApp">
+    <!--[if lte IE 8]>
+      <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+
+    <!-- Add your site or application content here -->
+    <div class="navbar navbar-default" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#js-navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+
+          <a class="navbar-brand" href="#/">
+            <img style="width:60px;" src="/images/matt-icons_package-300px.png" alt="OrderNext Home">OrderNext
+          </a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="js-navbar-collapse">
+          <ul class="nav navbar-nav navbar-right navbar-default menu">
+            <li ng-if="isLinkEnabled('/')" ng-class="{ active: isActiveLink('/') }"><a ng-href="#!">Home</a></li>
+            <li ng-if="isLinkEnabled('/tenants')" ng-class="{ active: isActiveLink('/tenants') }"><a ng-href="#!/tenants">Tenants</a></li>
+            <li ng-if="isLinkEnabled('/products')" ng-class="{ active: isActiveLink('/products') }"><a ng-href="#!/products">Catalog</a></li>
+            <li ng-if="isLinkEnabled('/orders')" ng-class="{ active: isActiveLink('/orders') }"><a ng-href="#!/orders">Orders</a></li>
+            <li ng-if="isLinkEnabled('/users')" ng-class="{ active: isActiveLink('/users') }"><a ng-href="#!/users">Users</a></li>
+            <li ng-class="{ active: isActiveLink('/login') }" ng-if="!isUserLoggedIn"><a ng-href="#!/login">Login</a></li>
+            <li ng-class="{ active: isActiveLink('/logout') }" dropdown="">
+              <a href="#" class="dropdown-toggle" dropdown-toggle="" data-toggle="dropdown">{{ userDisplayName }}<b ng-if="isUserLoggedIn" class="caret"></b></a>
+              <ul class="dropdown-menu" role="menu">
+                <li><a ng-href="#!/logout">Logout</a></li>
+                <li><a ng-href="#">Edit Profile</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div ng-view="" ></div>
+    </div>
+
+    <!-- build:js(.) scripts/vendor.js -->
+    <!-- bower:js -->
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="bower_components/angular-route/angular-route.js"></script>
+    <script src="bower_components/angular-jwt/dist/angular-jwt.js"></script>
+    <!-- endbower -->
+    <!-- endbuild -->
+    
+        <!-- build:js({.tmp,app}) scripts/scripts.js -->
+        <script src="scripts/app.js"></script>
+        <script src="scripts/constants.js"></script>
+        <script src="scripts/controllers/main.js"></script>
+        <script src="scripts/controllers/login.js"></script>
+        <script src="scripts/controllers/register.js"></script>
+        <script src="scripts/controllers/logout.js"></script>
+        <script src="scripts/controllers/confirm.js"></script>
+        <script src="scripts/controllers/users.js"></script>
+        <script src="scripts/controllers/products.js"></script>
+        <script src="scripts/controllers/product-add.js"></script>
+        <script src="scripts/controllers/product-edit.js"></script>
+        <script src="scripts/controllers/product-delete.js"></script>
+        <script src="scripts/controllers/tenants.js"></script>
+        <script src="scripts/controllers/tenant-edit.js"></script>
+        <script src="scripts/controllers/tenant-delete.js"></script>
+        <script src="scripts/controllers/user-add.js"></script>
+        <script src="scripts/controllers/user-edit.js"></script>
+        <script src="scripts/controllers/user-delete.js"></script>
+        <script src="scripts/controllers/orders.js"></script>
+        <script src="scripts/controllers/order-add.js"></script>
+        <script src="scripts/controllers/order-edit.js"></script>
+        <script src="scripts/controllers/order-delete.js"></script>
+        <script src="scripts/controllers/product-view.js"></script>
+        <script src="scripts/controllers/user-enable.js"></script>
+        <!-- endbuild -->
+</body>
+</html>

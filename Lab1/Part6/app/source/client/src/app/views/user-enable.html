@@ -1,0 +1,12 @@
+<form role="form">
+  <p>Are you sure you wish to {{user.enabled? 'disable' : 'enable' }} user: {{ user.userName }}?</p>
+  <div class="form-group">
+    <input type="submit" class="btn btn-danger" ng-click="yesPressed()" value="Yes"/>
+    <button ng-click="back()" type="button" class="btn btn-default">No</button>
+  </div>
+  <div class="form-group">
+    <br/>
+    <br/>
+    <div ng-if="error" class="alert alert-danger">{{ error }}</div>
+  </div>
+</form>

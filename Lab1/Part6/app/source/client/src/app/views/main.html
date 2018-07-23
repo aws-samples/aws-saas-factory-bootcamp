@@ -1,0 +1,111 @@
+<div class="jumbotron">
+  <div class="well" style="padding-top: 0px;" ng-if="isSystemUser()">
+    <div>
+      <img style="width:28px; float: left; margin-right: 5px;" src="/images/monitor.png">
+      <h3 class="text-left">Service Health</h3>
+    </div>
+    <hr style="margin-top: 0px; margin-bottom: 8px; padding: 0px;">
+    <div class="row">
+      <div class="col-sm-4">
+        <img class="health-image" ng-src="{{authenticationManagerHealthy && '/images/green-circle.png' || '/images/red-circle.png'}}">
+        <h5 class="text-left">Authentication Manager</h5>
+      </div>
+      <div class="col-sm-4">
+        <img class="health-image" ng-src="{{tenantManagerHealthy && '/images/green-circle.png' || '/images/red-circle.png'}}">
+        <h5 class="text-left">Tenant Manager</h5>
+      </div>
+      <div class="col-sm-4">
+        <img class="health-image" ng-src="{{tenantRegistrationHealthy && '/images/green-circle.png' || '/images/red-circle.png'}}">
+        <h5 class="text-left">Tenant Registration</h5>
+      </div>
+    </div>
+    <br/>
+    <div class="row">
+      <div class="col-sm-4">
+        <img class="health-image" ng-src="{{userManagerHealthy && '/images/green-circle.png' || '/images/red-circle.png'}}">
+        <h5 class="text-left">User Manager</h5>
+      </div>
+      <div class="col-sm-4">
+        <img class="health-image" ng-src="{{orderManagerHealthy && '/images/green-circle.png' || '/images/red-circle.png'}}">
+        <h5 class="text-left">Order Manager</h5>
+      </div>
+      <div class="col-sm-4">
+        <img class="health-image" ng-src="{{productManagerHealthy && '/images/green-circle.png' || '/images/red-circle.png'}}">
+        <h5 class="text-left">Product Manager</h5>
+      </div>
+    </div>
+  </div>
+  <div class="well" style="padding-top: 0px;">
+    <div>
+      <img style="width:28px; float: left; margin-right: 5px;" src="/images/chart.png">
+      <h3 class="text-left">System Metrics</h3>
+    </div>
+    <hr style="margin-top: 0px; margin-bottom: 8px; padding: 0px;">
+    <div class="row">
+      <div class="col-sm-6">
+        <div class="panel panel-default">
+          <div class="panel-heading panel-heading-custom">
+            <h3 class="panel-title">Total Product Count</h3>
+          </div>
+          <div class="panel-body">
+            1,414
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="panel panel-default">
+          <div class="panel-heading panel-heading-custom">
+            <h3 class="panel-title">Total Order Count</h3>
+          </div>
+          <div class="panel-body">
+            9,934
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6">
+        <div class="panel panel-default">
+          <div class="panel-heading panel-heading-custom">
+            <h3 class="panel-title">Average Sale Price</h3>
+          </div>
+          <div class="panel-body">
+            $193.12
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="panel panel-default">
+          <div class="panel-heading panel-heading-custom">
+            <h3 class="panel-title">Today's Order Count</h3>
+          </div>
+          <div class="panel-body">
+            123
+          </div>
+        </div>
+      </div>
+    </div>
+    <div ng-if="isSystemUser()" class="row">
+      <div class="col-sm-6">
+        <div class="panel panel-default">
+          <div class="panel-heading panel-heading-custom">
+            <h3 class="panel-title">Tenant Count</h3>
+          </div>
+          <div class="panel-body">
+            5
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="panel panel-default">
+          <div class="panel-heading panel-heading-custom">
+            <h3 class="panel-title">User Count</h3>
+          </div>
+          <div class="panel-body">
+            29
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

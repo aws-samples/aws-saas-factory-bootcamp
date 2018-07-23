@@ -1,0 +1,15 @@
+{
+  "Name": "dynamodb-helper",
+  "version": "1.0.0",
+  "description": "Helper functions to assist with dynamoDB interactions",
+  "main": "dynamodb-helper.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "winston": "latest",
+    "aws-sdk": "^2.24.0"
+  },
+  "author": "Amazon Web Services",
+  "license": "Apache Open Source"
+}

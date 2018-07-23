@@ -1,0 +1,42 @@
+<ng-include src="'views/product-nav.html'"></ng-include>
+<form role="form">
+  <div class="form-group">
+    <label for="sku" class="control-label">SKU</label>
+    <input type="text" ng-model="product.sku" class="form-control" id="sku" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="title" class="control-label">Title</label>
+    <input type="text" ng-model="product.title" class="form-control" id="title" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="description" class="control-label">Description</label>
+    <textarea ng-model="product.description" class="form-control" id="description" required=""></textarea>
+  </div>
+  <div class="form-group">
+    <label for="condition" class="control-label">Condition</label>
+    <select class="form-control"  id="condition" name="condition" ng-model="product.condition" ng-init="product.condition='Brand New'" required="">
+      <option value='Brand New'>Brand New</option>
+      <option value='Refurbished'2>Refubished</option>
+      <option value='Scratch and Dent'>Scratch and Dent</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="conditionDescription" class="control-label">Condition Description</label>
+    <textarea ng-model="product.conditionDescription" class="form-control" id="conditionDescription" required=""></textarea>
+  </div>
+  <div class="form-group">
+    <label for="numberInStock" class="control-label">Number in Stock</label>
+    <input type="text" ng-model="product.numberInStock" class="form-control" id="numberInStock" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="unitCost" class="control-label">Unit Cost</label>
+    <input type="number" ng-model="product.unitCost" class="form-control" id="unitCost" required=""/>
+  </div>
+  <div class="form-group">
+    <input type="submit" class="btn btn-primary" ng-click="saveProduct()" value="Save"/>
+    <input type="submit" class="btn btn-secondary" ng-click="cancel()" value="Cancel"/>
+    <br/>
+    <br/>
+    <div ng-if="error" class="alert alert-danger">{{ error }}</div>
+  </div>
+</form>

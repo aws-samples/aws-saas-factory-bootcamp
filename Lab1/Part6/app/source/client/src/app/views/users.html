@@ -1,0 +1,39 @@
+<div align="right">
+  <a class="btn btn-primary" href="#!/user/add"><span class="glyphicon glyphicon-plus"></span> Add User</a>
+</div>
+<table class="table table-striped">
+  <thead>
+  <th>First Name</th>
+  <th>Last Name</th>
+  <th>User Name</th>
+  <th>Role</th>
+  <th>Active</th>
+  <th>Date Created</th>
+  <th></th>
+  </thead>
+  <tbody>
+  <col width="12%">
+  <col width="11%">
+  <col width="16%">
+  <col width="15%">
+  <col width="10%">
+  <col width="22%">
+  <col width="10%">
+  <tr ng-repeat="user in users">
+    <td>{{ user.firstName }}</td>
+    <td>{{ user.lastName }}</td>
+    <td>{{ user.userName }}</td>
+    <td>{{ roleToDisplayName(user.role) }}</td>
+    <td>{{ user.enabled ? 'Active' : 'Inactive' }}</td>
+    <td>{{ user.dateCreated | date:'yyyy-MM-dd HH:mm:ss'}}</td>
+    <td>
+      <div class="button-group">
+        <a title="Edit" ng-href="/#!/user/edit/{{ user.userName }}"><span class="glyphicon glyphicon-pencil"></span></a>
+        <a title="Delete" ng-href="/#!/user/delete/{{ user.userName }}"><span class="glyphicon glyphicon-trash"></span></a>
+        <a title="Enable/Disable" ng-href="/#!/user/enable/{{ user.userName }}"><span class="glyphicon glyphicon-check"></span></a>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+</table>
+</div>

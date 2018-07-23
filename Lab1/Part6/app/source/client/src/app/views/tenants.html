@@ -1,0 +1,32 @@
+<table class="table table-striped">
+  <thead>
+  <th>Company Name</th>
+  <th>Account Name</th>
+  <th>Owner</th>
+  <th>Plan</th>
+  <th>Status</th>
+  <th ng-if="isSystemAdminUser()"></th>
+  </thead>
+  <tbody>
+  <col width="20%">
+  <col width="20%">
+  <col width="21%">
+  <col width="20%">
+  <col width="12%">
+  <col ng-if="isSystemAdminUser()" width="7%">
+  <tr ng-repeat="tenant in tenants">
+    <td>{{ tenant.companyName }}</td>
+    <td>{{ tenant.accountName }}</td>
+    <td>{{ tenant.ownerName }}</td>
+    <td>{{ tenant.tier }}</td>
+    <td>{{ tenant.status }}</td>
+    <td ng-if="isSystemAdminUser()" >
+      <div class="button-group">
+        <a ng-href="/#!/tenant/edit/{{ tenant.id }}"><span class="glyphicon glyphicon-pencil"></span></a>
+        <a ng-href="/#!/tenant/delete/{{ tenant.id }}"><span class="glyphicon glyphicon-trash"></span></a>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+</table>
+</div>

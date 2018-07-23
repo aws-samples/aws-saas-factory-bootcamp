@@ -1,0 +1,15 @@
+{
+  "Name": "config-helper",
+  "version": "1.0.0",
+  "description": "Simplify Configuration with config module",
+  "main": "config.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "config": "^1.25.1",
+    "winston": "latest"
+  },
+  "author": "Amazon Web Services",
+  "license": "Apache2.0"
+}

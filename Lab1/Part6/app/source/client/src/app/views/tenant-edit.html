@@ -1,0 +1,36 @@
+<h3>Edit Tenant</h3>
+<form role="form">
+  <div class="form-group">
+    <label for="companyName" class="control-label">Company Name</label>
+    <input type="text" ng-model="tenant.companyName" class="form-control" id="companyName" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="accountName" class="control-label">Account Name</label>
+    <input type="text" ng-model="tenant.accountName" class="form-control" id="accountName" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="ownerName" class="control-label">Owner Name</label>
+    <input type="text" ng-model="tenant.ownerName" class="form-control" id="ownerName" required=""/>
+  </div>
+  <div class="form-group">
+    <label for="tier">Plan</label>
+    <select class="form-control" id="tier" name="tier" ng-model="tenant.tier" ng-init="tenant.tier='Free Tier'" required="">
+      <option value='Free Tier'>Free Tier</option>
+      <option value='Standard Tier'>Standard Tier</option>
+      <option value='Professional Tier'>Professional Tier</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="status" class="control-label">Status</label>
+    <select class="form-control"  id="status" name="status" ng-model="tenant.status" ng-init="tenant.status='Active'" required="">
+      <option value='Active'>Active</option>
+      <option value='Inactive'2>Inactive</option>
+    </select>
+  </div>
+  <input type="submit" class="btn btn-primary" ng-click="saveTenant()" value="Save"/>
+  <input type="submit" class="btn btn-secondary" ng-click="cancel()" value="Cancel"/>
+  <br/>
+  <br/>
+  <div ng-if="error" class="alert alert-danger">{{ error }}</div>
+</form>
+

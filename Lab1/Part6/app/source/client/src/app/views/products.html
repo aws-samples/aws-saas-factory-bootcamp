@@ -1,0 +1,35 @@
+<div align="right">
+  <a class="btn btn-primary" ng-if="isTenantAdminUser()" href="#!/product/add"><span class="glyphicon glyphicon-plus"></span> Add Product</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <th>SKU</th>
+    <th>Title</th>
+    <th>Condition</th>
+    <th>In Stock</th>
+    <th>Unit Cost</th>
+    <th ng-if="isTenantAdminUser()"></th>
+  </thead>
+  <tbody>
+    <col width="15%">
+    <col width="25%">
+    <col width="23%">
+    <col width="15%">
+    <col width="15%">
+    <col ng-if="isTenantAdminUser()" width="7%">
+    <tr ng-repeat="product in products">
+      <td><a ng-href="/#!/product/{{ product.productId }}">{{ product.sku }}</a></td>
+      <td>{{ product.title }}</td>
+      <td>{{ product.condition }}</td>
+      <td>{{ product.numberInStock }}</td>
+      <td>{{ product.unitCost | currency }}</td>
+      <td ng-if="isTenantAdminUser()">
+        <div class="button-group">
+          <a ng-href="/#!/product/edit/{{ product.productId }}"><span class="glyphicon glyphicon-pencil"></span></a>
+          <a ng-href="/#!/product/delete/{{ product.productId }}"><span class="glyphicon glyphicon-trash"></span></a>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>

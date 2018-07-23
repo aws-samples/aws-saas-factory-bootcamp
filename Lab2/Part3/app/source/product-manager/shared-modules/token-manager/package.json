@@ -1,0 +1,18 @@
+{
+  "Name": "token-manager",
+  "version": "1.0.0",
+  "description": "Provide access to a decoding of tokens",
+  "main": "token-manager.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "jwt-decode": "latest",
+    "request": "^2.81.0",
+    "async": "latest",
+    "winston": "latest",
+    "aws-sdk": "^2.24.0"
+  },
+  "author": "Amazon Web Services",
+  "license": "Apache2.0"
+}

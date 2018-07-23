@@ -1,0 +1,51 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-10">
+      <div class="form-group">
+        <label>Product Filter: </label>
+        <select id="productFilter" ng-model="orderFilter" ng-init="orderFilter='No Filter'" ng-change="orderFilterChanged(orderFilter)">Product
+          <option ng-repeat= "itemVal in productFilterValues" ng-value="itemVal">{{itemVal}}</option>
+        </select>
+      </div>
+    </div>
+    <a class="btn btn-primary" href="#!/order/add"><span class="glyphicon glyphicon-plus"></span> Add Order</a>
+  </div>
+</div>
+<table class="table table-striped">
+  <thead>
+  <th>Product SKU</th>
+  <th>Product Title</th>
+  <th>Ordered By</th>
+  <th>Order Date</th>
+  <th>Quantity</th>
+  <th>Unit Cost</th>
+  <th>Total Cost</th>
+  <th></th>
+  </thead>
+  <tbody>
+  <col width="12%">
+  <col width="20%">
+  <col width="20%">
+  <col width="19%">
+  <col width="4%">
+  <col width="9%">
+  <col width="10%">
+  <col width="8%">
+  <tr ng-repeat="order in filteredOrders | orderBy: '-datePlaced'">
+    <td>{{ order.productSKU }}</td>
+    <td>{{ order.productDescription }}</td>
+    <td>{{ order.orderedBy }}</td>
+    <td>{{ order.dateOrdered | date:'MM-dd-yyyy HH:mm:ss' }}</td>
+    <td>{{ order.quantity }}</td>
+    <td>{{ order.unitCost | currency }}</td>
+    <td>{{ order.quantity * order.unitCost | currency }}</td>
+    <td>
+      <div class="button-group">
+        <a ng-href="/#!/order/edit/{{ order.orderId }}"><span class="glyphicon glyphicon-pencil"></span></a>
+        <a ng-href="/#!/order/delete/{{ order.orderId }}"><span class="glyphicon glyphicon-trash"></span></a>
+      </div>
+    </td>
+  </tr>
+  </tbody>
+</table>
+</div>
