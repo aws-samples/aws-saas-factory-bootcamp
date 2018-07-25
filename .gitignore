@@ -110,3 +110,4 @@ ENV/
 *.swp
 
 node_modules
+images/baseline.png

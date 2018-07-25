@@ -15,6 +15,10 @@
 
 ##### Our SaaS experts have many years of experience building, migrating, and managing SaaS products on AWS. This is a great opportunity to meet the team, ask them questions, and jumpstart your SaaS journey, through an interactive, guided experience with SaaS on AWS.
 
+### Lab 0 - Provision Bootcamp Baseline
+
+[![Lab0](images/lab0.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab%200%20Guide.pdf "Lab 0")
+
 ### Lab 1 - Identity and Onboarding
 
 [![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab%201%20Guide.pdf "Lab 1")
@@ -26,6 +30,11 @@
 ### Lab 3 - Data Isolation
 
 [![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab%203%20Guide.pdf "Lab 3")
+
+### Frequently Asked Questions (FAQ)
+
+[![GAQ](images/faq.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/faq.pdf "FAQ")
+
 
 # License
 
