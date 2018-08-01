@@ -4,7 +4,7 @@ exports.handler = function(event, context) {
     console.log('REQUEST RECEIVED:\n', JSON.stringify(event));
     if (event.RequestType == 'Delete') {
         console.log('STACK DELETED');
-        response.send(response.SUCCESS);
+        response.send(event, context, response.SUCCESS);
         return;
     }
     if (event.RequestType == 'Create') {
