@@ -102,7 +102,7 @@ DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
         var fetchParams = {
             TableName: this.tableDefinition.TableName,
             Key: keyParams
-        }
+        };
 
         docClient.get(fetchParams, function(err, data) {
             if (err)
@@ -111,7 +111,7 @@ DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
                 callback(null, data.Item);
         });
     }.bind(this));
-}
+};
 
 /**
  * Delete and item from a table
