@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Product Catalog Service
+Description: Product Catalog Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

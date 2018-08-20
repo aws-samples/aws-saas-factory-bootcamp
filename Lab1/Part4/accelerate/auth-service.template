@@ -1,0 +1,103 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Authentication Management Service
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: AWS Bootcamp Configuration
+      Parameters:
+      - QSS3BucketName
+      - QSS3KeyPrefix
+      - BaselineStackName
+    ParameterLabels:
+      QSS3KeyPrefix:
+        default: BOOTCAMP S3 KEY PREFIX
+      QSS3BucketName:
+        default: BOOTCAMP S3 BUCKET NAME
+      BaselineStackName:
+        default: BASELINE STACK NAME
+Parameters:
+  BaselineStackName:
+    Type: String
+    Description: BASELINE STACK NAME
+    Default: module-saas-bootcamp-base
+  BaselineServicesStackName:
+    Type: String
+    Description: Baseline "services" stack name to get exports from
+  QSS3BucketName:
+    Default: aws-bootcamp-us-east-1
+    Description: S3 bucket name for the Bootcamp assets. Bootcamp bucket name
+      can include numbers, lowercase letters, uppercase letters, and hyphens (-).
+      It cannot start or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    Default: bootcamp/
+    Description: S3 key prefix for the Bootcamp assets. Bootcamp key prefix
+      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+Resources:
+  CopyFiles:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part4/accelerate/auth-copy-files.template
+      Parameters:
+        TemplateBucket: !Ref QSS3BucketName
+        TemplatePrefix: !Ref QSS3KeyPrefix
+        DestinationBucket:
+          Fn::ImportValue: !Sub "${BaselineStackName}-TEMPLATEBUCKET"
+        RoleArn:
+          Fn::ImportValue: !Sub "${BaselineStackName}-ROLEARN"
+  Service:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+    - CopyFiles
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part4/accelerate/auth-service-build.template
+      Parameters:
+        VPC:
+          Fn::ImportValue: !Sub "${BaselineStackName}-VPC"
+        Cluster:
+          Fn::ImportValue: !Sub "${BaselineStackName}-ECSCLUSTER"
+        ServiceUrl:
+          Fn::ImportValue: !Sub "${BaselineStackName}-ALBURL"
+        SnsRole:
+          Fn::ImportValue: !Sub "${BaselineStackName}-SNSROLE"
+        Listener:
+          Fn::ImportValue: !Sub "${BaselineStackName}-ALBLISTENER"
+        Path: /auth*
+        HealthCheck: /auth/health
+        ServiceName: auth-manager
+        Priority: 2
+        ContainerPort: 3000
+        TemplateBucket:
+          Fn::ImportValue: !Sub "${BaselineStackName}-TEMPLATEBUCKET"
+        TemplatePrefix: !Ref QSS3KeyPrefix
+        WaitURL: !Ref WaitHandleService
+        CloudFormationExecutionRole:
+          Fn::ImportValue: !Sub "${BaselineStackName}-CFNROLEARN"
+        ArtifactBucket:
+          Fn::ImportValue: !Sub "${BaselineStackName}-ARTIFACTBUCKET"
+        Repository:
+          Fn::ImportValue: !Sub "${BaselineStackName}-ECRREPOSITORY"
+        UserTable: 'UserBootcamp'
+        ProductTable: 'ProductBootcamp'
+        OrderTable: 'OrderBootcamp'
+        TenantTable: 'TenantBootcamp'
+        BaselineStackName: !Ref BaselineStackName
+        BaselineServicesStackName: !Ref BaselineServicesStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  WaitHandleService:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  WaitConditionService:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn:
+    - Service
+    Properties:
+      Handle:
+        Ref: WaitHandleService
+      Timeout: '3600'
+      Count: '1'
+...

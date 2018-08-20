@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Master Stack
+Description: SaaS Bootcamp Master Stack
 Parameters:
   # backend required parameters
   GDAPIBase:

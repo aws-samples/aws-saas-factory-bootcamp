@@ -1,0 +1,56 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Automatically provisions the rest of Lab 1 infrastructure after the baseline
+Parameters:
+  BaselineStackName:
+    Type: String
+    Description: BASELINE STACK NAME
+  BaselineServicesStackName:
+    Type: String
+    Description: Baseline "services" stack name to get exports from
+  QSS3BucketName:
+    Description: S3 bucket name for the Bootcamp assets. Bootcamp bucket name can include numbers, lowercase letters, 
+      uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Type: String
+  QSS3KeyPrefix:
+    Description: S3 key prefix for the Bootcamp assets. Bootcamp key prefix can include numbers, lowercase letters, 
+      uppercase letters, hyphens (-), and forward slash (/).
+    Type: String
+Resources:
+  UserManagerService:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part2/templates/user-service.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        BaselineServicesStackName: !Ref BaselineServicesStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  TenantManagerService:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part3/accelerate/tenant-service.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        BaselineServicesStackName: !Ref BaselineServicesStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  AuthenticationManagerService:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part4/accelerate/auth-service.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        BaselineServicesStackName: !Ref BaselineServicesStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  TenantRegistrationService:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part4/accelerate/reg-service.template
+      Parameters:
+        BaselineStackName: !Ref BaselineStackName
+        BaselineServicesStackName: !Ref BaselineServicesStackName
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+...

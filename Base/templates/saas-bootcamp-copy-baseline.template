@@ -1,7 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation Template invokes another template responsible for
-  copying files to a local region S3 Bucket for Lambda.
+Description: S3 bucket to hold packaged Lambda functions used by other templates
 Parameters:
   QSS3BucketName:
     Description: The Template Bucket Name.

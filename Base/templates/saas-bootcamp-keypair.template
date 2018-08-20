@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Tenant Registration Service
+Description: S3 Bucket and IAM Policy for Lambda to copy files from one bucket to another
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

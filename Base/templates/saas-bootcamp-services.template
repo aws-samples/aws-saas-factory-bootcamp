@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: SERVICES BASE
+Description: SaaS Bootcamp micro-services base template
 Parameters:
   BaselineStackName:
     Type: String
@@ -73,67 +73,112 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
 Outputs:
+  ServicesStackName:
+    Description: The runtime Stack name of this nested stack
+    Value: !Ref "AWS::StackName"
   TENANTTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt Tenant.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", TENANTTASKDEFINITION ] ]
   TENANTTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt Tenant.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", TENANTTASKROLE ] ]
   TENANTTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt Tenant.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", TENANTTARGETGROUP ] ]
   USERTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt User.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", USERTASKDEFINITION ] ]
   USERTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt User.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", USERTASKROLE ] ]
   USERTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt User.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", USERTARGETGROUP ] ]
   AUTHTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt Auth.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", AUTHTASKDEFINITION ] ]
   AUTHTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt Auth.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", AUTHTASKROLE ] ]
   AUTHTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt Auth.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", AUTHTARGETGROUP ] ]
   REGTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt Reg.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", REGTASKDEFINITION ] ]
   REGTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt Reg.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", REGTASKROLE ] ]
   REGTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt Reg.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", REGTARGETGROUP ] ]
   PRODUCTTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt Product.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", PRODUCTTASKDEFINITION ] ]
   PRODUCTTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt Product.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", PRODUCTTASKROLE ] ]
   PRODUCTTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt Product.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", PRODUCTTARGETGROUP ] ]
   ORDERTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt Order.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", ORDERTASKDEFINITION ] ]
   ORDERTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt Order.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", ORDERTASKROLE ] ]
   ORDERTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt Order.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", ORDERTARGETGROUP ] ]
   SYSTASKDEFINITION:
     Description: The URL endpoint for the product service
     Value: !GetAtt Sys.Outputs.TASKDEFINITION
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", SYSTASKDEFINITION ] ]
   SYSTASKROLE:
     Description: The URL endpoint for the product service
     Value: !GetAtt Sys.Outputs.TASKROLE
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", SYSTASKROLE ] ]
   SYSTARGETGROUP:
     Description: The URL endpoint for the product service
     Value: !GetAtt Sys.Outputs.TARGETGROUP
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", SYSTARGETGROUP ] ]
 ...

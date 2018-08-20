@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Master Stack
+Description: SaaS Bootcamp Master Stack
 Parameters:
   QSS3BucketName:
     Description: S3 bucket name for the Bootcamp assets. Bootcamp bucket name
@@ -30,6 +30,26 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
+  Lab1Accelerate:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Services
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-lab1-accelerate.template
+      Parameters:
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
+        BaselineServicesStackName: !Select [1, !Split ['/', !Ref Services]]
+  Lab1AccelerateUI:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Lab1Accelerate
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-lab1-accelerate-ui.template
+      Parameters:
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
+        BaselineServicesStackName: !Select [1, !Split ['/', !Ref Services]]
   Access:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -111,7 +131,7 @@ Outputs:
       Name: !Join [ "-", [ !Ref "AWS::StackName", VPCSTACKNAME ] ]
   TENANTTASKDEFINITION:
     Description: Task Definition
-    Value: !GetAtt Services.Outputs.TENANTTASKDEFINITION
+    Value: !Sub "${Services.Outputs.ServicesStackName}-TENANTTASKDEFINITION"
     Export:
       Name: !Join [ "-", [ !Ref "AWS::StackName", TENANTTASKDEFINITION ] ]
   TENANTTASKROLE:
