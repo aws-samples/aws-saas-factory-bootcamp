@@ -52,6 +52,26 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
+  Lab1Accelerate:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Services
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-lab1-accelerate.template
+      Parameters:
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
+        BaselineServicesStackName: !Select [1, !Split ['/', !Ref Services]]
+  Lab1AccelerateUI:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: Lab1Accelerate
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-lab1-accelerate-ui.template
+      Parameters:
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
+        BaselineServicesStackName: !Select [1, !Split ['/', !Ref Services]]
   Access:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -61,6 +81,16 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         S3Bucket: !GetAtt Base.Outputs.TEMPLATEBUCKET
 Outputs:
+  PUBLICSUBNET1:
+    Description: Public Subnet 1
+    Value: !GetAtt Base.Outputs.PUBLICSUBNET1
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", PUBLICSUBNET1 ] ]
+  PUBLICSUBNET2:
+    Description: Public Subnet 2
+    Value: !GetAtt Base.Outputs.PUBLICSUBNET2
+    Export:
+      Name: !Join [ "-", [ !Ref "AWS::StackName", PUBLICSUBNET2 ] ]
   ALBURL:
     Description: The URL endpoint for the product service
     Value: !GetAtt Base.Outputs.ALBURL

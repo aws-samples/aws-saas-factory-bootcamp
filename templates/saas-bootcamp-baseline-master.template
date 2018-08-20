@@ -131,7 +131,7 @@ Outputs:
       Name: !Join [ "-", [ !Ref "AWS::StackName", VPCSTACKNAME ] ]
   TENANTTASKDEFINITION:
     Description: Task Definition
-    Value: !Sub "${Services.Outputs.ServicesStackName}-TENANTTASKDEFINITION"
+    Value: !GetAtt Services.Outputs.TENANTTASKDEFINITION
     Export:
       Name: !Join [ "-", [ !Ref "AWS::StackName", TENANTTASKDEFINITION ] ]
   TENANTTASKROLE:
