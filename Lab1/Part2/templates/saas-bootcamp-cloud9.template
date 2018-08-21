@@ -25,4 +25,5 @@ Resources:
       SubnetId: !Ref SubnetIdentifier
       InstanceType: !Ref EC2InstanceType
       Name: 'SAASBOOTCAMPIDE'
+      OwnerArn: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/player-role/MasterKey"
 ...

@@ -24,6 +24,7 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
   Services:
     Type: AWS::CloudFormation::Stack
+    DependsOn: Base
     Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-services.template
       Parameters:
