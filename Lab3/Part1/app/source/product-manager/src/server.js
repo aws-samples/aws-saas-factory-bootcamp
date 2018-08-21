@@ -92,7 +92,7 @@ app.get('/products', function (req, res) {
 		KeyConditionExpression: "tenantId = :tenantId",
 		ExpressionAttributeValues: {
 			":tenantId": tenantId
-					// ":tenantId": "<INSERT TENANTTWO GUID HERE>"
+			//":tenantId": "<INSERT TENANTTWO GUID HERE>"
 		}
 	};
 	// construct the helper object
