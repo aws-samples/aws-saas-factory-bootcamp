@@ -295,7 +295,7 @@ module.exports.getTenantId = function (req) {
 };
 ```
 
-**Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 2 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/scripts` directory, right-click `product-manager-v3.sh`, and click **Run** to execute the shell script.
+**Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 3 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/scripts` directory, right-click `product-manager-v3.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script.png" alt="Lab 2 Part 3 Step 4 Cloud9 Run Script"/></p>
 
