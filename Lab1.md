@@ -297,7 +297,7 @@ Notice that we extract the contents of the form and construct a JSON `tenant` ob
 
 **Step 2** – Our web application is considered static because it uses JavaScript to modify the HTML views directly on the browser without having to reload the entire URI from the server. **Amazon S3** provides for _serverless_ hosting of static websites. We need to capture the URL of our application from S3.
 
-Navigate to the **S3** service under the **Storage** category in the AWS console. An S3 bucket has been created with a bucket name pattern of **applicationui-webclient-_random_-webbucket-_random_** and it will be the only bucket marked with **Public** access. Open the detail view for the bucket by clicking on its name.
+Navigate to the **S3** service under the **Storage** category in the AWS console. An S3 bucket has been created to store our web application and it will be the only bucket marked with **Public** access. Open the detail view for the bucket by clicking on its name.
 
 <p align="center"><img src="./images/lab1/part4/s3_public_bucket.png" alt="Lab 1 Part 4 Step 2 S3 Public Bucket"/></p>
 
