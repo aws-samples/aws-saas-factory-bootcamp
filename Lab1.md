@@ -81,7 +81,7 @@ For our solution, we'll override a few of the default options. First, let's turn
 
 **Step 9** – The 4th step in the wizard is the **Message customizations** page. As part of our onboarding process, we'll be sending emails to users to verify their identity. We can lean on Cognito for this functionality as well. This screen lets us configure how this verification process will work. _For this bootcamp, we will use the default verification message settings_. Scroll down the page to the "**Do you want to customize your user invitation messages?**" section. Customize the invitation email that will be sent by Cognito as each new tenant signs up as follows:
 
-Change the subject from "Your temporary password" to "**New SaaS Bootcamp Tenant**" and the message text to:
+Change the subject from "Your temporary password" to "**New SaaS Bootcamp Tenant**" and the **Email message** text to:
 
 ```html
 <img src="https://d0.awsstatic.com/partner-network/logo_apn.png" alt="AWSPartner"> <br><br>
