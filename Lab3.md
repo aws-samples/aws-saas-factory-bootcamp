@@ -210,7 +210,7 @@ Instead of creating new policies from scratch, let's edit policies that were pro
 
 <p align="center"><img src="./images/lab3/part2/iam_request_conditions.png" alt="Lab 3 Part 2 Step 5 IAM Policy Request Conditions"/></p>
 
-**Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Select the **Save Changes** button to save this change to the policy.
+**Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Click the **Add** button. Select the  **Review policy** button and then select the **Save Changes** button to save this change to the policy.
 
 This process created a new **request condition** for our policy that now indicates that the value of our partition key in our DynamoDB table must include the tenant identifier when you user attempts to access items in the table.
 
@@ -250,9 +250,9 @@ At this point, all the elements of our isolation scheme are in place. We have au
 
 The steps that follow will guide you through the process of configuring and deploying a new version of the product manager service that successfully acquires these tenant-scoped credentials.
 
-**Step 1** - Let's start by looking at how the product manager service is modified to support tenant isolation. In Cloud9, navigate to `Lab3/Part4/app/source/product-manager/` and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
+**Step 1** - Let's start by looking at how the product manager service is modified to support tenant isolation. In Cloud9, navigate to `Lab3/Part4/app/source/product-manager/src/` and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
 
-<p align="center"><img src="./images/lab3/part3/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
+<p align="center"><img src="./images/lab3/part4/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
 
 The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are  used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
 
@@ -339,7 +339,7 @@ While seeing this work is great, it's hard to know that this new code is truly e
 At this point, we have incorporated security at the IAM level by leveraging Cognito's
 `getCredentialsForIdentity()`, but we have not evaluated if we can circumvent our security measures. As we did before, we will **manually override the tenant identifier** to see if we can break tenant isolation. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
 
-**Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/app/source/product-manager/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Run**.
+**Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/app/source/product-manager/src/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Run**.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_open_server.js.png" alt="Lab 3 Part 5 Step 1 Cloud9 Open server.js"/></p>
 

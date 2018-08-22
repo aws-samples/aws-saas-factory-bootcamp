@@ -201,7 +201,7 @@ Navigate to the **EC2** console listed under the **Compute** heading in the AWS 
 
 **Step 7** – Now that you have the pool id and the load balancer URL you're ready to call the REST method on the user manager service to create a user in Cognito. To call our REST entry point, we'll need to invoke the create user POST method. You can do this via a variety of tools (cURL, Postman, etc.). We will use the terminal command line available in Cloud9.
 
-Below the code editor pane you should see a command line prompt. To open a new terminal window, click on the green plus button and choose **New Terminal** or use the keyboard shortcut `Alt/Opt-T`.
+The Cloud9 Welcome screen will be open as a tab in the editor pane. _Below_ the code editor pane you should see a series of command line tabs. You can use an existing command line or open a new terminal window by clicking on the green plus button and choose **New Terminal** or use the keyboard shortcut `Alt/Opt-T`.
 
 <p align="center"><img src="./images/lab1/part2/cloud9_new_terminal.png" alt="Lab 1 Part 2 Step 7 Cloud9 New Terminal"/></p>
 
