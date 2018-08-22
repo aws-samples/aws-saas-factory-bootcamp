@@ -31,7 +31,7 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: 1
       TaskDefinition:
-        Fn::ImportValue: !Sub "${ApplicationUIStackName}-PRODUCTTASKDEFINITION"
+        Fn::ImportValue: !Sub "${BaselineStackName}-PRODUCTTASKDEFINITION"
       LoadBalancers:
       - ContainerName: !Ref Tag
         ContainerPort: !Ref ContainerPort
