@@ -189,7 +189,7 @@ app.post('/user/create', function (req, res) {
 
 To achieve this, you'll need the URL of the **Application Load Balancer** that our ECS cluster is behind and the **Pool Id** from Cognito that you saved earlier when creating the identity pool.
 
-Navigate to the **EC2** console listed under the **Compute** heading in the AWS console. Scroll down the left-hand menu and select **Load Balancers**. In the Description tab you will see the public DNS name we can use to invoke our microservices. For example:
+Navigate to the **EC2** console listed under the **Compute** heading in the AWS console. Scroll down the left-hand menu and select **Load Balancers**. You'll see a list of load balancers at the top of the screen and below a series of tabs. With the load balancer for the bootcamp selected, in the **Description** tab you will see the public DNS name we can use to invoke our microservices. For example:
 
 <p align="center"><img src="./images/lab1/part2/alb_url.png" alt="Lab 1 Part 2 Step 4 Load Balancer DNS Name"/></p>
 

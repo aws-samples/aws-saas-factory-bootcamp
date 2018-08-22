@@ -189,7 +189,7 @@ Navigate to the DynamoDB service in the AWS console and select the **Tables** op
 
 <p align="center"><img src="./images/lab2/part2/dynamo_delete_table.png" alt="Lab 2 Part 2 Step 5 DynamoDB Delete Table"/></p>
 
-**Step 6** - Now we can start the table creation process from scratch. Select the **Create table** button from the top of the page. As before, enter **ProductBootcamp** for the table name, but this time enter **tenantId** for the partition key. Now click on the **Add sort key** checkbox and we'll enter **productId** as the sort key.
+**Step 6** - Now we can start the table creation process from scratch. Select the **Create table** button from the top of the page. As before, enter **ProductBootcamp** for the table name, but this time enter **tenantId** for the partition key. Now click on the **Add sort key** checkbox and we'll enter **productId** as the sort key. Click the **Create** button to finalize the table.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_create_table.png" alt="Lab 2 Part 2 Step 6 DynamoDB Create Table"/></p>
 
