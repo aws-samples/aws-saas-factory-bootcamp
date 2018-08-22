@@ -117,17 +117,15 @@ Cognito also has the ability to customize some of the email headers for your ver
 
 <p align="center"><img src="./images/lab1/part1/cognito_splash.png" alt="Lab 1 Part 1 Cognito Manage Identity Pools"/></p>
 
-**Step 16** – The Getting started wizard should launch for you to create a new identity pool because you don't have any existing pools to list. 
+**Step 16** – The Getting started wizard should launch for you to create a new identity pool because you don't have any existing pools to list. Enter the name of your new identity pool (e.g. **SaaS Identity Pool**). 
 
-**Step 17** – Enter the name of your new identity pool (e.g. **SaaS Identity Pool**). 
+**Step 17** – Expand the "**Authentication Providers**" section at the bottom of the screen by clicking on the triangle. Here's where we'll create the connection between our user pool and the identity pool. You'll see a collection of tabs here representing the various identity providers that Cognito supports. We'll be focusing on the first tab, **Cognito**. You'll see options here to enter the user pool id as well as the application client id that were captured above. If you don't have them, you can get them by accessing the attributes of the user pool you created above.
 
-**Step 18** – Expand the "**Authentication Providers**" section at the bottom of the screen by clicking on the triangle. Here's where we'll create the connection between our user pool and the identity pool. You'll see a collection of tabs here representing the various identity providers that Cognito supports. We'll be focusing on the first tab, **Cognito**. You'll see options here to enter the user pool id as well as the application client id that were captured above. If you don't have them, you can get them by accessing the attributes of the user pool you created above.
+<p align="center"><img src="./images/lab1/part1/cognito_step10_auth_providers.png" alt="Lab 1 Part 1 Step 17 Cognito Authentication Providers"/></p>
 
-<p align="center"><img src="./images/lab1/part1/cognito_step10_auth_providers.png" alt="Lab 1 Part 1 Step 18 Cognito Authentication Providers"/></p>
+**Step 18** – Select the "**Create Pool**" button from the bottom right of the page to trigger the creation of the pool. 
 
-**Step 19** – Select the "**Create Pool**" button from the bottom right of the page to trigger the creation of the pool. 
-
-**Step 20** – Finally, select the "**Allow button**" on the next page to enable your new identity pool to access AWS resources. This will complete the creation process.
+**Step 19** – Finally, select the "**Allow button**" on the next page to enable your new identity pool to access AWS resources. This will complete the creation process.
 
 **Recap**: At this point, you have all the moving parts in place for your SaaS system to manage users and associate those users with tenants. We've also setup the policies that will control how the system validates users during onboarding. This includes the definition of password and username policies. That last bit was to setup an identity pool to enable authentication and access to AWS resources.
 
