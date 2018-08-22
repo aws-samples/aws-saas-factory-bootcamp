@@ -185,3 +185,237 @@ app.get('/products', function (req, res) {
 **Step 22** - Select the **Catalog** menu option at the top of the page. This should display the catalog for your **TenantOne** user you just authenticated as. However, the _**list actually contains products that are from TenantTwo**_. We've now officially crossed the tenant boundary.
 
 **Recap**: The key takeaway here is that authentication alone is not enough to protect your SaaS system. Without additional policies and authorization in place, the code of your system could un-intentionally access data for another tenant. Here we forced this condition more explicitly, but you can imagine how more subtle changes by a developer could have an un-intended side effect.
+
+## Part 2 - Configuring Provisioned IAM Policies
+
+It's clear now that we need policies to better protect our system from cross-tenant access. The question is: what can we do to better isolate and protect tenant data? The first piece of the puzzle is **IAM policies**. With IAM policies, we can create rules that control the level of access a user has to tenant resources.
+
+Instead of creating new policies from scratch, let's edit policies that were provisioned during the start of our process. The following steps will guide through the policy editing process:
+
+**Step 1** - To locate to the policies we want to edit, navigate to the IAM service in the AWS console and select **Policies** from the list of options on the upper left-hand side of the page. This will give you a list of all the polices that are available in IAM.
+
+**Step 2** - Now, we want to find the policies associated with the two tenants that we created (**TenantOne** and **TenantTwo**). Let's start with TenantOne. We need to enter the policy name in the search box near the top of the screen. Enter the GUID of the tenant for TenantOne. You captured this value earlier from DynamoDB.
+
+<p align="center"><img src="./images/lab3/part2/iam_search_policies.png" alt="Lab 3 Part 2 Step 2 IAM Search Policies"/></p>
+
+**Step 3** - The list should now be narrowed to just the 2 policies for tenant one. **Select the arrow** in the column preceding your policy name to drill into the policy. Then, select the **Edit policy** button that's near the center of the page.
+
+<p align="center"><img src="./images/lab3/part2/iam_edit_policy.png" alt="Lab 3 Part 2 Step 3 IAM Edit Policy"/></p>
+
+**Step 4** - The console will now display a list of DynamoDB polices and a Cognito User Pool policy. We're interested in editing the policy for the **ProductBootcamp** table. However, _it's location in this list of DynamoDB tables can vary_. Open each of the collapsed DynamoDB entries in this list by **selecting the arrow** at the left edge of the list. Near the bottom of each expanded set of polices, you should find a **Resources** section. Locate the set of policies that reference the **ProductBootcamp** table. The ARN will be similar to the following:
+
+<p align="center"><img src="./images/lab3/part2/iam_dynamo_arn.png" alt="Lab 3 Part 2 Step 4 IAM Dynamo ARN"/></p>
+
+**Step 5** - Our interest is in the **Request conditions** associated with this policy. These conditions are at the heart of our ability to control which items a user can access within a DynamoDB table. We want our policy to indicate that only users with partition key value that matches **TenantOne**'s tenant identifier will be allowed to access those items in the table. Hover over the **Request conditions** value and **select the text for the conditions** this will put you into edit mode for the conditions.
+
+<p align="center"><img src="./images/lab3/part2/iam_request_conditions.png" alt="Lab 3 Part 2 Step 5 IAM Policy Request Conditions"/></p>
+
+**Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Select the **Save Changes** button to save this change to the policy.
+
+This process created a new **request condition** for our policy that now indicates that the value of our partition key in our DynamoDB table must include the tenant identifier when you user attempts to access items in the table.
+
+**Step 7** - We now want to repeat this same process for **TenantTwo**. Complete steps 2-6 again replacing all references to TenantOne with **TenantTwo**. This will ensure that TenantTwo is also protected.
+
+**Recap**: The exercises in this part of the lab showed how to put in place the elements needed to support our tenant isolation goals. We amended our existing tenant **policies** introducing changes that allow us to scope access to DynamoDB tables. This was achieved by adding a new condition to our ProductBootcamp table policies. These policies, which are tenant-specific, limit a user's view of the table to only those items that contain our tenant identifier in the table's partition key.
+
+## Part 3 - Mapping User Roles to Policies
+
+Now that we have policies defined, we need some way to connect these policies with specific user roles. Ultimately, we need a way to match both the role of the user and the tenant scope to a _specific_ set of policies. For this scenario, we're going to lean on the **role matching capabilities of Cognito**. Cognito will allow us to define a set of conditions that will be used to create this match and, in the process, emit a **set of credentials** that will be scope based on the matching policies —- which is exactly what we need to implement our tenant isolation model.
+
+In this bootcamp these policy mappings have already been created. Let's take a look at them in the **Cognito console**.
+
+**Step 1** - Navigate to the Cognito service in the AWS console. From the landing page, select the **Manage Identity Pools** button to see a list of identity pools. It will include **separate pools** for each of the tenants that you have onboarded.
+
+Locate the identity pools for **TenantOne** and **TenantTwo**. They will be named with the GUID of the tenant. Click on the identity pool that is associated with **TenantOne**.
+
+<p align="center"><img src="./images/lab3/part3/cognito_identity_pools.png" alt="Lab 3 Part 3 Step 1 Cognito Identity Pools"/></p>
+
+**Step 2** - Once you select the identity pool, you see a page that provides and overview of the identity pool activity. Now select the **Edit identity pool** link at the top right of the page.
+
+<p align="center"><img src="./images/lab3/part3/cognito_identity_pool_details.png" alt="Lab 3 Part 3 Step 2 Cognito Identity Pool Details"/></p>
+
+**Step 3** - If you scroll down the edit identity pool page, you'll see a heading for **Authentication Providers**. Expand this section and you'll see a page with authorization provider configurations.
+
+We can now see the role mappings in place for our two roles. There is a **TenantAdmin** role that represents the administrator and there's a **TenantUser** role that maps to individual non-admin users of your SaaS system. Naturally, these have different levels of access to the system and its resources.
+
+The claim column has a value (URL encoded) that matches the custom **role** attribute you configured in Cognito back in Lab 1. When that **custom claim matches** the name of the role, the IAM policy (with the DynamoDB restrictions) is enforced on the **temporary security tokens returned from STS**.
+
+<p align="center"><img src="./images/lab3/part3/cognito_role_matching.png" alt="Lab 3 Part 3 Step 3 Cognito Role Matching"/></p>
+
+**Recap**: You've now completed building out the second phase of our tenant isolation. With this exercise, we saw the role-mapping rules in our Cognito identity pool. These mappings directly associate roles for tenants (TenantAdmin and TenantUser) to the policies that we configured in first part of this lab.
+
+## Part 4 - Acquiring Tenant-Scoped Credentials
+
+At this point, all the elements of our isolation scheme are in place. We have authentication with Cognito, roles provisioned for each tenant that scope access to our DynamoDB tables, and we have role-mapping conditions configured in Cognito that will connect our authenticated users with their corresponding policies. All that remains now is to introduce the code into our application services that exercises these elements and acquires credentials that will properly scope our access to the tenant resources.
+
+The steps that follow will guide you through the process of configuring and deploying a new version of the product manager service that successfully acquires these tenant-scoped credentials.
+
+**Step 1** - Let's start by looking at how the product manager service is modified to support tenant isolation. In Cloud9, navigate to `Lab3/Part4/app/source/product-manager/` and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
+
+<p align="center"><img src="./images/lab3/part3/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
+
+The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are  used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
+
+```javascript
+app.get('/product/:id', function (req, res) {
+    winston.debug('Fetching product: ' + req.params.id);
+    tokenManager.getCredentialsFromToken(req, function (credentials) {
+        // init params structure with request params
+        var params = {
+            tenantId: tenantId,
+            productId: req.params.id
+        };
+        // construct the helper object
+        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+        dynamoHelper.getItem(params, credentials, function (err, product) {
+            if (err) {
+                winston.error('Error getting product: ' + err.message);
+                res.status(400).send('{"Error" : "Error getting product"}');
+            } else {
+                winston.debug('Product ' + req.params.id + ' retrieved');
+                res.status(200).send(product);
+            }
+        });
+    });
+});
+```
+**Step 2** - The call to `getCredentialsFromToken()` described above is where all the magic happens in terms of mapping our token/identity to the appropriate policies and returning that in the form of credentials. Given the importance of this function, let's dig in and look more closely at what it is doing. Below is a snippet of code from the `TokenManager` that implements the `getCredentialsFromToken()` function:
+
+```javascript
+module.exports.getCredentialsFromToken = function (req, updateCredentials) {
+    var bearerToken = req.get('Authorization');
+    if (bearerToken) {
+        var tokenValue = bearerToken.substring(bearerToken.indexOf(' ') + 1);
+        if (!(tokenValue in tokenCache)) {
+            var decodedIdToken = jwtDecode(tokenValue);
+            var userName = decodedIdToken['cognito:username'];
+            async.waterfall([
+                function (callback) {
+                    getUserPoolWithParams(userName, callback);
+                },
+                function (userPool, callback) {
+                    authenticateUserInPool(userPool, tokenValue, callback);
+                }
+            ], function (error, results) {
+                if (error) {
+                    winston.error('Error fetching credentials for user');
+                    updateCredentials(null);
+                } else {
+                    tokenCache[tokenValue] = results;
+                    updateCredentials(results);
+                }
+            });
+        } else if (tokenValue in tokenCache) {
+            winston.debug('Getting credentials from cache');
+            updateCredentials(tokenCache[tokenValue]);
+        }
+    }
+};
+```
+
+Let's highlight the key elements of this function.
+* The very first action is to extract the security `bearerToken` from the HTTP request. This is the token that you received from Cognito after you authenticated your user.
+* We then decode the token and extract the `userName` attribute.
+* Next, a series of calls are executed in sequence. It starts by looking up the `userPool` for the current user. It then calls `authenticateUserInPool()`. This function, which is part of the `TokenManager` helper class ultimately calls the Cognito `getCredentialsForIdentity()` method, passing in the token from the user.
+
+It's this call to Cognito that **triggers the role mapping** we configured earlier. Cognito will extract the role from the supplied token and match it to the policy, then construct a **temporary set of scoped credentials** that are returned to the calling function.
+
+**Step 2** - So that's what the code is doing behind the scenes. Now, let's deploy this new version of the product manager service to see it in action. In Cloud9, navigate to the  `Lab3/Part4/scripts` directory, right-click `product-manager-v6.sh`, and click **Run** to execute the shell script.
+
+<p align="center"><img src="./images/lab3/part4/cloud9_run.png" alt="Lab 3 Part 4 Step 2 Cloud9 Run"/></p>
+
+**Step 3** - Wait for the `product-manager-v6.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+
+<p align="center"><img src="./images/lab3/part1/cloud9_run_script_complete.png" alt="Lab 3 Part 4 Step 3 Cloud9 Script Finished"/></p>
+
+**Step 4** - Let's verify that all of the moving parts of this process are working. Use the same web application URL you've used throughout. If **TenantTwo** is stilled logged in, log out using the dropdown at the top left of the application navigation bar. Now, login as **TenantOne** and access your data by selecting the **Catalog** menu item and viewing **TenantOne's** products. **Everything should work**.
+
+While seeing this work is great, it's hard to know that this new code is truly enforcing our tenant isolation. This always of tough case to test. Let's try a bit of a brute force method in Part 5.
+
+**Recap**: We looked at the source code to see how we tie together the JWT **security bearer token** from the HTTP headers, our defined **custom claims**, and Cognito's **role-to-policy mapping** and return of **temporary STS credentials** to enforce tenant isolation in our system. We then deployed a fresh version of the product manager service to remove our manual "security hack" from before.
+
+## Part 5 - Verifying Tenant-Scoped Credentials
+
+At this point, we have incorporated security at the IAM level by leveraging Cognito's
+`getCredentialsForIdentity()`, but we have not evaluated if we can circumvent our security measures. As we did before, we will **manually override the tenant identifier** to see if we can break tenant isolation. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
+
+**Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/app/source/product-manager/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Run**.
+
+<p align="center"><img src="./images/lab3/part5/cloud9_open_server.js.png" alt="Lab 3 Part 5 Step 1 Cloud9 Open server.js"/></p>
+
+**Step 2** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
+
+```javascript
+app.get('/products', function (req, res) {
+    winston.debug('Fetching Products for Tenant Id: ' + tenantId);
+    tokenManager.getCredentialsFromToken(req, function (credentials) {
+        var searchParams = {
+            TableName: productSchema.TableName,
+            KeyConditionExpression: "tenantId = :tenantId",
+            ExpressionAttributeValues: {
+                ":tenantId": tenantId
+                //":tenantId": "<INSERT TENANTTWO GUID HERE>"
+            }
+        };
+        // construct the helper object
+        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+        dynamoHelper.query(searchParams, credentials, function (error, products) {
+            if (error) {
+                winston.error('Error retrieving products: ' + error.message);
+                res.status(400).send('{"Error" : "Error retrieving products"}');
+            } else {
+                winston.debug('Products successfully retrieved');
+                res.status(200).send(products);
+            }
+        });
+    });
+});
+```
+
+Locate the `tenantId` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenantId` with this value. So, when you're done, it should appear similar to the following:
+
+We will once again **manually inject** the `tenantId` for **TenantTwo** to see if our new code will prevent cross tenant access. Locate the `tenantId` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenantId` with this value. So, when you're done, it should appear similar to the following:
+
+```javascript
+app.get('/products', function (req, res) {
+    winston.debug('Fetching Products for Tenant Id: ' + tenantId);
+    tokenManager.getCredentialsFromToken(req, function (credentials) {
+        var searchParams = {
+            TableName: productSchema.TableName,
+            KeyConditionExpression: "tenantId = :tenantId",
+            ExpressionAttributeValues: {
+                ":tenantId": "TENANT4c33c2eae9974615951e3dc04c7b9057"
+            }
+        };
+        // construct the helper object
+        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+        dynamoHelper.query(searchParams, credentials, function (error, products) {
+            if (error) {
+                winston.error('Error retrieving products: ' + error.message);
+                res.status(400).send('{"Error" : "Error retrieving products"}');
+            } else {
+                winston.debug('Products successfully retrieved');
+                res.status(200).send(products);
+            }
+        });
+    });
+});
+```
+
+**Step 3** - Now we need to deploy our updated product manager microservice with our cross tenant access violation in-place. First, save your edited `server.js` file in Cloud9 by clicking **File** on the toolbar followed by **Save**.
+
+<p align="center"><img src="./images/lab3/part5/cloud9_save.png" alt="Lab 3 Part 5 Step 3 Save server.js"/></p>
+
+**Step 4** - To deploy our modified service, navigate to the `Lab3/Part5/scripts` directory and right-click `product-manager-v7.sh`, and click **Run** to execute the shell script.
+
+<p align="center"><img src="./images/lab3/part5/cloud9_run.png" alt="Lab 3 Part 5 Step 4 Cloud9 Run"/></p>
+
+**Step 5** - Wait for the `product-manager-v7.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+
+<p align="center"><img src="./images/lab3/part5/cloud9_run_script_complete.png" alt="Lab 3 Part 5 Step 5 Cloud9 Script Finished"/></p>
+
+**Step 6** - With our new version of the service deployed, we can now see how this impacted the application. Let's log back into the system with the credentials for **TenantOne** that you created above (if **TenantTwo** is still logged in, log out using the dropdown at the top right of the page).
+
+**Step 7** - Select the **Catalog** menu option at the top of the page. This should display the catalog for your **TenantOne** user you just authenticated as. You'll see that **no products are displayed**. In fact, if you look at the logs (use your browser's developer tools), you'll see that this threw an error. This is because we're logged in as **TenantOne** and our service has hard-coded **TenantTwo**. This makes it clear that our isolation policies are being enforced since the **credentials we acquired prohibited us from accessing data for TenantTwo**.
+
+**Recap**: With this last step, we connected all the concepts of **tenant isolation** in the code of the product manager service. We added specific calls to exchange our authenticated token for a **tenant-scope set of credentials** which we then used to access our DynamoDB data store. With this **new level of isolation enforcement** in place, we attempted to hard-code something that crossed a tenant boundary and confirmed that our policies **prohibited cross-tenant access**.
