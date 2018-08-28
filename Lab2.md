@@ -124,7 +124,7 @@ To make this work, will also need a different configuration for our DynamoDB dat
 
 The steps that follow will take you through the process of adding these capabilities to the product manager service:
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support data partitioning. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab2/Part2/app/source/product-manager/`, right-click `server.js` and click **Open**.
+**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support data partitioning. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab2/Part2/app/source/product-manager/src`, right-click `server.js` and click **Open**.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_open_script.png" alt="Lab 2 Part 2 Step 1 Cloud9 Open Script"/></p>
 
