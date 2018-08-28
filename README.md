@@ -21,15 +21,15 @@
 
 ### Lab 1 - Identity and Onboarding
 
-[![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab%201%20Guide.pdf "Lab 1")
+[![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
 
 ### Lab 2 - Multi-Tenant Security & User Roles
 
-[![Lab2](images/lab2.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab%202%20Guide.pdf "Lab 2")
+[![Lab2](images/lab2.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab2.md "Lab 2")
 
 ### Lab 3 - Data Isolation
 
-[![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab%203%20Guide.pdf "Lab 3")
+[![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab3.md "Lab 3")
 
 ### Frequently Asked Questions (FAQ)
 
