@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation Template Invokes a Lambda Function to Create a Custom CloudFormation Resource
+Description: IAM Role for Lambda
 Parameters:
   QSS3BucketName:
     Description: The S3 Bucket Name of Zipped Lambda Code

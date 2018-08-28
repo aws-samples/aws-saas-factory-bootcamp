@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Authentication Service
+Description: Authentication Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

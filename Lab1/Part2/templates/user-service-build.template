@@ -46,6 +46,9 @@ Parameters:
   BaselineStackName:
     Type: String
     Description: BASELINE STACK NAME
+  BaselineServicesStackName:
+    Type: String
+    Description: Baseline "services" stack name to get exports from
   QSS3BucketName:
     Description: S3 bucket name for the Bootcamp assets. Bootcamp bucket name
       can include numbers, lowercase letters, uppercase letters, and hyphens (-).
@@ -56,9 +59,6 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
     Type: String
-  BaselineStackName:
-    Type: String
-    Description: BASELINE STACK NAME
 Resources:
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
@@ -291,7 +291,8 @@ Resources:
             RoleArn: !Ref CloudFormationExecutionRole
             ParameterOverrides: !Sub |
               {
-                "BaselineStackName": "${BaselineStackName}"
+                "BaselineStackName": "${BaselineStackName}",
+                "BaselineServicesStackName": "${BaselineServicesStackName}"
               }
           InputArtifacts:
           - Name: Template

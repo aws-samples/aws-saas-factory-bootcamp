@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "This CloudFormation Template copies a file to an S3 Bucket.",
+    "Description": "Lambda function to copy files from one S3 bucket to another",
     "Parameters": {
         "DestinationBucket": {
             "Type": "String",

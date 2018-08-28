@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Tenant Registration Service
+Description: Tenant Registration Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

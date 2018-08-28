@@ -17,6 +17,8 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
   CloudFormationExecutionRole:
     Type: AWS::IAM::Role
     Properties:

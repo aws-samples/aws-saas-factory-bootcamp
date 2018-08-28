@@ -1,5 +1,5 @@
 ---
-Description: This template deploys IAM Roles required for other cloudformation templates.
+Description: IAM Roles for Cognito and CloudFormation
 Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names

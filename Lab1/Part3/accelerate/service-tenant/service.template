@@ -1,0 +1,77 @@
+---
+Description: CloudFormation Template to spin up ECS Service, Task Definition, Target
+  Group, and ALB Path for Multi-Tenant Micro-Service.
+Parameters:
+  BaselineStackName:
+    Type: String
+    Description: BASELINE STACK NAME
+    Default: module-saas-bootcamp-base
+  BaselineServicesStackName:
+    Type: String
+    Description: Baseline "services" stack name to get exports from
+  Tag:
+    Description: The name of the container image
+    Type: String
+    Default: 'tenant-manager'
+  ContainerPort:
+    Description: The Container Port
+    Type: Number
+    Default: '3003'
+Resources:
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn:
+    - ServiceRole
+    - ServicePolicy
+    Properties:
+      ServiceName: !Ref Tag
+      Cluster:
+        Fn::ImportValue: !Sub "${BaselineStackName}-ECSCLUSTER"
+      Role: !Ref ServiceRole
+      DesiredCount: 1
+      TaskDefinition:
+        Fn::ImportValue: !Sub "${BaselineServicesStackName}-TENANTTASKDEFINITION"
+      LoadBalancers:
+      - ContainerName: !Ref Tag
+        ContainerPort: !Ref ContainerPort
+        TargetGroupArn:
+            Fn::ImportValue: !Sub "${BaselineServicesStackName}-TENANTTARGETGROUP"
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ecs.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
+  ServicePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ecs-service-${AWS::StackName}
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: ECSALBAccess
+          Action:
+          - ec2:DescribeVpcs
+          - ec2:AuthorizeSecurityGroupIngress
+          - ec2:Describe*
+          - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+          - elasticloadbalancing:Describe*
+          - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+          - elasticloadbalancing:DeregisterTargets
+          - elasticloadbalancing:DescribeTargetGroups
+          - elasticloadbalancing:DescribeTargetHealth
+          - elasticloadbalancing:RegisterTargets
+          Resource: '*'
+          Effect: Allow
+      Roles:
+      - Ref: ServiceRole
+...

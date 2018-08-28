@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: System Admin Registration Service
+Description: System Admin Registration Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

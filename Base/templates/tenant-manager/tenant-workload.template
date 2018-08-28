@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Tenant Management Service
+Description: Tenant Management Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

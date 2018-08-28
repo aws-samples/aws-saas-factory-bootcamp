@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: Order Management Service
+Description: Order Management Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation Template creates the ECR Repository and Artifact
+Description: ECR Repository and S3 bucket for CodePipeline artifacts
   Bucket for the Docker Pipeline.
 Resources:
   Repository:

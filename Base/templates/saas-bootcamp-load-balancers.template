@@ -1,6 +1,5 @@
 ---
-Description: This template deploys an Application Load Balancer that exposes the micro-services
-  in an ECS Cluster.
+Description: Application Load Balancer for the micro-services in the ECS cluster
 Parameters:
   EnvironmentName:
     Description: An environment name that will be prefixed to resource names

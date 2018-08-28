@@ -6,6 +6,9 @@ Parameters:
     Type: String
     Description: BASELINE STACK NAME
     Default: module-saas-bootcamp-base
+  BaselineServicesStackName:
+    Type: String
+    Description: Baseline "services" stack name to get exports from
   Tag:
     Description: The name of the container image
     Type: String
@@ -27,12 +30,12 @@ Resources:
       Role: !Ref ServiceRole
       DesiredCount: 1
       TaskDefinition:
-        Fn::ImportValue: !Sub "${BaselineStackName}-USERTASKDEFINITION"
+        Fn::ImportValue: !Sub "${BaselineServicesStackName}-USERTASKDEFINITION"
       LoadBalancers:
       - ContainerName: !Ref Tag
         ContainerPort: !Ref ContainerPort
         TargetGroupArn:
-            Fn::ImportValue: !Sub "${BaselineStackName}-USERTARGETGROUP"
+            Fn::ImportValue: !Sub "${BaselineServicesStackName}-USERTARGETGROUP"
   ServiceRole:
     Type: AWS::IAM::Role
     Properties:

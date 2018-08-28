@@ -25,5 +25,5 @@ Resources:
       TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part2/templates/saas-bootcamp-cloud9.template
       Parameters:
         SubnetIdentifier:
-          Fn::ImportValue: !Sub "${BaselineStackName}-PUBLICSUBNET1"
+          Fn::ImportValue: !Sub "${BaselineStackName}-PublicSubnet1ID"
 ...

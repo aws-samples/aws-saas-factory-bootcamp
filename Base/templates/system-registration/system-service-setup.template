@@ -1,6 +1,5 @@
 ---
-Description: CloudFormation Template to spin up ECS Service, Task Definition, Target
-  Group, and ALB Path for Multi-Tenant Micro-Service.
+Description: system-registration ECS Service, Task Definition, Target Group, and ALB path
 Parameters:
   VPC:
     Description: The VPC that the ECS cluster is deployed to

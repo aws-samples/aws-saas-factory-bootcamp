@@ -22,6 +22,9 @@ Parameters:
     Type: String
     Description: BASELINE STACK NAME
     Default: module-saas-bootcamp-base
+  BaselineServicesStackName:
+    Type: String
+    Description: Baseline "services" stack name to get exports from
   QSS3BucketName:
     Default: aws-bootcamp-us-east-1
     Description: S3 bucket name for the Bootcamp assets. Bootcamp bucket name
@@ -113,6 +116,7 @@ Resources:
         OrderTable: 'OrderBootcamp'
         TenantTable: 'TenantBootcamp'
         BaselineStackName: !Ref BaselineStackName
+        BaselineServicesStackName: !Ref BaselineServicesStackName
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
   WaitConditionService:

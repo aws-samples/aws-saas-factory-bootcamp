@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: For many developers, the move to SaaS can be daunting. Adopting a multi-tenant mindset means re-thinking many of the fundamental elements of how you design, build, operate, and deploy your applications. With the Building SaaS Solutions on AWS bootcamp, you’ll get a hands on opportunity to build and deploy a SaaS environment that touches on many of the core elements of multi-tenant application design and architecture. This bootcamp, through a combination of lecture and hand-on labs, will guide you through a discovery of the core principles of SaaS, introducing you to the fundamentals of on-boarding, tenant isolation, data partitioning, identity, management, and billing. The idea here is to expose participants to these concepts via a phased, hands on build of a working SaaS application, exposing SaaS developers to strategies for realizing SaaS architecture principles on the AWS stack of services.
+Description: SaaS Bootcamp Baseline Master Stack
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

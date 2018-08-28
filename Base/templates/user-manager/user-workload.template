@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: User Management Service
+Description: User Management Service Setup
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation Template Invokes a Lambda Function to Create a Custom CloudFormation Resource
+Description: Creates IAM user and credentials for the Bootcamp
 Parameters:
   S3Bucket:
     Description: The S3 Bucket Name of Zipped Lambda Code
