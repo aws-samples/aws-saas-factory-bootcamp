@@ -105,7 +105,7 @@ To do this, we'll return to the product manager service and look at how manually
 
 **Step 15** - Locate the two tenants you created within the list by identifying the tenant with the username/email that you used above. **Capture the tenant identifiers for both of these tenants**. You'll need these values in subsequent steps.
  
-**Step 16** - Now let's go back to the code of our product manager service and make a modification. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/app/source/product-manager/`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
+**Step 16** - Now let's go back to the code of our product manager service and make a modification. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/app/source/product-manager/src`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
 
 <p align="center"><img src="./images/lab3/part1/open_server.js.png" alt="Lab 3 Part 1 Step 16 Open server.js"/></p>
 
