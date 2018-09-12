@@ -357,7 +357,7 @@ function authenticateUserInPool(userPool, idToken, callback) {
 			winston.error('ret');
 		}
 	});
-}
+};
 
 /**
  * Get AWS Credentials with Cognito Federated Identity and ID Token
