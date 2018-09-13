@@ -176,9 +176,13 @@ module.exports.getCredentialsFromToken = function (req, updateCredentials) {
 			var userName = decodedIdToken['cognito:username'];
 			async.waterfall([
 				function (callback) {
+					winston.debug('Calling getUserPoolWithParams');
 					getUserPoolWithParams(userName, callback);
 				},
 				function (userPool, callback) {
+					winston.debug('Calling authenticateUserInPool');
+					winston.debug('userPool' + userPool);
+					winston.debug('token: ' + decodedIdToken);
 					authenticateUserInPool(userPool, tokenValue, callback);
 				}
 			], function (error, results) {
