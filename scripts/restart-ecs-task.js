@@ -57,9 +57,9 @@ cloudformation.describeStacks(params, function (err, data) {
 						for (var i = 0; i < tasks.length; i++) {
 							var taskName = tasks[i].containers[0].name;
 							var taskArn = tasks[i].containers[0].taskArn;
-							console.log("Stopping task " + taskName + " in service " + service_name);
 //							jsonArray.push({"TaskName": taskName, "TaskArn": taskArn});
 							if (taskName === service_name) {
+								console.log("Stopping task " + taskName + " in service " + service_name);
 								var params = {
 									task: taskArn, /* required */
 									cluster: ecs_cluster
@@ -68,6 +68,20 @@ cloudformation.describeStacks(params, function (err, data) {
 								ecs.stopTask(params, function (err, data) {
 									if (err) {
 										console.log(err, err.stack); // an error occurred
+									} else {
+										console.log(data);
+									}
+								});
+								
+								var params = {
+									service: service_name,
+									cluster: ecs_cluster,
+									taskDefinition: taskName
+								};
+								console.log("Updating service with task " + params["taskDefinition"]);
+								ecs.updateService(params, function(err, data) {
+									if (err) {
+										console.log(err, err.stack);
 									} else {
 										console.log(data);
 									}
