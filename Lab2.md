@@ -84,7 +84,7 @@ Let's start by looking at the signature of the method. Here you'll see the tradi
 
 <p align="center"><img src="./images/lab2/part1/dynamo_menu_tables.png" alt="Lab 2 Part 1 Step 4 DynamoDB Menu Tables"/></p>
 
-**Step 5** - Now click the **Create table** button at the top of the page. Enter a table name of **ProductBootcamp** and enter **productId** as the primary key. Once you've filled out the form, select the **Create** button at the bottom right of the page to create your new table.
+**Step 5** - Now click the **Create table** button at the top of the page. Enter a table name of **ProductBootcamp** and enter **productId** as the primary key. The table and key names are case sensitive in DynamoDB. Be sure you enter the values correctly. Once you've filled out the form, select the **Create** button at the bottom right of the page to create your new table.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_create_table.png" alt="Lab 2 Part 1 Step 5 DynamoDB Create Table"/></p>
 

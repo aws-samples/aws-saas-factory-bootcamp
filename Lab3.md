@@ -198,7 +198,7 @@ Instead of creating new policies from scratch, let's edit policies that were pro
 
 <p align="center"><img src="./images/lab3/part2/iam_search_policies.png" alt="Lab 3 Part 2 Step 2 IAM Search Policies"/></p>
 
-**Step 3** - The list should now be narrowed to just the 2 policies for tenant one. **Select the arrow** in the column preceding your policy name to drill into the policy. Then, select the **Edit policy** button that's near the center of the page.
+**Step 3** - The list should now be narrowed to just the 2 policies for tenant one. There will be a policy for tenant **admin** and a second one for tenant **user**. **Select the triangle/arrow** in the column preceding the **TenantAdmin** policy name to drill into the policy. Then, select the **Edit policy** button that's near the center of the page.
 
 <p align="center"><img src="./images/lab3/part2/iam_edit_policy.png" alt="Lab 3 Part 2 Step 3 IAM Edit Policy"/></p>
 
@@ -211,6 +211,8 @@ Instead of creating new policies from scratch, let's edit policies that were pro
 <p align="center"><img src="./images/lab3/part2/iam_request_conditions.png" alt="Lab 3 Part 2 Step 5 IAM Policy Request Conditions"/></p>
 
 **Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Click the **Add** button. Select the  **Review policy** button and then select the **Save Changes** button to save this change to the policy.
+
+<p align="center"><img src="./images/lab3/part2/iam_add_request_condition.png" alt="Lab 3 Part 2 Step 6 IAM Policy Add Request Condition"/></p>
 
 This process created a new **request condition** for our policy that now indicates that the value of our partition key in our DynamoDB table must include the tenant identifier when you user attempts to access items in the table.
 
