@@ -19,11 +19,57 @@ Parameters:
       forward slash (/).
     Type: String
 Resources:
+  CheckRoleLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: ConfigPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Sid: Logging
+            Effect: Allow
+            Action: logs:*
+            Resource: '*'
+          - Sid: IAM
+            Effect: Allow
+            Action: iam:*
+            Resource: '*'
+  CheckRoleFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: CheckRoleLambdaRole
+    Properties:
+      FunctionName: check-role
+      Description: Checks the existence of a given IAM role
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Timeout: 30
+      Role: !GetAtt CheckRoleLambdaRole.Arn
+      Code:
+        S3Bucket:
+          Fn::ImportValue: !Sub "${BaselineStackName}-TEMPLATEBUCKET"
+        S3Key: !Sub "${QSS3KeyPrefix}Base/functions/packages/check-role/check-role.zip"
+  CheckRole:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: CheckRoleFunction
+    Properties:
+      ServiceToken: !GetAtt CheckRoleFunction.Arn
+      RoleName: player-role
   IDE:
     Type: AWS::CloudFormation::Stack
+    DependsOn: CheckRole
     Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part2/templates/saas-bootcamp-cloud9.template
       Parameters:
         SubnetIdentifier:
           Fn::ImportValue: !Sub "${BaselineStackName}-PublicSubnet1ID"
+        EventEngineRole: !GetAtt CheckRole.Role
 ...

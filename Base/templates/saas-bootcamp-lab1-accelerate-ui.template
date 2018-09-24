@@ -19,7 +19,7 @@ Parameters:
 Resources:
   ApplicationUI:
     Type: AWS::CloudFormation::Stack
-    Properties: 
+    Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part6/templates/application-ui.template
       Parameters:
         BaselineStackName: !Ref BaselineStackName

@@ -130,6 +130,7 @@ Resources:
       Count: '1'
   DevEnvironment:
     Type: AWS::CloudFormation::Stack
+    DependsOn: Service
     Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Lab1/Part2/templates/dev-environment.template
       Parameters:

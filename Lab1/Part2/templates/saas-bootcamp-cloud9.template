@@ -13,6 +13,13 @@ Parameters:
   SubnetIdentifier:
     Description: SubnetId
     Type: AWS::EC2::Subnet::Id
+  EventEngineRole:
+    Description: IAM Role ARN of the Event Engine Player Role if it exists
+    Type: String
+    Default: ''
+Conditions:
+  EventEngine:
+    !Not [!Equals ['', !Ref EventEngineRole]]
 Resources:
   IDE:
     Type: AWS::Cloud9::EnvironmentEC2
@@ -25,5 +32,6 @@ Resources:
       SubnetId: !Ref SubnetIdentifier
       InstanceType: !Ref EC2InstanceType
       Name: 'SAASBOOTCAMPIDE'
-      OwnerArn: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/player-role/MasterKey"
+      OwnerArn: 
+        !If [EventEngine, !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/player-role/MasterKey", !Ref "AWS::NoValue"]
 ...

@@ -41,7 +41,8 @@
                 },
                 "Objects": [
                     "Lab1/Part2/app/packages/user-manager/user-manager.zip",
-                    "Lab1/Part2/templates/service-user.template.zip"
+                    "Lab1/Part2/templates/service-user.template.zip",
+                    "Base/functions/packages/check-role/check-role.zip"
                 ]
             }
         },

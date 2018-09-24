@@ -12,6 +12,7 @@ exports.handler = function(event, context) {
 		var iam = new aws.IAM();
 		var params = {RoleName: event.ResourceProperties.RoleName};
 		iam.getRole(params, function(err, data) {
+			console.log("iam.getRole returned:\n" + JSON.stringify(err) + "\n\n" + JSON.stringify(data));
 			if (err) {
 				// IAM throws an error instead of returning NULL when it can't find the role
 				if ('NoSuchEntity' == err.code) {
