@@ -1,0 +1,14 @@
+{
+  "name": "check_role",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mibeard",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.x",
+    "cfn-response": "^1.x"
+  }
+}
