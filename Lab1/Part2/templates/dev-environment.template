@@ -62,7 +62,7 @@ Resources:
     DependsOn: CheckRoleFunction
     Properties:
       ServiceToken: !GetAtt CheckRoleFunction.Arn
-      RoleName: player-role
+      RoleName: TeamRole
   IDE:
     Type: AWS::CloudFormation::Stack
     DependsOn: CheckRole
