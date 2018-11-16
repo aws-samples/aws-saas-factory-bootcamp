@@ -18,6 +18,10 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, hyphens (-), and
       forward slash (/).
     Type: String
+  EventEngineRoleName:
+    Description: IAM role name of the Event Engine player role
+    Type: String
+    Default: TeamRole
 Resources:
   CheckRoleLambdaRole:
     Type: AWS::IAM::Role
@@ -62,7 +66,7 @@ Resources:
     DependsOn: CheckRoleFunction
     Properties:
       ServiceToken: !GetAtt CheckRoleFunction.Arn
-      RoleName: TeamRole
+      RoleName: !Ref EventEngineRoleName
   IDE:
     Type: AWS::CloudFormation::Stack
     DependsOn: CheckRole
@@ -72,4 +76,5 @@ Resources:
         SubnetIdentifier:
           Fn::ImportValue: !Sub "${BaselineStackName}-PublicSubnet1ID"
         EventEngineRole: !GetAtt CheckRole.Role
+        EventEngineRoleName: !Ref EventEngineRoleName
 ...
