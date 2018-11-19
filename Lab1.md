@@ -60,7 +60,11 @@ Here we're specifying what options a user can have for their unique identifier (
 
 **Step 6** – Now we will get more SaaS specific as we turn our attention to configuring the custom attributes of our user pool. This, as stated above, is where we introduce those attributes that will connect users to tenants. When we provision tenants, we'll persist these additional attributes as part of each user's profile. This same data will also be embedded in the tokens that are returned by the authentication process. 
 
-Scroll down the page and click Add custom attribute. Add the following tenant attributes we're interested in, selecting Add another attribute to for each new attribute to be added: 
+Scroll down the page and click **Add custom attribute**.
+
+<p align="center"><img src="./images/lab1/part1/cognito_step4_add_custom_attribute.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
+
+Add the following tenant attributes we're interested in, selecting Add another attribute to for each new attribute to be added: 
 * **tenant_id** (string, default max length, _**not**_ mutable)
 * **tier** (string, default max length, mutable)
 * **company_name** (string, default max length, mutable)
@@ -321,7 +325,7 @@ Enter the data for your new tenant. The key value here is your email address. _Y
 
 <p align="center"><img src="./images/lab1/part4/login.png" alt="Lab 1 Part 4 Step 5 Login Form"/></p>
 
-**Step 6** – Cognito will detect that this is a temporary password and indicate that you need to setup a new password for your account. To do this, the application redirects you to a new form where you'll setup your new password. Create your new password and select the **Confirm** button.
+**Step 6** – Cognito will detect that this is a temporary password and indicate that you need to setup a new password for your account. To do this, the application redirects you to a new form where you'll setup your new password. Create your new password and select the **Confirm** button. Remember, your new password must conform to the policy you defined in Cognito earlier in this Lab (upper and lower letters and at least 1 number and 8 characters or more in length).
 
 <p align="center"><img src="./images/lab1/part4/change_password.png" alt="Lab 1 Part 4 Step 6 Change Password"/></p>
 
@@ -375,3 +379,5 @@ We have now seen how our system and architecture choices create a scalable, flex
 <p align="center"><img src="./images/lab1/part5/jwt_payload.png" alt="Lab 1 Part 5 Step 4 JWT Payload"/></p>
 
 **Recap**: This part showed how we can leverage custom "claims" within our security token to pass along tenant-context to each REST API invokation in our system. We are utilizing a standard mechanism from OpenID Connect which Cognito (and many other identity providers) support to augment user profile information with custom attributes. In the next lab of our bootcamp, we will learn how our microservices decode this JWT security token and apply the tenant context to our business logic.
+
+[Continue to Lab 2](Lab2.md)

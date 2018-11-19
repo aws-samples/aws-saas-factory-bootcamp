@@ -102,7 +102,7 @@ Let's start by looking at the signature of the method. Here you'll see the tradi
 curl https://API-GATEWAY-PROD-URL/product/health
 ```
 
-**Be sure you've included the API stage name at the end of the URL _before_ /product/health**. You should get an HTTP 200 response with a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
+**Be sure you've included the API stage name at the end of the URL _before_ /product/health**. You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
 
 **Step 9** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Submit the following REST command to create your first product. Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
@@ -352,3 +352,5 @@ Navigate to the **DynamoDB** service in the AWS console and select **Tables** fr
 **Step 19** - If you review the **TenantBootcamp** table, you should see entries for the tenants you onboarded through the web application and their automatically generated GUIDs in the **id** field will match the **tenantId** field in the entries in the **ProductBootcamp** table.
 
 **Recap**: You've now elevated the mechanism of acquiring tenant context in our microservices by extracting our custom "claims" from the security token passed in the Authorization HTTP header. We reduced developer complexity in applying the tenant context by creating a custom TokenManager helper class that takes advantage of the Express framework's "middleware" concept to intercept all incoming requests prior to executing a REST resource's method.
+
+[Continue to Lab 3](Lab3.md)
