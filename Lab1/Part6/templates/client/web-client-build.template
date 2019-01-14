@@ -133,30 +133,27 @@ Resources:
           phases:
             pre_build:
               commands:
-                - cd "${SERVICE_NAME}"
-                - cd src
-                - export LC_CTYPE=en_US.UTF-8 && export LANG=en_US.UTF-8
-                - sudo apt-get update && sudo apt-get install -y ruby ruby-dev && sudo apt-get clean && sudo gem install compass
+                - cd "${SERVICE_NAME}/src"
+                - sudo apt-get update && sudo apt-get install -y python-software-properties
+                - sudo apt-add-repository -y ppa:brightbox/ruby-ng
+                - sudo apt-get update && sudo apt-get install -y ruby2.2 ruby2.2-dev
+                - sudo gem2.2 install compass
                 - sudo npm install && sudo npm install grunt-cli && sudo npm install bower
                 - ./node_modules/bower/bin/bower install --allow-root
             build:
               commands:
-                - which sed
                 - sed -i -e "s#DOMAIN_URL#$SERVICE_URL#g" app/scripts/constants.js
-                - cat app/scripts/constants.js
-                - pwd
                 - ./node_modules/grunt-cli/bin/grunt build &
                 - sleep 120
             post_build:
               commands:
-                - pwd
                 - aws s3 cp --recursive ./dist s3://"${WEBSITE_BUCKET}" --acl public-read
                 - cd ../
                 - curl -T body.json "${WAIT_HANDLE}"
                 - echo BuildCompleted
       Environment:
         ComputeType: BUILD_GENERAL1_LARGE
-        Image: aws/codebuild/nodejs:7.0.0
+        Image: aws/codebuild/nodejs:8.11.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
         - Name: AWS_DEFAULT_REGION
