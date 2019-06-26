@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation Template Invokes a Lambda Function to Create a Custom CloudFormation Resource
+Description: Invokes a Lambda to create an IAM user and access key
 Parameters:
   S3Bucket:
     Description: The S3 Bucket Name of Zipped Lambda Code
@@ -53,7 +53,7 @@ Resources:
     Properties:
       Description: Invokes CFN with the required Attributes Neccesary
       Handler: index.handler
-      Runtime: nodejs6.10
+      Runtime: nodejs8.10
       Role: !GetAtt CFNExecRole.Arn
       Timeout: 300
       Code:

@@ -1,5 +1,5 @@
 {
-  "name": "delete-apigw-cfn",
+  "name": "update-ecs-service-cfn",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.111.0",
-    "cfn-response": "^1.0.1"
+    "aws-sdk": "^2.x",
+    "cfn-response": "^1.x"
   }
 }

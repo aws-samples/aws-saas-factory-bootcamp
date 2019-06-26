@@ -1,6 +1,6 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: IAM Role for Lambda
+Description: IAM role for Lambda copy files between S3 buckets. Triggers bootcamp user stacks.
 Parameters:
   QSS3BucketName:
     Description: The S3 Bucket Name of Zipped Lambda Code

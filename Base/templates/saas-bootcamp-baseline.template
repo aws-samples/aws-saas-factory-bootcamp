@@ -106,6 +106,7 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
   VPCStack:
+    # The VPC stack only uses the keypair if it's in GovCloud and using private subnets...
     DependsOn: KeyPairCreate
     Type: AWS::CloudFormation::Stack
     Properties:

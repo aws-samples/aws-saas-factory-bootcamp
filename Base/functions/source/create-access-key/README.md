@@ -1,7 +1,7 @@
-# Create and Delete an EC2 Key Pair
+# Create an IAM user and access key
 ## Documentation
 ###Purpose
-The objective of this Custom CloudFormation Resources is to easily create and delete an EC2 Key Pair as CloudFormation Does not currently support this.
+This Custom CloudFormation Resource creates an IAM user and access key for that user.
 ###Steps
 1. Install Node Packages via "npm install"
 2. Zip All Files into an Archive
@@ -10,4 +10,4 @@ The objective of this Custom CloudFormation Resources is to easily create and de
 5. Create a Stack using the cloudformation.template file
 5. Enter the S3 Bucket Name, Prefix, and Object Name of the Zip Archive
 6. Follow through CloudFormation and Create Stack
-7. View outputs of Stack to See the Key Pair
+7. View outputs of Stack to see the AccessKey
