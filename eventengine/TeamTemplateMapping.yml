@@ -106,15 +106,15 @@
 - Key Name: QSS3KEYPREFIX:
     Description: Key Prefix
     Label: QSS3KEYPREFIX
-- Key Name: ACCESSKEYID:
-    Description: Access Key for Cloud9
-    Label: ACCESSKEYID
-- Key Name: SECRETACCESSKEY:
-    Description: Secret Access Key for Cloud9
-    Label: SECRETACCESSKEY
-- Key Name: USERNAME:
-    Description: User Created with Access and Secret Key Pair
-    Label: USERNAME
+#- Key Name: ACCESSKEYID:
+#    Description: Access Key for Cloud9
+#    Label: ACCESSKEYID
+#- Key Name: SECRETACCESSKEY:
+#    Description: Secret Access Key for Cloud9
+#    Label: SECRETACCESSKEY
+#- Key Name: USERNAME:
+#    Description: User Created with Access and Secret Key Pair
+#    Label: USERNAME
 - Key Name: PUBLICSUBNET1:
     Description: Public Subnet 1
     Label: PUBLICSUBNET1

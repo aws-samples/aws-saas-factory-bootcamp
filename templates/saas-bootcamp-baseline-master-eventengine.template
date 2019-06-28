@@ -72,14 +72,14 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         BaselineStackName: !GetAtt Base.Outputs.BASESTACKNAME
         BaselineServicesStackName: !Select [1, !Split ['/', !Ref Services]]
-  Access:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-provision-user.template
-      Parameters:
-        QSS3BucketName: !Ref QSS3BucketName
-        QSS3KeyPrefix: !Ref QSS3KeyPrefix
-        S3Bucket: !GetAtt Base.Outputs.TEMPLATEBUCKET
+#  Access:
+#    Type: AWS::CloudFormation::Stack
+#    Properties:
+#      TemplateURL: !Sub https://s3.amazonaws.com/${QSS3BucketName}/${QSS3KeyPrefix}Base/templates/saas-bootcamp-provision-user.template
+#      Parameters:
+#        QSS3BucketName: !Ref QSS3BucketName
+#        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+#        S3Bucket: !GetAtt Base.Outputs.TEMPLATEBUCKET
 Outputs:
   PUBLICSUBNET1:
     Description: Public Subnet 1
@@ -271,19 +271,19 @@ Outputs:
     Value: !Ref QSS3KeyPrefix
     Export:
       Name: !Join [ "-", [ !Ref "AWS::StackName", QSS3KEYPREFIX ] ]
-  ACCESSKEYID:
-    Description: Access Key for Cloud9
-    Value: !GetAtt Access.Outputs.ACCESSKEYID
-    Export:
-      Name: !Join [ "-", [ !Ref "AWS::StackName", ACCESSKEYID ] ]
-  SECRETACCESSKEY:
-    Description: Secret Access Key for Cloud9
-    Value: !GetAtt Access.Outputs.SECRETACCESSKEY
-    Export:
-      Name: !Join [ "-", [ !Ref "AWS::StackName", SECRETACCESSKEY ] ]
-  USERNAME:
-    Description: User Created with Access and Secret Key Pair
-    Value: !GetAtt Access.Outputs.USERNAME
-    Export:
-      Name: !Join [ "-", [ !Ref "AWS::StackName", USERNAME ] ]
+#  ACCESSKEYID:
+#    Description: Access Key for Cloud9
+#    Value: !GetAtt Access.Outputs.ACCESSKEYID
+#    Export:
+#      Name: !Join [ "-", [ !Ref "AWS::StackName", ACCESSKEYID ] ]
+#  SECRETACCESSKEY:
+#    Description: Secret Access Key for Cloud9
+#    Value: !GetAtt Access.Outputs.SECRETACCESSKEY
+#    Export:
+#      Name: !Join [ "-", [ !Ref "AWS::StackName", SECRETACCESSKEY ] ]
+#  USERNAME:
+#    Description: User Created with Access and Secret Key Pair
+#    Value: !GetAtt Access.Outputs.USERNAME
+#    Export:
+#      Name: !Join [ "-", [ !Ref "AWS::StackName", USERNAME ] ]
 ...
