@@ -1,14 +1,15 @@
 #!/bin/bash
 echo "BUILDING TENANT REGISTRATION SERVICE"
 echo "--------------------------"
-echo 'SETTING UP ENV VARIABLES'
-export AWS_DEFAULT_REGION="us-east-1"
-export BUILD_FILE_PATH="./../app/source/tenant-registration/build.sh"
+sudo yum install -y jq
+
+echo "SETTING UP ENV VARIABLES"
 export SERVICE_NAME="tenant-registration"
-node ./../../../scripts/expose-region.js
-node ./../../../scripts/expose-repository.js
-node ./../../../scripts/expose-service-name.js
+export BASELINE_STACK=$(aws cloudformation describe-stacks | jq -r '[.Stacks[] | select(.ParentId == null) | {CreationTime, StackName}] | sort_by(.CreationTime) | .[0].StackName')
+export REPOSITORY_URI=$(aws ecr describe-repositories | jq -r '.repositories[0].repositoryUri')
+
 echo 'MOVING TO SERVICE DIRECTORY'
 cd ../app/source/"${SERVICE_NAME}"
+
 echo 'BUILDING CONTAINER'
 ./build.sh

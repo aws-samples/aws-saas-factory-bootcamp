@@ -1,8 +1,8 @@
 #!/bin/bash
 echo "BUILDING TWO SERVICES. PLEASE DO NOT CLOSE SCRIPT UNTIL BOTH AUTH MANAGER AND TENANT REGISTRATION ARE COMPLETE"
-echo "Installing scripts"
-./install.sh
+
 echo "BUILDING AUTH MANAGER"
 ./auth-manager.sh
+
 echo "BUILDING TENANT REGISTRATION SERVICE"
 ./tenant-registration.sh
