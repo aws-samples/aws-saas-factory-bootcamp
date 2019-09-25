@@ -1,7 +1,9 @@
 #!/bin/bash
 echo "BUILDING PRODUCT MANAGER V1 - SINGLE TENANT"
 echo "--------------------------"
-sudo yum install -y jq
+if ! [ -x "$(command -v jq)" ]; then
+    sudo yum install -y jq
+fi
 
 echo "SETTING UP ENV VARIABLES"
 export SERVICE_NAME="product-manager"
