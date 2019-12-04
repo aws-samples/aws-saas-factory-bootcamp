@@ -105,7 +105,7 @@ Cognito also has the ability to customize some of the email headers for your ver
 
 <p align="center"><img src="./images/lab1/part1/cognito_step7_add_app_client.png" alt="Lab 1 Part 1 Step 11 Cognito Add App Client"/></p>
 
-**Step 12** – Now we can configure the new application client. Enter the name of "SaaS App Client" and uncheck the "**Generate client secret**" box. While we're disabling the client secret to simplify this experience, you'd want to enable this option for a production environment. Once you've made these changes, select the "**Create app client**" button and then the "**Next step**" button to continue the wizard.
+**Step 12** – Now we can configure the new application client. Enter the name of "SaaS App Client" and uncheck the three boxes "**Generate client secret**", "**Enable lambda trigger based custom authentication (ALLOW_CUSTOM_AUTH)**", and "**Enable SRP (secure remote password) protocol based authentication (ALLOW_USER_SRP_AUTH)**". While we're disabling the client secret to simplify this experience, you'd want to enable this option for a production environment. Once you've made these changes, select the "**Create app client**" button and then the "**Next step**" button to continue the wizard.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step8_app_client_config.png" alt="Lab 1 Part 1 Step 12 Cognito Configure App Client"/></p>
 
