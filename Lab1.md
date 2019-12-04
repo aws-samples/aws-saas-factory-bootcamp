@@ -121,7 +121,9 @@ Cognito also has the ability to customize some of the email headers for your ver
 
 <p align="center"><img src="./images/lab1/part1/cognito_splash.png" alt="Lab 1 Part 1 Cognito Manage Identity Pools"/></p>
 
-**Step 16** – The Getting started wizard should launch for you to create a new identity pool because you don't have any existing pools to list. Enter the name of your new identity pool (e.g. **SaaS Identity Pool**). 
+**Step 16** – The Getting started wizard should launch for you to create a new identity pool because you don't have any existing pools to list. Enter the name of your new identity pool (e.g. **SaaS Identity Pool**).
+
+<p align="center"><img src="./images/lab1/part1/cognito_step16_identity_pool_name.png" alt="Lab 1 Part 1 Step 16 Cognito Identity Pool Name"/></p>
 
 **Step 17** – Expand the "**Authentication Providers**" section at the bottom of the screen by clicking on the triangle. Here's where we'll create the connection between our user pool and the identity pool. You'll see a collection of tabs here representing the various identity providers that Cognito supports. We'll be focusing on the first tab, **Cognito**. You'll see options here to enter the user pool id as well as the application client id that were captured above. If you don't have them, you can get them by accessing the attributes of the user pool you created above.
 
