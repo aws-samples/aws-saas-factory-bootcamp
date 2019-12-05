@@ -96,10 +96,10 @@ Let's start by looking at the signature of the method. Here you'll see the tradi
 
 <p align="center"><img src="./images/lab2/part1/apigw_invoke_url.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 8** - Now let's verify that the basic plumbing of our Product Manager service is all in place by making a simple call to its health check endpoint. For this step and subsequent steps, you can use either **cURL** or Postman (or the tool of your choice). Let's invoke the GET method on `/product/health` to verify that the service is running. Copy and paste the following command, replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 8** - Now let's verify that the basic plumbing of our Product Manager service is all in place by making a simple call to its health check endpoint. For this step and subsequent steps, you can use either **cURL** or Postman (or the tool of your choice). Let's invoke the GET method on `/product/health` to verify that the service is running. Copy and paste the following command, replacing **API-GATEWAY-PROD-URL** with the URL (including `https://`) and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl https://API-GATEWAY-PROD-URL/product/health
+curl API-GATEWAY-PROD-URL/product/health
 ```
 
 **Be sure you've included the API stage name at the end of the URL _before_ /product/health**. You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
@@ -107,7 +107,7 @@ curl https://API-GATEWAY-PROD-URL/product/health
 **Step 9** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Submit the following REST command to create your first product. Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' https://API-GATEWAY-PROD-URL/product
+curl --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' API-GATEWAY-PROD-URL/product
 ```
 
 **Step 10** - Let's now go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Select the **Items** tab from the top of the screen, you'll see the list of items in your product table, which should include the item you just added.
@@ -185,7 +185,7 @@ You'll notice that we're passing through all the parameters that we constructed 
 
 **Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **productId** as the partition key. We now need to have **tenantId** be our partition key and have the **productId** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
 
-Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch logs to complete the process.
+Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch alarms to complete the process.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_delete_table.png" alt="Lab 2 Part 2 Step 5 DynamoDB Delete Table"/></p>
 
@@ -196,7 +196,7 @@ Navigate to the DynamoDB service in the AWS console and select the **Tables** op
 **Step 7** - The service has now been modified to support the introduction of a tenant identifier and we've modified DynamoDB to partition the data with this tenant identifier. It's time now to validate that the new version of the service is up-and-running. Issue the following cURL command to invoke the health check on the service. Refer to Part 1 if you need to find your API Gateway URL. Copy and paste the following command, replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl https://API-GATEWAY-PROD-URL/product/health
+curl API-GATEWAY-PROD-URL/product/health
 ```
 
 You should get a 200 response from your request indicating that the request was successfully processed and the service is ready to process requests.
@@ -204,7 +204,7 @@ You should get a 200 response from your request indicating that the request was 
 **Step 8** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Unlike our prior REST call, this one must provide the tenant identifier as part of the request. Submit the following REST command to create a product for tenant "**123**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"tenantId": "123", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' https://API-GATEWAY-PROD-URL/product
+curl --header "Content-Type: application/json" --request POST --data '{"tenantId": "123", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' API-GATEWAY-PROD-URL/product
 ```
 
 This looks much like the prior example. However, notice that we pass a parameter of tenant id ("123") in the body.
@@ -212,7 +212,7 @@ This looks much like the prior example. However, notice that we pass a parameter
 **Step 9** - Before we verify that this data was successfully written, let's introduce another product for a different tenant. This will highlight the fact that our partitioning scheme can store data separately for each tenant. To add another product for a different tenant, we just issue another POST command for a different tenant. Submit the following POST for tenant "**456**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"tenantId": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' https://API-GATEWAY-PROD-URL/product
+curl --header "Content-Type: application/json" --request POST --data '{"tenantId": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' API-GATEWAY-PROD-URL/product
 ```
 
 **Step 10** - Let's go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Now select the **Items** tab from the top of the screen and you'll see the list of items in your table which should include the two items you just added. Verify that these two items exist and are partitioned based on the two tenant identifiers that you suppled ("123" and "456").
