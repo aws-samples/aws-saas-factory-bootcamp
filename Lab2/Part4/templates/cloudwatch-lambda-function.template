@@ -74,7 +74,7 @@
             "Properties": {
                 "Description": "CloudWatchEventHandler",
                 "Handler": "index.handler",
-                "Runtime": "nodejs6.10",
+                "Runtime": "nodejs10.x",
                 "Role": {"Fn::GetAtt" : ["LambdaRole", "Arn"] },
                 "Timeout": 240,
                 "Code": {
