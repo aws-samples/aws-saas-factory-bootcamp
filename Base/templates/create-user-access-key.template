@@ -53,7 +53,7 @@ Resources:
     Properties:
       Description: Invokes CFN with the required Attributes Neccesary
       Handler: index.handler
-      Runtime: nodejs8.10
+      Runtime: nodejs12.x
       Role: !GetAtt CFNExecRole.Arn
       Timeout: 300
       Code:
