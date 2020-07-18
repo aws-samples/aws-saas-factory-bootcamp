@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.x",
-    "cfn-response": "^1.x"
+    "cfn-response": "^1.x",
+    "lodash": "~4.17.19"
   }
 }
