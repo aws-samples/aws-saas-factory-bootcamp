@@ -54,7 +54,7 @@ Resources:
       FunctionName: check-role
       Description: Checks the existence of a given IAM role
       Handler: index.handler
-      Runtime: nodejs8.10
+      Runtime: nodejs12.x
       Timeout: 30
       Role: !GetAtt CheckRoleLambdaRole.Arn
       Code:
