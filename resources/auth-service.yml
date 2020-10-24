@@ -1,0 +1,328 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS SaaS Factory Bootcamp Auth Service
+Parameters:
+  BootcampBucket:
+    Description: The S3 bucket with bootcamp resources
+    Type: String
+  ArtifactBucket:
+    Description: The S3 bucket for CodeBuild to store built artifacts
+    Type: String
+  CodeBuildRoleArn:
+    Description: The CodeBuild IAM role ARN
+    Type: String
+  CodePipelineRoleArn:
+    Description: The CodePipeline IAM role ARN
+    Type: String
+  CloudWatchEventRoleArn:
+    Description: The CloudWatch Event IAM role ARN
+    Type: String
+  LambdaCodeBuildStartBuildArn:
+    Description: The Lambda function ARN to start a CodeBuild project
+    Type: String
+  VPC:
+    Description: The SaaS Bootcamp VPC
+    Type: String
+  ALBListener:
+    Description: The HTTP listener on the load balancer for ECS
+    Type: String
+  ECSCluster:
+    Description: ECS Cluster to run the ECS service in
+    Type: String
+  ServiceUrl:
+    Description: API Gateway endpoint URL in front of the microservices
+    Type: String
+  ECSSecurityGroup:
+    Description: Security Group for ECS
+    Type: String
+  ECSServiceRole:
+    Description: ECS service-linked role
+    Type: String
+  SubnetPrivateA:
+    Description: Subnet for ECS service to place tasks in
+    Type: String
+  SubnetPrivateB:
+    Description: Subnet for ECS service to place tasks in
+    Type: String
+Resources:
+  ECSRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: saas-bootcamp/auth-manager
+  CodeBuildLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/aws/codebuild/saas-bootcamp-auth-svc'
+      RetentionInDays: 14
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: saas-bootcamp-auth-svc
+      Tags:
+        - Key: Name
+          Value: saas-bootcamp-auth-svc
+      ServiceRole: !Ref CodeBuildRoleArn
+      TimeoutInMinutes: 10
+      Artifacts:
+        Type: S3
+        Location: !Ref ArtifactBucket
+        Path: '/'
+        Name: auth-manager
+        Packaging: ZIP
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:3.0
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: REPOSITORY_URI
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECSRepository}
+          - Name: BOOTCAMP_BUCKET
+            Value: !Ref BootcampBucket
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/auth-manager ./auth-manager
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/shared-modules ./auth-manager/shared-modules
+                - $(aws ecr get-login --no-include-email)
+            build:
+              commands:
+                - cd auth-manager
+                - docker image build -t saas-bootcamp/auth-manager -f Dockerfile .
+                - docker tag saas-bootcamp/auth-manager:latest ${REPOSITORY_URI}:latest
+                - cd ../
+            post_build:
+              commands:
+                - docker push "${REPOSITORY_URI}:latest"
+                - printf '[{"name":"auth-manager","imageUri":"%s"}]' "${REPOSITORY_URI}:latest" > imagedefinitions.json
+          artifacts:
+            files: imagedefinitions.json
+            discard-paths: yes
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn:
+      - ECSService
+    Properties:
+      Name: saas-bootcamp-auth-svc
+      RoleArn: !Ref CodePipelineRoleArn
+      ArtifactStore:
+        Location: !Ref ArtifactBucket
+        Type: S3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: S3
+                Version: 1
+              Configuration:
+                S3Bucket: !Ref ArtifactBucket
+                S3ObjectKey: auth-manager
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: imgdef
+        - Name: Deploy
+          Actions:
+            - Name: PreDeployAction
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Provider: Lambda
+                Version: 1
+              RunOrder: 1
+              Configuration:
+                FunctionName: !Sub saas-bootcamp-update-ecs-${AWS::Region}
+                UserParameters: !Sub '{"cluster":"${ECSCluster}","service":"${ECSService}","desiredCount":1}'
+            - Name: DeployAction
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: ECS
+                Version: 1
+              RunOrder: 2
+              Configuration:
+                ClusterName: !Ref ECSCluster
+                ServiceName: saas-bootcamp-auth-svc
+                FileName: imagedefinitions.json
+              InputArtifacts:
+                - Name: imgdef
+  CloudWatchEventRuleForCodePipeline:
+    DependsOn: CodePipeline
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - 'AWS API Call via CloudTrail'
+        detail:
+          eventSource:
+            - s3.amazonaws.com
+          eventName:
+            - CopyObject
+            - PutObject
+            - CompleteMultipartUpload
+          requestParameters:
+            bucketName:
+              - !Ref ArtifactBucket
+            key:
+              - auth-manager
+      Targets:
+        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
+          RoleArn: !Ref CloudWatchEventRoleArn
+          Id: saas-bootcamp-auth-svc
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: ECSLogGroup
+    Properties:
+      RoleName: saas-bootcamp-auth-svc-exec-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: saas-bootcamp-auth-svc-exec-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${ECSRepository}
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+  ECSLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/ecs/saas-bootcamp-auth-svc'
+      RetentionInDays: 14
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: saas-bootcamp-auth-svc-task-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - ECSTaskExecutionRole
+      - ECSTaskRole
+    Properties:
+      Family: saas-bootcamp-auth-svc
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      RequiresCompatibilities:
+        - FARGATE
+      Memory: 1024
+      Cpu: 512
+      NetworkMode: awsvpc
+      ContainerDefinitions:
+        - Name: auth-manager
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECSRepository}:latest
+          PortMappings:
+            - ContainerPort: 3000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ECSLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          Environment:
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+              # Shared config module sets the account id that the User Manager needs when creating IAM polices
+            - Name: AWS_ACCOUNT_ID
+              Value: !Ref AWS::AccountId
+            - Name: SERVICE_URL
+              Value: !Ref ServiceUrl
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: saas-bootcamp-auth-svc
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: '/auth/health'
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      TargetType: ip
+      VpcId: !Ref VPC
+  ALBRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref ALBTargetGroup
+          Type: forward
+      Conditions:
+        - Field: path-pattern
+          Values: ['/auth*']
+      ListenerArn: !Ref ALBListener
+      Priority: 2
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ECSTaskDefinition
+      - ALBRule
+    Properties:
+      ServiceName: saas-bootcamp-auth-svc
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ECSTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: 0
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref ECSSecurityGroup
+          Subnets:
+            - !Ref SubnetPrivateA
+            - !Ref SubnetPrivateB
+      LoadBalancers:
+        - ContainerName: auth-manager
+          ContainerPort: 3000
+          TargetGroupArn: !Ref ALBTargetGroup
+  InvokeLambdaCodeBuildStartBuild:
+    Type: Custom::CustomResource
+    DependsOn:
+      - CodeBuildProject
+      - CodePipeline
+      - CloudWatchEventRuleForCodePipeline
+    Properties:
+      ServiceToken: !Ref LambdaCodeBuildStartBuildArn
+      Project: saas-bootcamp-auth-svc
+...

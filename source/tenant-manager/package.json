@@ -1,0 +1,26 @@
+{
+  "Name": "tenant-manager",
+  "version": "1.0.0",
+  "description": "Tenant Manager",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "aws-sdk": "latest",
+    "body-parser": "latest",
+    "config": "latest",
+    "express": "latest",
+    "winston": "latest"
+  },
+  "author": "Amazon Web Services",
+  "contributors": [
+    {
+      "name": "Tod Golding"
+    },
+    {
+      "name": "Judah Bernstein"
+    }
+  ],
+  "license": "Apache-2.0"
+}

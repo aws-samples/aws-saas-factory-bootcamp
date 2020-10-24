@@ -1,0 +1,29 @@
+{
+  "Name": "user-manager",
+  "version": "1.0.0",
+  "description": "Provide user management",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "amazon-cognito-identity-js": "latest",
+    "amazon-cognito-js": "latest",
+    "async": "^2.6.3",
+    "aws-sdk": "latest",
+    "body-parser": "latest",
+    "config": "latest",
+    "express": "latest",
+    "winston": "latest"
+  },
+  "author": "Amazon Web Services",
+  "contributors": [
+    {
+      "name": "Tod Golding"
+    },
+    {
+      "name": "Judah Bernstein"
+    }
+  ],
+  "license": "Apache-2.0"
+}

@@ -1,0 +1,264 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS SaaS Factory Bootcamp Master Stack
+Parameters:
+  EEAssetsBucket:
+    Description: Event Engine assets bucket
+    Type: String
+  EEAssetsKeyPrefix:
+    Description: Event Engine asset bucket key prefix
+    Type: String
+    Default: ''
+  EETeamRoleArn:
+    Description: Event Engine TeamRole ARN
+    Type: String
+    Default: ''
+  SourceBucket:
+    Description: S3 bucket URL to copy objects from
+    Type: String
+    Default: aws-bootcamp-us-east-1
+  SourceRegion:
+    Description: Region of source bucket
+    Type: String
+    Default: us-east-1
+  EventEngineRoleName:
+    Description: IAM role name of the Event Engine player role
+    Type: String
+    Default: TeamRole
+Resources:
+  BootcampBucket:
+    Type: AWS::S3::Bucket
+  BootcampBucketSsmParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub saas-bootcamp-bucket-${AWS::Region}
+      Type: String
+      Value: !Ref BootcampBucket
+  S3ObjectsExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: BootcampBucket
+    Properties:
+      RoleName: !Sub saas-bootcamp-s3-copy-role-${AWS::Region}
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub saas-bootcamp-s3-copy-policy-${AWS::Region}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SourceBucket}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:ListBucketVersions
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub arn:aws:s3:::${BootcampBucket}
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                Resource:
+                  - !Sub arn:aws:s3:::${BootcampBucket}/*
+  CopyS3ObjectsLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/saas-bootcamp-s3-copy-${AWS::Region}
+      RetentionInDays: 14
+  CopyS3Objects:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - S3ObjectsExecutionRole
+    Properties:
+      FunctionName: !Sub saas-bootcamp-s3-copy-${AWS::Region}
+      Role: !GetAtt S3ObjectsExecutionRole.Arn
+      Runtime: java8
+      Timeout: 600
+      MemorySize: 1024
+      Handler: com.amazon.aws.partners.saasfactory.CopyS3Objects
+      Code:
+        S3Bucket: !Ref EEAssetsBucket
+        S3Key: !Sub ${EEAssetsKeyPrefix}CopyS3Objects.jar
+  InvokeLambdaCopyS3Objects:
+    Type: Custom::CustomResource
+    DependsOn:
+      - CopyS3Objects
+      - CopyS3ObjectsLogs
+      - BootcampBucket
+    Properties:
+      ServiceToken: !GetAtt CopyS3Objects.Arn
+      Source: !Ref SourceBucket
+      SourceRegion: !Ref SourceRegion
+      Destination: !Ref BootcampBucket
+      DestinationRegion: !Ref AWS::Region
+      Objects:
+        - CopyS3Objects.jar
+        - ClearS3Bucket.jar
+        - CodeBuildStartBuild.jar
+        - EcsServiceUpdate-lambda.zip
+        - baseline.yml
+        - api-gateway.yml
+        - auth-service.yml
+        - tenant-service.yml
+        - user-service.yml
+        - registration-service.yml
+        - order-service.yml
+        - product-service.yml
+        - web-client.yml
+        - shared-modules/config-helper/config.js
+        - shared-modules/config-helper/package.json
+        - shared-modules/config-helper/config/default.json
+        - shared-modules/config-helper/config/development.json
+        - shared-modules/config-helper/config/production.json
+        - shared-modules/token-manager/token-manager.js
+        - shared-modules/token-manager/package.json
+        - shared-modules/dynamodb-helper/dynamodb-helper.js
+        - shared-modules/dynamodb-helper/package.json
+        - auth-manager/Dockerfile
+        - auth-manager/server.js
+        - auth-manager/package.json
+        - tenant-manager/Dockerfile
+        - tenant-manager/server.js
+        - tenant-manager/package.json
+        - user-manager/cognito-user.js
+        - user-manager/Dockerfile
+        - user-manager/server.js
+        - user-manager/package.json
+        - tenant-registration/Dockerfile
+        - tenant-registration/server.js
+        - tenant-registration/package.json
+        - order-manager/Dockerfile
+        - order-manager/server.js
+        - order-manager/package.json
+        - product-manager/Dockerfile
+        - product-manager/server.js
+        - product-manager/package.json
+        - web-client/Gruntfile.js
+        - web-client/app/404.html
+        - web-client/app/config.json
+        - web-client/app/favicon.ico
+        - web-client/app/images/Auctioneer2-300px.png
+        - web-client/app/images/chart.png
+        - web-client/app/images/favicon.ico
+        - web-client/app/images/green-circle.png
+        - web-client/app/images/matt-icons_package-300px.png
+        - web-client/app/images/matt-icons_package-800px.png
+        - web-client/app/images/monitor.png
+        - web-client/app/images/red-circle.png
+        - web-client/app/images/yeoman.png
+        - web-client/app/index.html
+        - web-client/app/robots.txt
+        - web-client/app/scripts/app.js
+        - web-client/app/scripts/constants.js
+        - web-client/app/scripts/controllers/confirm.js
+        - web-client/app/scripts/controllers/login.js
+        - web-client/app/scripts/controllers/main.js
+        - web-client/app/scripts/controllers/order-add.js
+        - web-client/app/scripts/controllers/order-delete.js
+        - web-client/app/scripts/controllers/order-edit.js
+        - web-client/app/scripts/controllers/orders.js
+        - web-client/app/scripts/controllers/product-add.js
+        - web-client/app/scripts/controllers/product-delete.js
+        - web-client/app/scripts/controllers/product-edit.js
+        - web-client/app/scripts/controllers/product-view.js
+        - web-client/app/scripts/controllers/products.js
+        - web-client/app/scripts/controllers/register.js
+        - web-client/app/scripts/controllers/tenant-delete.js
+        - web-client/app/scripts/controllers/tenant-edit.js
+        - web-client/app/scripts/controllers/tenants.js
+        - web-client/app/scripts/controllers/user-add.js
+        - web-client/app/scripts/controllers/user-delete.js
+        - web-client/app/scripts/controllers/user-edit.js
+        - web-client/app/scripts/controllers/user-enable.js
+        - web-client/app/scripts/controllers/users.js
+        - web-client/app/styles/main.css
+        - web-client/app/styles/main.scss
+        - web-client/app/views/confirm.html
+        - web-client/app/views/login.html
+        - web-client/app/views/main.html
+        - web-client/app/views/order-add.html
+        - web-client/app/views/order-delete.html
+        - web-client/app/views/order-edit.html
+        - web-client/app/views/order-nav.html
+        - web-client/app/views/orders.html
+        - web-client/app/views/product-add.html
+        - web-client/app/views/product-delete.html
+        - web-client/app/views/product-edit.html
+        - web-client/app/views/product-nav.html
+        - web-client/app/views/product-view.html
+        - web-client/app/views/products.html
+        - web-client/app/views/register.html
+        - web-client/app/views/tenant-delete.html
+        - web-client/app/views/tenant-edit.html
+        - web-client/app/views/tenants.html
+        - web-client/app/views/user-add.html
+        - web-client/app/views/user-delete.html
+        - web-client/app/views/user-edit.html
+        - web-client/app/views/user-enable.html
+        - web-client/app/views/user-nav.html
+        - web-client/app/views/users.html
+        - web-client/bower.json
+        - web-client/package.json
+  ClearS3BucketLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/saas-bootcamp-s3-clear-${AWS::Region}
+      RetentionInDays: 14
+  ClearS3Bucket:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub saas-bootcamp-s3-clear-${AWS::Region}
+      Role: !GetAtt S3ObjectsExecutionRole.Arn
+      Runtime: java8
+      Timeout: 900
+      MemorySize: 1024
+      Handler: com.amazon.aws.partners.saasfactory.ClearS3Bucket
+      Code:
+        S3Bucket: !Ref EEAssetsBucket
+        S3Key: !Sub ${EEAssetsKeyPrefix}ClearS3Bucket.jar
+  InvokeClearS3BucketWorkshopS3Bucket:
+    Type: Custom::CustomResource
+    DependsOn:
+      - ClearS3Bucket
+      - BootcampBucket
+      - ClearS3BucketLogs
+    Properties:
+      ServiceToken: !GetAtt ClearS3Bucket.Arn
+      Bucket: !Ref BootcampBucket
+  Baseline:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: InvokeLambdaCopyS3Objects
+    Properties:
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/baseline.yml
+      Parameters:
+        EventEngineRole: !Ref EETeamRoleArn
+        EventEngineRoleName: !Ref EventEngineRoleName
+        BootcampBucket: !Ref BootcampBucket
+Outputs:
+  SaaSFactoryServerlessSaaSWorkshopStack:
+    Description: Saas Bootcamp CloudFormation stack
+    Value: !Ref AWS::StackName
+...

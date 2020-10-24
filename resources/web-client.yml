@@ -1,0 +1,108 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS SaaS Factory Bootcamp Web Client
+Parameters:
+  BootcampBucket:
+    Description: The S3 bucket with bootcamp resources
+    Type: String
+  WebsiteBucket:
+    Description: The S3 bucket to host the web client from
+    Type: String
+  WebsiteBucketWebsiteURL:
+    Description: The WebsiteBucket WebsiteURL attribute
+    Type: String
+  CodeBuildRoleArn:
+    Description: The CodeBuild IAM role ARN
+    Type: String
+  LambdaCodeBuildStartBuildArn:
+    Description: The Lambda function ARN to start a CodeBuild project
+    Type: String
+  ServiceUrl:
+    Description: API Gateway endpoint URL in front of the microservices
+    Type: String
+Resources:
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultRootObject: index.html
+        Enabled: true
+        IPV6Enabled: false
+        HttpVersion: http2
+        Origins:
+          - Id: !Sub S3-Website-${WebsiteBucket}
+            DomainName: !Select [1, !Split ["http://", !Ref WebsiteBucketWebsiteURL]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              OriginSSLProtocols: ['TLSv1', 'TLSv1.1', 'TLSv1.2']
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods: [GET,HEAD,OPTIONS]
+          CachedMethods: [GET,HEAD,OPTIONS]
+          TargetOriginId: !Sub S3-Website-${WebsiteBucket}
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          ForwardedValues:
+            Headers:
+              - Origin
+              - Access-Control-Request-Headers
+              - Access-Control-Request-Method
+            QueryString: false
+  CodeBuildLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/aws/codebuild/saas-bootcamp-web-client'
+      RetentionInDays: 14
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: saas-bootcamp-web-client
+      Tags:
+        - Key: Name
+          Value: saas-bootcamp-web-client
+      ServiceRole: !Ref CodeBuildRoleArn
+      TimeoutInMinutes: 10
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:3.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: BOOTCAMP_BUCKET
+            Value: !Ref BootcampBucket
+          - Name: WEBSITE_BUCKET
+            Value: !Ref WebsiteBucket
+          - Name: SERVICE_URL
+            Value: !Ref ServiceUrl
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/web-client ./web-client
+                - sed -i -e "s#DOMAIN_URL#$SERVICE_URL#g" ./web-client/app/scripts/constants.js
+            build:
+              commands:
+                - cd web-client
+                - npm install
+                - npm install grunt-cli
+                - ./node_modules/bower/bin/bower install --allow-root
+                - ./node_modules/grunt-cli/bin/grunt build
+                - cd ../
+            post_build:
+              commands:
+                - aws s3 sync --delete --cache-control no-store --acl public-read ./web-client/dist/ s3://$WEBSITE_BUCKET/
+  InvokeLambdaCodeBuildStartBuild:
+    Type: Custom::CustomResource
+    DependsOn:
+      - CodeBuildProject
+    Properties:
+      ServiceToken: !Ref LambdaCodeBuildStartBuildArn
+      Project: saas-bootcamp-web-client
+...

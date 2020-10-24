@@ -1,0 +1,1801 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS SaaS Factory Bootcamp API Gateway
+Parameters:
+  ECSLoadBalancer:
+    Description: Application Load Balancer DNS Name for ECS
+    Type: String
+Resources:
+  ApiGatewayLoggingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub saas-bootcamp-apigw-role-${AWS::Region}
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: saas-bootcamp-api
+      EndpointConfiguration:
+        Types: [REGIONAL]
+  ApiGatewayLoggingAccount:
+    Type: AWS::ApiGateway::Account
+    DependsOn:
+      - ApiGatewayApi
+      - ApiGatewayLoggingRole
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayLoggingRole.Arn
+  AuthManagerAuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: auth
+  AuthManagerHealthCheckResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref AuthManagerAuthResource
+      PathPart: health
+  RegistrationManagerRegResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: reg
+  RegistrationManagerHealthCheckResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref RegistrationManagerRegResource
+      PathPart: health
+  ProductManagerProductsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: products
+  ProductManagerProductResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: product
+  ProductManagerProductByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref ProductManagerProductResource
+      PathPart: '{id}'
+  ProductManagerHealthCheckResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref ProductManagerProductResource
+      PathPart: health
+  OrderManagerOrdersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: orders
+  OrderManagerOrderResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: order
+  OrderManagerOrderByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref OrderManagerOrderResource
+      PathPart: '{id}'
+  OrderManagerHealthCheckResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref OrderManagerOrderResource
+      PathPart: health
+  TenantManagerTenantsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: tenants
+#  TenantManagerTenantsSystemResource:
+#    Type: AWS::ApiGateway::Resource
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ParentId: !Ref TenantManagerTenantsResource
+#      PathPart: system
+  TenantManagerTenantResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: tenant
+  TenantManagerTenantByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref TenantManagerTenantResource
+      PathPart: '{id}'
+  TenantManagerHealthCheckResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref TenantManagerTenantResource
+      PathPart: health
+  UserManagerUsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: users
+  UserManagerUserResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !GetAtt ApiGatewayApi.RootResourceId
+      PathPart: user
+  UserManagerUserByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: '{id}'
+  UserManagerHealthCheckResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: health
+  UserManagerCreateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: create
+  UserManagerDisableResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: disable
+  UserManagerEnableResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: enable
+  UserManagerRegResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: reg
+#  UserManagerSystemResource:
+#    Type: AWS::ApiGateway::Resource
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ParentId: !Ref UserManagerUserResource
+#      PathPart: system
+#  UserManagerTablesResource:
+#    Type: AWS::ApiGateway::Resource
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ParentId: !Ref UserManagerUserResource
+#      PathPart: tables
+#  UserManagerTenantsResource:
+#    Type: AWS::ApiGateway::Resource
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ParentId: !Ref UserManagerUserResource
+#      PathPart: tenants
+  UserManagerPoolResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerUserResource
+      PathPart: pool
+  UserManagerPoolByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ParentId: !Ref UserManagerPoolResource
+      PathPart: '{id}'
+  AuthManagerAuthResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref AuthManagerAuthResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  AuthManagerHealthCheckResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref AuthManagerHealthCheckResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  AuthManagerAuthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref AuthManagerAuthResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/auth
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  AuthManagerHealthCheckMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref AuthManagerHealthCheckResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/auth/health
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  RegistrationManagerRegResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref RegistrationManagerRegResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  RegistrationManagerHealthCheckResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref RegistrationManagerHealthCheckResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  RegistrationManagerRegMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref RegistrationManagerRegResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/reg
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  RegistrationManagerHealthCheckMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref RegistrationManagerHealthCheckResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/reg/health
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  OrderManagerOrderResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrderResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  OrderManagerHealthCheckResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerHealthCheckResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  OrderManagerOrderByIdResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrderByIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  OrderManagerOrdersResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrdersResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  OrderManagerHealthCheckMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerHealthCheckResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/order/health
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  OrderManagerInsertOrderMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrderResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/order
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  OrderManagerUpdateOrderMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrderResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Sub http://${ECSLoadBalancer}/order
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  OrderManagerGetOrderMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrderByIdResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/order/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  OrderManagerDeleteOrderMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrderByIdResource
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: DELETE
+        Uri: !Sub http://${ECSLoadBalancer}/order/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  OrderManagerGetOrdersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref OrderManagerOrdersResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/orders
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ProductManagerProductResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  ProductManagerHealthCheckResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerHealthCheckResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  ProductManagerProductByIdResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductByIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  ProductManagerProductsResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  ProductManagerHealthCheckMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerHealthCheckResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/product/health
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ProductManagerInsertProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/product
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ProductManagerUpdateProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Sub http://${ECSLoadBalancer}/product
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ProductManagerGetProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductByIdResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/product/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ProductManagerDeleteProductMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductByIdResource
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: DELETE
+        Uri: !Sub http://${ECSLoadBalancer}/product/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ProductManagerGetProductsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ProductManagerProductsResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/products
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  TenantManagerTenantResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  TenantManagerHealthCheckResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerHealthCheckResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  TenantManagerTenantByIdResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantByIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  TenantManagerTenantsResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+#  TenantManagerTenantsSystemResourceCORS:
+#    Type: AWS::ApiGateway::Method
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ResourceId: !Ref TenantManagerTenantsSystemResource
+#      HttpMethod: OPTIONS
+#      AuthorizationType: NONE
+#      Integration:
+#        Type: MOCK
+#        PassthroughBehavior: WHEN_NO_MATCH
+#        IntegrationResponses:
+#          - StatusCode: 200
+#            ResponseTemplates: {application/json: ''}
+#            ResponseParameters:
+#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+#              method.response.header.Access-Control-Allow-Origin: "'*'"
+#              method.response.header.Access-Control-Max-Age: "'3600'"
+#              method.response.header.X-Requested-With: "'*'"
+#        RequestTemplates:
+#          application/json: '{"statusCode": 200}'
+#      MethodResponses:
+#        - StatusCode: 200
+#          ResponseModels: {application/json: Empty}
+#          ResponseParameters:
+#            method.response.header.Access-Control-Allow-Headers: false
+#            method.response.header.Access-Control-Allow-Methods: false
+#            method.response.header.Access-Control-Allow-Origin: false
+#            method.response.header.Access-Control-Max-Age: false
+#            method.response.header.X-Requested-With: false
+  TenantManagerHealthCheckMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerHealthCheckResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/tenant/health
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  TenantManagerInsertTenantMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/tenant
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  TenantManagerUpdateTenantMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Sub http://${ECSLoadBalancer}/tenant
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  TenantManagerGetTenantMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantByIdResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/tenant/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  TenantManagerDeleteTenantMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantByIdResource
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: DELETE
+        Uri: !Sub http://${ECSLoadBalancer}/tenant/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  TenantManagerGetTenantsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref TenantManagerTenantsResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/tenants
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+#  TenantManagerTenantsSystemMethod:
+#    Type: AWS::ApiGateway::Method
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ResourceId: !Ref TenantManagerTenantsSystemResource
+#      AuthorizationType: NONE
+#      HttpMethod: GET
+#      Integration:
+#        Type: HTTP_PROXY
+#        IntegrationHttpMethod: GET
+#        Uri: !Sub http://${ECSLoadBalancer}/tenants/system
+#        PassthroughBehavior: WHEN_NO_MATCH
+#      MethodResponses:
+#        - StatusCode: 200
+#          ResponseModels: {application/json: Empty}
+#          ResponseParameters:
+#            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerUsersResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUsersResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerUserResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUserResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerUserByIdResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUserByIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerHealthCheckResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerHealthCheckResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerDisableResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerDisableResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerEnableResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerEnableResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerCreateResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerCreateResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,PUT,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerRegResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerRegResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+#  UserManagerSystemResourceCORS:
+#    Type: AWS::ApiGateway::Method
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ResourceId: !Ref UserManagerSystemResource
+#      HttpMethod: OPTIONS
+#      AuthorizationType: NONE
+#      Integration:
+#        Type: MOCK
+#        PassthroughBehavior: WHEN_NO_MATCH
+#        IntegrationResponses:
+#          - StatusCode: 200
+#            ResponseTemplates: {application/json: ''}
+#            ResponseParameters:
+#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              method.response.header.Access-Control-Allow-Methods: "'POST,DELETE,OPTIONS'"
+#              method.response.header.Access-Control-Allow-Origin: "'*'"
+#              method.response.header.Access-Control-Max-Age: "'3600'"
+#              method.response.header.X-Requested-With: "'*'"
+#        RequestTemplates:
+#          application/json: '{"statusCode": 200}'
+#      MethodResponses:
+#        - StatusCode: 200
+#          ResponseModels: {application/json: Empty}
+#          ResponseParameters:
+#            method.response.header.Access-Control-Allow-Headers: false
+#            method.response.header.Access-Control-Allow-Methods: false
+#            method.response.header.Access-Control-Allow-Origin: false
+#            method.response.header.Access-Control-Max-Age: false
+#            method.response.header.X-Requested-With: false
+#  UserManagerTablesResourceCORS:
+#    Type: AWS::ApiGateway::Method
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ResourceId: !Ref UserManagerTablesResource
+#      HttpMethod: OPTIONS
+#      AuthorizationType: NONE
+#      Integration:
+#        Type: MOCK
+#        PassthroughBehavior: WHEN_NO_MATCH
+#        IntegrationResponses:
+#          - StatusCode: 200
+#            ResponseTemplates: {application/json: ''}
+#            ResponseParameters:
+#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              method.response.header.Access-Control-Allow-Methods: "'DELETE,OPTIONS'"
+#              method.response.header.Access-Control-Allow-Origin: "'*'"
+#              method.response.header.Access-Control-Max-Age: "'3600'"
+#              method.response.header.X-Requested-With: "'*'"
+#        RequestTemplates:
+#          application/json: '{"statusCode": 200}'
+#      MethodResponses:
+#        - StatusCode: 200
+#          ResponseModels: {application/json: Empty}
+#          ResponseParameters:
+#            method.response.header.Access-Control-Allow-Headers: false
+#            method.response.header.Access-Control-Allow-Methods: false
+#            method.response.header.Access-Control-Allow-Origin: false
+#            method.response.header.Access-Control-Max-Age: false
+#            method.response.header.X-Requested-With: false
+#  UserManagerTenantsResourceCORS:
+#    Type: AWS::ApiGateway::Method
+#    Properties:
+#      RestApiId: !Ref ApiGatewayApi
+#      ResourceId: !Ref UserManagerTenantsResource
+#      HttpMethod: OPTIONS
+#      AuthorizationType: NONE
+#      Integration:
+#        Type: MOCK
+#        PassthroughBehavior: WHEN_NO_MATCH
+#        IntegrationResponses:
+#          - StatusCode: 200
+#            ResponseTemplates: {application/json: ''}
+#            ResponseParameters:
+#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+#              method.response.header.Access-Control-Allow-Methods: "'DELETE,OPTIONS'"
+#              method.response.header.Access-Control-Allow-Origin: "'*'"
+#              method.response.header.Access-Control-Max-Age: "'3600'"
+#              method.response.header.X-Requested-With: "'*'"
+#        RequestTemplates:
+#          application/json: '{"statusCode": 200}'
+#      MethodResponses:
+#        - StatusCode: 200
+#          ResponseModels: {application/json: Empty}
+#          ResponseParameters:
+#            method.response.header.Access-Control-Allow-Headers: false
+#            method.response.header.Access-Control-Allow-Methods: false
+#            method.response.header.Access-Control-Allow-Origin: false
+#            method.response.header.Access-Control-Max-Age: false
+#            method.response.header.X-Requested-With: false
+  UserManagerPoolResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerPoolResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerPoolByIdResourceCORS:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerPoolByIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates: {application/json: ''}
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Max-Age: "'3600'"
+              method.response.header.X-Requested-With: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+            method.response.header.Access-Control-Max-Age: false
+            method.response.header.X-Requested-With: false
+  UserManagerHealthCheckMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerHealthCheckResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/user/health
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerPoolByIdMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerPoolByIdResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/user/pool/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerRegMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerRegResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/user/reg
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerDisableUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerDisableResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Sub http://${ECSLoadBalancer}/user/disable
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerEnableUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerEnableResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Sub http://${ECSLoadBalancer}/user/enable
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerGetUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUsersResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/users
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerGetUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUserByIdResource
+      AuthorizationType: NONE
+      HttpMethod: GET
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub http://${ECSLoadBalancer}/user/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerInsertUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUserResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/user
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerCreateUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerCreateResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub http://${ECSLoadBalancer}/user/create
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerUpdateUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUserResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: PUT
+        Uri: !Sub http://${ECSLoadBalancer}/user
+        PassthroughBehavior: WHEN_NO_MATCH
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  UserManagerDeleteUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref UserManagerUserByIdResource
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      RequestParameters: {method.request.path.id: true}
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: DELETE
+        Uri: !Sub http://${ECSLoadBalancer}/user/{id}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.id: 'method.request.path.id'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels: {application/json: Empty}
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: false
+  ApiGatewayApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AuthManagerAuthResourceCORS
+      - AuthManagerHealthCheckResourceCORS
+      - AuthManagerAuthMethod
+      - AuthManagerHealthCheckMethod
+      - RegistrationManagerRegResourceCORS
+      - RegistrationManagerHealthCheckResourceCORS
+      - RegistrationManagerRegMethod
+      - RegistrationManagerHealthCheckMethod
+      - OrderManagerOrderResourceCORS
+      - OrderManagerHealthCheckResourceCORS
+      - OrderManagerOrderByIdResourceCORS
+      - OrderManagerOrdersResourceCORS
+      - OrderManagerHealthCheckMethod
+      - OrderManagerInsertOrderMethod
+      - OrderManagerUpdateOrderMethod
+      - OrderManagerGetOrderMethod
+      - OrderManagerDeleteOrderMethod
+      - OrderManagerGetOrdersMethod
+      - ProductManagerProductResourceCORS
+      - ProductManagerHealthCheckResourceCORS
+      - ProductManagerProductByIdResourceCORS
+      - ProductManagerProductsResourceCORS
+      - ProductManagerHealthCheckMethod
+      - ProductManagerInsertProductMethod
+      - ProductManagerUpdateProductMethod
+      - ProductManagerGetProductMethod
+      - ProductManagerDeleteProductMethod
+      - ProductManagerGetProductsMethod
+      - TenantManagerTenantResourceCORS
+      - TenantManagerHealthCheckResourceCORS
+      - TenantManagerTenantByIdResourceCORS
+      - TenantManagerTenantsResourceCORS
+#      - TenantManagerTenantsSystemResourceCORS
+      - TenantManagerHealthCheckMethod
+      - TenantManagerInsertTenantMethod
+      - TenantManagerUpdateTenantMethod
+      - TenantManagerGetTenantMethod
+      - TenantManagerDeleteTenantMethod
+      - TenantManagerGetTenantsMethod
+#      - TenantManagerTenantsSystemMethod
+      - UserManagerUsersResourceCORS
+      - UserManagerUserResourceCORS
+      - UserManagerUserByIdResourceCORS
+      - UserManagerHealthCheckResourceCORS
+      - UserManagerDisableResourceCORS
+      - UserManagerEnableResourceCORS
+      - UserManagerCreateResourceCORS
+      - UserManagerRegResourceCORS
+#      - UserManagerSystemResourceCORS
+#      - UserManagerTablesResourceCORS
+#      - UserManagerTenantsResourceCORS
+      - UserManagerPoolResourceCORS
+      - UserManagerPoolByIdResourceCORS
+      - UserManagerHealthCheckMethod
+      - UserManagerPoolByIdMethod
+      - UserManagerRegMethod
+      - UserManagerDisableUserMethod
+      - UserManagerEnableUserMethod
+      - UserManagerGetUsersMethod
+      - UserManagerGetUserMethod
+      - UserManagerInsertUserMethod
+      - UserManagerCreateUserMethod
+      - UserManagerUpdateUserMethod
+      - UserManagerDeleteUserMethod
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+  ApiGatewayApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      StageName: v1
+      DeploymentId: !Ref ApiGatewayApiDeployment
+Outputs:
+  ApiGatewayEndpoint:
+    Description: API Gateway Invoke URL
+    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayApiStage}'

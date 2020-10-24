@@ -1,0 +1,27 @@
+{
+  "Name": "tenant-registration",
+  "version": "1.0.0",
+  "description": "Orchestrate Tenant Registration",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no tests currently specified\""
+  },
+  "dependencies": {
+    "body-parser": "latest",
+    "config": "latest",
+    "express": "latest",
+    "request": "latest",
+    "uuid": "3.4.0",
+    "winston": "latest"
+  },
+  "author": "Amazon Web Services",
+  "contributors": [
+    {
+      "name": "Tod Golding"
+    },
+    {
+      "name": "Judah Bernstein"
+    }
+  ],
+  "license": "Apache-2.0"
+}
