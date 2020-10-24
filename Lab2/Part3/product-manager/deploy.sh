@@ -51,7 +51,7 @@ BUILD_ID=$(echo $BUILD_PROJECT | jq -r '.build.id')
 
 # Now, wait for CodePipeline to finish deploying everything to ECS
 echo
-echo "Rebuilding and deploying the Product Manager service. This can take up to 10 minutes."
+echo "Rebuilding and deploying the Product Manager service. This can take a few minutes."
 echo "You can view the details of the CI/CD process in the AWS console for CodeBuild and CodePipeline."
 echo
 
@@ -65,19 +65,15 @@ while [ "$BUILD_RUNNING" = true ]; do
     if [ "$BUILD_PHASE" = "COMPLETED" ]; then
         BUILD_RUNNING=false
     else
-        # After a minute, we'll check on the build every 10 seconds
-        print_dots 10
+        # After a minute, we'll check on the build every 5 seconds
+        print_dots 5
     fi
 done
 
 echo
 echo "Docker image built. Waiting for deployment to finish."
 
-# CodePipeline will take 5+ minutes
-print_dots 60
-print_dots 60
-print_dots 60
-
+# CodePipeline will take 2+ minutes
 LOOP=0
 while true; do
     let LOOP++
