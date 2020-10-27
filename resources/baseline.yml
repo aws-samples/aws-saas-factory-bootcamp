@@ -13,6 +13,18 @@ Parameters:
     Description: IAM role name of the Event Engine player role
     Type: String
     Default: ''
+  ArtifactBucket:
+    Description: S3 bucket for CodeBuild artifacts
+    Type: String
+  WebsiteBucket:
+    Description: S3 bucket to host the website
+    Type: String
+  WebsiteBucketWebsiteURL:
+    Description: The S3 website URL for CloudFront to proxy
+    Type: String
+  CloudTrailBucket:
+    Description: S3 bucket for CloudTrail to publish logs to
+    Type: String
 Conditions:
   EventEngine: !Not [!Equals ['', !Ref EventEngineRole]]
 Resources:
@@ -169,115 +181,8 @@ Resources:
       Name: SaaS Bootcamp IDE
       OwnerArn:
         !If [EventEngine, !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/${EventEngineRoleName}/MasterKey", !Ref "AWS::NoValue"]
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    DependsOn:
-      - ArtifactBucket
-    Properties:
-      RoleName: !Sub saas-bootcamp-cfn-lambda-role-${AWS::Region}
-      Path: '/'
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:
-        - PolicyName: !Sub saas-bootcamp-cfn-lambda-policy-${AWS::Region}
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:PutLogEvents
-                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:DescribeLogStreams
-                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
-              - Effect: Allow
-                Action:
-                  - codebuild:StartBuild
-                Resource: !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/*
-              - Effect: Allow
-                Action:
-                  - s3:ListBucket
-                  - s3:ListBucketVersions
-                  - s3:GetBucketVersioning
-                Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}
-                  - !Sub arn:aws:s3:::${ArtifactBucket}
-                  - !Sub arn:aws:s3:::${CloudTrailBucket}
-                  - !Sub arn:aws:s3:::${WebsiteBucket}
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
-                  - s3:DeleteObjectVersion
-                Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}/*
-                  - !Sub arn:aws:s3:::${ArtifactBucket}/*
-                  - !Sub arn:aws:s3:::${CloudTrailBucket}/*
-                  - !Sub arn:aws:s3:::${WebsiteBucket}/*
-  LambdaClearBucketLogs:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/saas-bootcamp-clear-bucket-${AWS::Region}
-      RetentionInDays: 14
-  LambdaClearBucket:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub saas-bootcamp-clear-bucket-${AWS::Region}
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Runtime: java8
-      Timeout: 300
-      MemorySize: 384
-      Handler: com.amazon.aws.partners.saasfactory.ClearS3Bucket
-      Code:
-        S3Bucket: !Ref BootcampBucket
-        S3Key: ClearS3Bucket.jar
-  ArtifactBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      VersioningConfiguration:
-        Status: Enabled
-      Tags:
-        - Key: Name
-          Value: !Sub saas-bootcamp-artifact-bucket-${AWS::Region}
-  InvokeLambdaClearArtifactBucket:
-    Type: Custom::CustomResource
-    DependsOn:
-      - ArtifactBucket
-      - LambdaClearBucket
-      - LambdaClearBucketLogs
-      - LambdaExecutionRole
-    Properties:
-      ServiceToken: !GetAtt LambdaClearBucket.Arn
-      Bucket: !Ref ArtifactBucket
-  CloudTrailBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub saas-bootcamp-cloudtrail-bucket-${AWS::Region}
-  InvokeLambdaClearCloudTrailBucket:
-    Type: Custom::CustomResource
-    DependsOn:
-      - CloudTrailBucket
-      - LambdaClearBucket
-      - LambdaClearBucketLogs
-      - LambdaExecutionRole
-    Properties:
-      ServiceToken: !GetAtt LambdaClearBucket.Arn
-      Bucket: !Ref CloudTrailBucket
   CloudTrailBucketPolicy:
     Type: AWS::S3::BucketPolicy
-    DependsOn: CloudTrailBucket
     Properties:
       Bucket:
         Ref: CloudTrailBucket
@@ -289,7 +194,7 @@ Resources:
             Principal: 
               Service: cloudtrail.amazonaws.com
             Action: s3:GetBucketAcl
-            Resource: !GetAtt CloudTrailBucket.Arn
+            Resource: !Sub arn:aws:s3:::${CloudTrailBucket}
           - Sid: AWSCloudTrailWrite20150319
             Effect: Allow
             Principal: 
@@ -393,6 +298,53 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
+  LambdaCodeBuildStartBuildExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub saas-bootcamp-cfn-codebuild-role-${AWS::Region}
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub saas-bootcamp-cfn-codebuild-policy-${AWS::Region}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                Resource: !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:ListBucketVersions
+                  - s3:GetBucketVersioning
+                Resource:
+                  - !Sub arn:aws:s3:::${BootcampBucket}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                Resource:
+                  - !Sub arn:aws:s3:::${BootcampBucket}/*
   LambdaCodeBuildStartBuildLogs:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -403,14 +355,32 @@ Resources:
     DependsOn: LambdaCodeBuildStartBuildLogs
     Properties:
       FunctionName: !Sub saas-bootcamp-codebuild-start-${AWS::Region}
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Runtime: java8
+      Role: !GetAtt LambdaCodeBuildStartBuildExecutionRole.Arn
+      Runtime: python3.7
       Timeout: 60
-      MemorySize: 384
-      Handler: com.amazon.aws.partners.saasfactory.CodeBuildStartBuild
+      MemorySize: 512
+      Handler: index.lambda_handler
       Code:
-        S3Bucket: !Ref BootcampBucket
-        S3Key: CodeBuildStartBuild.jar
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+          from botocore.exceptions import ClientError
+          
+          def lambda_handler(event, context):
+              print(json.dumps(event, default=str))
+              if event['RequestType'] == 'Create':
+                  try:
+                      codebuild = boto3.client('codebuild')
+                      response = codebuild.start_build(projectName = event['ResourceProperties']['Project'])
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {"BuildStatus": response['build']['buildStatus']})
+                  except ClientError as codebuild_error:
+                      cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": str(codebuild_error)})
+                      raise
+              elif event['RequestType'] in ['Update', 'Delete']:
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+              else:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "Unknown RequestType %s" % event['RequestType']})
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -480,7 +450,6 @@ Resources:
                   - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/tenant-registration
   CodePipelineRole:
     Type: AWS::IAM::Role
-    DependsOn: ArtifactBucket
     Properties:
       RoleName: saas-bootcamp-codepipeline-role
       Path: '/'
@@ -584,13 +553,57 @@ Resources:
     Properties:
       FunctionName: !Sub saas-bootcamp-update-ecs-${AWS::Region}
       Role: !GetAtt CodePipelineUpdateEcsServiceExecRole.Arn
-      Runtime: java11
+      Runtime: python3.7
       Timeout: 300
-      MemorySize: 256
-      Handler: com.amazon.aws.partners.saasfactory.EcsServiceUpdate
+      MemorySize: 512
+      Handler: index.lambda_handler
       Code:
-        S3Bucket: !Ref BootcampBucket
-        S3Key: EcsServiceUpdate-lambda.zip
+        ZipFile: |
+          import json
+          import boto3
+          
+          ecs = boto3.client('ecs')
+          codepipeline = boto3.client('codepipeline')
+          
+          def lambda_handler(event, context):
+              job = event.get['CodePipeline.job']
+              job_id = job['id']
+              job_params = json.loads(job['data']['actionConfiguration']['configuration']['UserParameters'])
+              cluster = params['cluster']
+              service = params['service']
+              count = params['desiredCount']
+              
+              # If the desired count for the ECS service is less than the requested count
+              # update the service before continuing the CodePipeline
+              try:
+                current_settings = ecs.describe_services(cluster=cluster, services=[service])
+                for current_setting in current_settings:
+                    if current_setting['desiredCount'] < count:
+                        try:
+                            ecs.update_service(cluster=cluster, service=service, desiredCount=count)
+                        except botocore.exceptions.ClientError as ecs_error:
+                            print("ecs:UpdateService %s" % (str(ecs_error))
+                            fail_job(job_id, "Error calling ecs:UpdateService for %s in cluster %s" % (service, cluster), context)
+                            raise
+              except botocore.exceptions.ClientError as ecs_error:
+                  print("ecs:DescribeServices %s" % str(ecs_error))
+                  fail_job(job_id, "Error calling ecs:DescribeServices for %s in cluster %s" % (service, cluster), context)
+                  raise
+              
+              # Tell CodePipeline to continue
+              codepipeline.put_job_success_result(jobId=jobId)
+          
+          def fail_job(job_id, message, context):
+              try:
+                  details = {
+                      "type": "JobFailed",
+                      "message": message,
+                      "externalExecutionId": context.aws_request_id
+                  }
+                  codepipeline.put_job_failure_result(jobId=job_id, failureDetails=details)
+              except botocore.exceptions.ClientError as codepipeline_error:
+                  print("codepipeline:PutJobFailureResult %s" % str(codepipeline_error))
+                  raise
   CodePipelineUpdateEcsServicePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -620,36 +633,18 @@ Resources:
                 Action:
                   - codepipeline:StartPipelineExecution
                 Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:*
-  WebsiteBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      WebsiteConfiguration:
-        IndexDocument: index.html
-      Tags:
-        - Key: Name
-          Value: !Sub saas-bootcamp-website-bucket-${AWS::Region}
-  InvokeLambdaClearWebsiteBucket:
-    Type: Custom::CustomResource
-    DependsOn:
-      - WebsiteBucket
-      - LambdaClearBucket
-      - LambdaClearBucketLogs
-      - LambdaExecutionRole
-    Properties:
-      ServiceToken: !GetAtt LambdaClearBucket.Arn
-      Bucket: !Ref WebsiteBucket
   ApiGateway:
     Type: AWS::CloudFormation::Stack
     DependsOn: ECSLoadBalancer
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/api-gateway.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/api-gateway.yml
       Parameters:
         ECSLoadBalancer: !GetAtt ECSLoadBalancer.DNSName
   UserService:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/user-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/user-service.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
@@ -669,7 +664,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/auth-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/auth-service.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
@@ -689,7 +684,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/tenant-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/tenant-service.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
@@ -709,7 +704,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/registration-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/registration-service.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
@@ -729,7 +724,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/order-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/order-service.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
@@ -749,7 +744,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/product-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/product-service.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
@@ -769,13 +764,12 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ApiGateway
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/web-client.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/web-client.yml
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         WebsiteBucket: !Ref WebsiteBucket
-        WebsiteBucketWebsiteURL: !GetAtt WebsiteBucket.WebsiteURL
+        WebsiteBucketWebsiteURL: !Ref WebsiteBucketWebsiteURL
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
-#Outputs:
 ...

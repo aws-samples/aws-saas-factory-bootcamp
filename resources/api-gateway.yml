@@ -113,12 +113,6 @@ Resources:
       RestApiId: !Ref ApiGatewayApi
       ParentId: !GetAtt ApiGatewayApi.RootResourceId
       PathPart: tenants
-#  TenantManagerTenantsSystemResource:
-#    Type: AWS::ApiGateway::Resource
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ParentId: !Ref TenantManagerTenantsResource
-#      PathPart: system
   TenantManagerTenantResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -185,24 +179,6 @@ Resources:
       RestApiId: !Ref ApiGatewayApi
       ParentId: !Ref UserManagerUserResource
       PathPart: reg
-#  UserManagerSystemResource:
-#    Type: AWS::ApiGateway::Resource
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ParentId: !Ref UserManagerUserResource
-#      PathPart: system
-#  UserManagerTablesResource:
-#    Type: AWS::ApiGateway::Resource
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ParentId: !Ref UserManagerUserResource
-#      PathPart: tables
-#  UserManagerTenantsResource:
-#    Type: AWS::ApiGateway::Resource
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ParentId: !Ref UserManagerUserResource
-#      PathPart: tenants
   UserManagerPoolResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -979,36 +955,6 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: false
             method.response.header.Access-Control-Max-Age: false
             method.response.header.X-Requested-With: false
-#  TenantManagerTenantsSystemResourceCORS:
-#    Type: AWS::ApiGateway::Method
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ResourceId: !Ref TenantManagerTenantsSystemResource
-#      HttpMethod: OPTIONS
-#      AuthorizationType: NONE
-#      Integration:
-#        Type: MOCK
-#        PassthroughBehavior: WHEN_NO_MATCH
-#        IntegrationResponses:
-#          - StatusCode: 200
-#            ResponseTemplates: {application/json: ''}
-#            ResponseParameters:
-#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-#              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
-#              method.response.header.Access-Control-Allow-Origin: "'*'"
-#              method.response.header.Access-Control-Max-Age: "'3600'"
-#              method.response.header.X-Requested-With: "'*'"
-#        RequestTemplates:
-#          application/json: '{"statusCode": 200}'
-#      MethodResponses:
-#        - StatusCode: 200
-#          ResponseModels: {application/json: Empty}
-#          ResponseParameters:
-#            method.response.header.Access-Control-Allow-Headers: false
-#            method.response.header.Access-Control-Allow-Methods: false
-#            method.response.header.Access-Control-Allow-Origin: false
-#            method.response.header.Access-Control-Max-Age: false
-#            method.response.header.X-Requested-With: false
   TenantManagerHealthCheckMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -1117,23 +1063,6 @@ Resources:
           ResponseModels: {application/json: Empty}
           ResponseParameters:
             method.response.header.Access-Control-Allow-Origin: false
-#  TenantManagerTenantsSystemMethod:
-#    Type: AWS::ApiGateway::Method
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ResourceId: !Ref TenantManagerTenantsSystemResource
-#      AuthorizationType: NONE
-#      HttpMethod: GET
-#      Integration:
-#        Type: HTTP_PROXY
-#        IntegrationHttpMethod: GET
-#        Uri: !Sub http://${ECSLoadBalancer}/tenants/system
-#        PassthroughBehavior: WHEN_NO_MATCH
-#      MethodResponses:
-#        - StatusCode: 200
-#          ResponseModels: {application/json: Empty}
-#          ResponseParameters:
-#            method.response.header.Access-Control-Allow-Origin: false
   UserManagerUsersResourceCORS:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -1374,96 +1303,6 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: false
             method.response.header.Access-Control-Max-Age: false
             method.response.header.X-Requested-With: false
-#  UserManagerSystemResourceCORS:
-#    Type: AWS::ApiGateway::Method
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ResourceId: !Ref UserManagerSystemResource
-#      HttpMethod: OPTIONS
-#      AuthorizationType: NONE
-#      Integration:
-#        Type: MOCK
-#        PassthroughBehavior: WHEN_NO_MATCH
-#        IntegrationResponses:
-#          - StatusCode: 200
-#            ResponseTemplates: {application/json: ''}
-#            ResponseParameters:
-#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-#              method.response.header.Access-Control-Allow-Methods: "'POST,DELETE,OPTIONS'"
-#              method.response.header.Access-Control-Allow-Origin: "'*'"
-#              method.response.header.Access-Control-Max-Age: "'3600'"
-#              method.response.header.X-Requested-With: "'*'"
-#        RequestTemplates:
-#          application/json: '{"statusCode": 200}'
-#      MethodResponses:
-#        - StatusCode: 200
-#          ResponseModels: {application/json: Empty}
-#          ResponseParameters:
-#            method.response.header.Access-Control-Allow-Headers: false
-#            method.response.header.Access-Control-Allow-Methods: false
-#            method.response.header.Access-Control-Allow-Origin: false
-#            method.response.header.Access-Control-Max-Age: false
-#            method.response.header.X-Requested-With: false
-#  UserManagerTablesResourceCORS:
-#    Type: AWS::ApiGateway::Method
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ResourceId: !Ref UserManagerTablesResource
-#      HttpMethod: OPTIONS
-#      AuthorizationType: NONE
-#      Integration:
-#        Type: MOCK
-#        PassthroughBehavior: WHEN_NO_MATCH
-#        IntegrationResponses:
-#          - StatusCode: 200
-#            ResponseTemplates: {application/json: ''}
-#            ResponseParameters:
-#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-#              method.response.header.Access-Control-Allow-Methods: "'DELETE,OPTIONS'"
-#              method.response.header.Access-Control-Allow-Origin: "'*'"
-#              method.response.header.Access-Control-Max-Age: "'3600'"
-#              method.response.header.X-Requested-With: "'*'"
-#        RequestTemplates:
-#          application/json: '{"statusCode": 200}'
-#      MethodResponses:
-#        - StatusCode: 200
-#          ResponseModels: {application/json: Empty}
-#          ResponseParameters:
-#            method.response.header.Access-Control-Allow-Headers: false
-#            method.response.header.Access-Control-Allow-Methods: false
-#            method.response.header.Access-Control-Allow-Origin: false
-#            method.response.header.Access-Control-Max-Age: false
-#            method.response.header.X-Requested-With: false
-#  UserManagerTenantsResourceCORS:
-#    Type: AWS::ApiGateway::Method
-#    Properties:
-#      RestApiId: !Ref ApiGatewayApi
-#      ResourceId: !Ref UserManagerTenantsResource
-#      HttpMethod: OPTIONS
-#      AuthorizationType: NONE
-#      Integration:
-#        Type: MOCK
-#        PassthroughBehavior: WHEN_NO_MATCH
-#        IntegrationResponses:
-#          - StatusCode: 200
-#            ResponseTemplates: {application/json: ''}
-#            ResponseParameters:
-#              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-#              method.response.header.Access-Control-Allow-Methods: "'DELETE,OPTIONS'"
-#              method.response.header.Access-Control-Allow-Origin: "'*'"
-#              method.response.header.Access-Control-Max-Age: "'3600'"
-#              method.response.header.X-Requested-With: "'*'"
-#        RequestTemplates:
-#          application/json: '{"statusCode": 200}'
-#      MethodResponses:
-#        - StatusCode: 200
-#          ResponseModels: {application/json: Empty}
-#          ResponseParameters:
-#            method.response.header.Access-Control-Allow-Headers: false
-#            method.response.header.Access-Control-Allow-Methods: false
-#            method.response.header.Access-Control-Allow-Origin: false
-#            method.response.header.Access-Control-Max-Age: false
-#            method.response.header.X-Requested-With: false
   UserManagerPoolResourceCORS:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -1755,14 +1594,12 @@ Resources:
       - TenantManagerHealthCheckResourceCORS
       - TenantManagerTenantByIdResourceCORS
       - TenantManagerTenantsResourceCORS
-#      - TenantManagerTenantsSystemResourceCORS
       - TenantManagerHealthCheckMethod
       - TenantManagerInsertTenantMethod
       - TenantManagerUpdateTenantMethod
       - TenantManagerGetTenantMethod
       - TenantManagerDeleteTenantMethod
       - TenantManagerGetTenantsMethod
-#      - TenantManagerTenantsSystemMethod
       - UserManagerUsersResourceCORS
       - UserManagerUserResourceCORS
       - UserManagerUserByIdResourceCORS
@@ -1771,9 +1608,6 @@ Resources:
       - UserManagerEnableResourceCORS
       - UserManagerCreateResourceCORS
       - UserManagerRegResourceCORS
-#      - UserManagerSystemResourceCORS
-#      - UserManagerTablesResourceCORS
-#      - UserManagerTenantsResourceCORS
       - UserManagerPoolResourceCORS
       - UserManagerPoolByIdResourceCORS
       - UserManagerHealthCheckMethod

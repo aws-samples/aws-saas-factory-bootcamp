@@ -86,8 +86,8 @@ Resources:
           phases:
             pre_build:
               commands:
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/product-manager ./product-manager
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/shared-modules ./product-manager/shared-modules
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/product-manager ./product-manager
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/shared-modules ./product-manager/shared-modules
                 - $(aws ecr get-login --no-include-email)
             build:
               commands:

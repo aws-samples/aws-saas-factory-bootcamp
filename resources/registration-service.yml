@@ -86,8 +86,8 @@ Resources:
           phases:
             pre_build:
               commands:
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/tenant-registration ./tenant-registration
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/shared-modules ./tenant-registration/shared-modules
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/tenant-registration ./tenant-registration
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/shared-modules ./tenant-registration/shared-modules
                 - $(aws ecr get-login --no-include-email)
             build:
               commands:

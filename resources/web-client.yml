@@ -85,7 +85,7 @@ Resources:
           phases:
             pre_build:
               commands:
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/web-client ./web-client
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/web-client ./web-client
                 - sed -i -e "s#DOMAIN_URL#$SERVICE_URL#g" ./web-client/app/scripts/constants.js
             build:
               commands:

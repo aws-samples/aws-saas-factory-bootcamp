@@ -113,8 +113,8 @@ Resources:
           phases:
             pre_build:
               commands:
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/user-manager ./user-manager
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/shared-modules ./user-manager/shared-modules
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/user-manager ./user-manager
+                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/shared-modules ./user-manager/shared-modules
                 - $(aws ecr get-login --no-include-email)
             build:
               commands:
