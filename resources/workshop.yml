@@ -325,8 +325,16 @@ Resources:
                                   break
                       if len(objects_to_delete) > 0:
                           print("Deleting %d objects" % len(objects_to_delete))
-                          delete_response = s3.delete_objects(Bucket=bucket, Delete={'Objects': objects_to_delete})
-                          print("Cleaned up %d objects in bucket %s" % (len(delete_response['Deleted']), bucket))
+                          max_batch_size = 1000
+                          batch_start = 0
+                          batch_end = 0
+                          while batch_end < len(objects_to_delete):
+                              batch_start = batch_end
+                              batch_end += max_batch_size
+                              if (batch_end > len(objects_to_delete)):
+                                  batch_end = len(objects_to_delete)
+                              delete_response = s3.delete_objects(Bucket=bucket, Delete={'Objects': objects_to_delete[batch_start:batch_end]})
+                              print("Cleaned up %d objects in bucket %s" % (len(delete_response['Deleted']), bucket))
                       else:
                           print("Bucket %s is empty. Nothing to clean up." % bucket)
                       
