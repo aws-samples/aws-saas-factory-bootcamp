@@ -85,7 +85,6 @@ module.exports.getUserRole = function(req, callback) {
     }
 }
 
-
 /**
  * Decode and token and extract the user's full name from
  * the token.
@@ -114,7 +113,6 @@ module.exports.getRequestAuthToken = function(req) {
         var authToken = authHeader.substring(authHeader.indexOf(' ') + 1);
     return authToken;
 }
-
 
 /**
  * Decode and token and extract the token
@@ -206,8 +204,7 @@ module.exports.getCredentialsFromToken = function(req, updateCredentials) {
  */
 module.exports.getUserPool = function(userName, callback) {
     // Create URL for user-manager request
-    // var userURL = userURL + '/system/' + userName;
-    var userURL   = configuration.url.user + '/pool/' + userName;
+    var userURL = configuration.url.user + '/pool/' + userName;
     request({
         url: userURL,
         method: "GET",
@@ -218,13 +215,11 @@ module.exports.getUserPool = function(userName, callback) {
     }, function (error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(null, body);
-        }
-        else {
+        } else {
             if (!error) {
                 var lookupError = new Error("Failed looking up user pool: " + response.body.Error);
                 callback(lookupError, response);
-            }
-            else {
+            } else {
                 callback(error, response)
             }
         }
@@ -251,8 +246,7 @@ function getUserPoolWithParams(userName, callback) {
     }, function (error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(null, body);
-        }
-        else {
+        } else {
             callback(null, "Error loading user: " + error);
         }
     });
@@ -265,7 +259,6 @@ function getUserPoolWithParams(userName, callback) {
  */
 module.exports.getInfra = function(input, callback) {
     // Create URL for user-manager request
-    // var userURL = userURL + '/system/' + userName;
     var tenantsUrl   = configuration.url.tenant + 's/system/';
     console.log(tenantsUrl);
     request({
@@ -278,13 +271,11 @@ module.exports.getInfra = function(input, callback) {
     }, function (error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(null, body);
-        }
-        else {
+        } else {
             if (!error) {
                 var lookupError = new Error("Failed looking up infra: " + response.body.Error);
                 callback(lookupError, response);
-            }
-            else {
+            } else {
                 callback(error, response)
             }
         }
@@ -319,14 +310,11 @@ module.exports.fireRequest = function(event, callback) {
     }, function (error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(body);
-        }
-        else {
+        } else {
             callback(null, 'Error making request. \nError: ' + error);
         }
     });
 };
-
-
 
 /**
  * Authenticate the user in the user pool
@@ -357,13 +345,11 @@ function authenticateUserInPool(userPool, idToken, callback) {
 
                     // put claim and user full name into one response
                     callback(null, {"claim": returnedCredentials.Credentials});
-                }
-                else {
+                } else {
                     winston.error('ret');
                 }
             })
-        }
-        else {
+        } else {
             winston.error('ret');
         }
     })
@@ -389,8 +375,7 @@ function getCredentialsForIdentity(event, callback) {
         if (err) {
             winston.debug(err, err.stack);
             callback(err);
-        }
-        else {
+        } else {
             callback(data);
         }
     });
@@ -402,7 +387,7 @@ function getCredentialsForIdentity(event, callback) {
  * @param AccountId The AWS Account Number
  * @param Logins Provider Map Provider : ID Token
  */
-function getId (event, callback) {
+function getId(event, callback) {
     var cognitoidentity = new AWS.CognitoIdentity({apiVersion: '2014-06-30',region: configuration.aws_region});
     var params = {
         IdentityPoolId: event.IdentityPoolId, /* required */
@@ -416,8 +401,7 @@ function getId (event, callback) {
         if (err) {
             winston.debug(err, err.stack);
             callback(err);
-        }
-        else {
+        } else {
             callback(data);
         }
     });
@@ -434,7 +418,6 @@ function getId (event, callback) {
  * @return Fire off request and return result
  */
 function fireRequest(event, callback) {
-
     var protocol = event.protocol;
     var path = event.path;
     var delimiter = '://';
@@ -451,8 +434,7 @@ function fireRequest(event, callback) {
     }, function (error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(body);
-        }
-        else {
+        } else {
             callback(null, 'Error making request. \nError: ' + error);
         }
     });
@@ -465,14 +447,12 @@ module.exports.getSystemCredentials = function(callback) {
             if (err) {
                 callback(err.stack);
                 winston.debug('Unable to Obtain Credentials');
-            } // credentials not loaded
-            else{
+            } else{
                 var tempCreds = sysConfig.credentials;
                 if (tempCreds.metadata == undefined || tempCreds.metadata == null){
                     var credentials = {"claim": tempCreds};
                     callback(credentials);
-                }
-                else {
+                } else {
                     sysCreds = {
                         SessionToken: tempCreds.metadata.Token,
                         AccessKeyId: tempCreds.metadata.AccessKeyId,
@@ -482,8 +462,6 @@ module.exports.getSystemCredentials = function(callback) {
                     var credentials = {"claim": sysCreds};
                     callback(credentials);
                 }
-
             }
         })
-
 }

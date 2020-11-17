@@ -55,7 +55,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: '/aws/codebuild/saas-bootcamp-web-client'
-      RetentionInDays: 14
+      RetentionInDays: 7
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:

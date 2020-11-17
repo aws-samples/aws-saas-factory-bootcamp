@@ -14,8 +14,8 @@ var configuration = configModule.configure(process.env.NODE_ENV);
 const winston = require('winston');
 winston.add(new winston.transports.Console({level: configuration.loglevel}));
 
-var tenantURL   = configuration.url.tenant;
-var userURL   = configuration.url.user;
+var tenantURL = configuration.url.tenant;
+var userURL = configuration.url.user;
 
 // Instantiate application
 var app = express();
@@ -32,8 +32,7 @@ app.use(function (req, res, next) {
     // intercept OPTIONS method
     if ('OPTIONS' == req.method) {
         res.send(200);
-    }
-    else {
+    } else {
         next();
     }
 });
@@ -46,9 +45,9 @@ app.post('/reg', function (req, res) {
 
     // Generate the tenant id
     var guid = uuidv4();
-    tenant.id = 'TENANT' + guid;
-    tenant.id = tenant.id.split('-').join('');
-    winston.debug('Creating Tenant: ' + tenant.id);
+    tenant.tenant_id = 'TENANT' + guid;
+    tenant.tenant_id = tenant.tenant_id.split('-').join('');
+    winston.debug('Creating Tenant: ' + tenant.tenant_id);
 
     // if the tenant doesn't exist, create one
     tenantExists(tenant, function(tenantExists) {
@@ -77,9 +76,9 @@ app.post('/reg', function (req, res) {
                     saveTenantData(tenant)
                 })
                 .then(function () {
-                    winston.debug("Tenant registered: " + tenant.id);
+                    winston.debug("Tenant registered: " + tenant.tenant_id);
                     res.status(200).send({
-                        id: tenant.id,
+                        id: tenant.tenant_id,
                         company: tenant.companyName,
                         tier: tenant.tier,
                         status: tenant.status
@@ -109,15 +108,16 @@ function tenantExists(tenant, callback) {
         json: true,
         headers: {"content-type": "application/json"}
     }, function (error, response, body) {
-        if (error)
+        if (error) {
             callback(false);
-        else if ((response != null) && (response.statusCode == 400))
+        } else if ((response != null) && (response.statusCode == 400)) {
             callback(false);
-        else {
-            if (body.userName === tenant.userName)
+        } else {
+            if (body.userName === tenant.userName) {
                 callback(true);
-            else
+            } else {
                 callback(false);
+            }
         }
     });
 };
@@ -132,7 +132,7 @@ function registerTenantAdmin(tenant) {
 
         // init the request with tenant data
         var tenantAdminData = {
-            "tenant_id": tenant.id,
+            "tenant_id": tenant.tenant_id,
             "companyName": tenant.companyName,
             "accountName": tenant.accountName,
             "ownerName": tenant.ownerName,
@@ -155,9 +155,9 @@ function registerTenantAdmin(tenant) {
             headers: {"content-type": "application/json"},
             body: tenantAdminData
         }, function (error, response, body) {
-            if (error || (response.statusCode != 200))
+            if (error || (response.statusCode != 200)) {
                 reject(error)
-            else {
+            } else {
                 resolve(body);
             }
         });
@@ -175,7 +175,7 @@ function saveTenantData(tenant) {
     var promise = new Promise(function(resolve, reject) {
         // init the tenant sace request
         var tenantRequestData = {
-            "id": tenant.id,
+            "tenant_id": tenant.tenant_id,
             "companyName": tenant.companyName,
             "accountName": tenant.accountName,
             "ownerName": tenant.ownerName,
@@ -200,10 +200,11 @@ function saveTenantData(tenant) {
             headers: {"content-type": "application/json"},
             body: tenantRequestData
         }, function (error, response, body) {
-            if (error || (response.statusCode != 200))
+            if (error || (response.statusCode != 200)) {
                 reject(error);
-            else
+            } else {
                 resolve(body);
+            }
         });
     });
 
@@ -216,7 +217,6 @@ function saveTenantData(tenant) {
 app.get('/reg/health', function(req, res) {
     res.status(200).send({service: 'Tenant Registration', isAlive: true});
 });
-
 
 // Start the servers
 app.listen(configuration.port.reg);

@@ -44,17 +44,18 @@ angular.module('clientApp').controller('MainCtrl', function ($scope, $timeout, $
         });
       }
       pollForServiceHealth();
-    }, 10000);
+    }, 30000);
   };
   pollForServiceHealth();
 
   function getServiceHealth(serviceURL, callback) {
     $http.get(serviceURL + '/health')
       .then(function(response) {
-        if (response.status == 200)
+        if (response.status == 200) {
           callback(true);
-        else
+        } else {
           callback(false);
+        }
       })
       .catch(function(error) {
         callback(false);

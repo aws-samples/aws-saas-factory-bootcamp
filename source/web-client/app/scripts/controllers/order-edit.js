@@ -28,7 +28,7 @@ angular.module('clientApp').controller('OrderEditCtrl', function ($scope, $locat
     .then(function (response) {
       $scope.products = response.data;
       $scope.productMap = {};
-      $scope.products.forEach(function (it) { $scope.productMap[it.productId] = it; });
+      $scope.products.forEach(function (it) { $scope.productMap[it.product_id] = it; });
     })
     .catch(function (response) {
       console.log('Error getting products: ' + response.message);
@@ -39,7 +39,7 @@ angular.module('clientApp').controller('OrderEditCtrl', function ($scope, $locat
 
   $scope.saveOrder = function() {
     var order = {
-      orderId: $scope.order.orderId,
+      order_id: $scope.order.order_id,
       productId: $scope.order.productId,
       productSKU: $scope.productMap[$scope.order.productId].sku,
       productDescription: $scope.productMap[$scope.order.productId].title,

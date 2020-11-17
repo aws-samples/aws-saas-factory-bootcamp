@@ -30,7 +30,7 @@ function DynamoDBHelper(tableDefinition, credentials, configSettings, callback) 
  */
 DynamoDBHelper.prototype.query = function(searchParameters, credentials, callback) {
     this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
-        if(!error){
+        if (!error){
             docClient.query(searchParameters, function(err, data) {
                 if (err) {
                     winston.error("Unable to query. Error:", JSON.stringify(err, null, 2));
@@ -39,12 +39,10 @@ DynamoDBHelper.prototype.query = function(searchParameters, credentials, callbac
                     callback(null, data.Items);
                 }
             });
-        }
-        else{
+        } else{
             winston.error(error);
             callback(error);
         }
-
     }.bind(this));
 }
 
@@ -61,11 +59,10 @@ DynamoDBHelper.prototype.putItem = function(item, credentials, callback) {
             TableName: this.tableDefinition.TableName,
             Item: item
         }
-
         docClient.put(itemParams, function(err, data) {
-            if (err)
+            if (err) {
                 callback(err);
-            else {
+            } else {
                 callback(null, data);
             }
         });
@@ -81,10 +78,11 @@ DynamoDBHelper.prototype.putItem = function(item, credentials, callback) {
 DynamoDBHelper.prototype.updateItem = function(productUpdateParams, credentials, callback) {
     this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
         docClient.update(productUpdateParams, function(err, data) {
-            if (err)
+            if (err) {
                 callback(err);
-            else
+            } else {
                 callback(null, data.Attributes);
+            }
         });
     }.bind(this));
 }
@@ -102,12 +100,13 @@ DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
             TableName: this.tableDefinition.TableName,
             Key: keyParams
         }
-
         docClient.get(fetchParams, function(err, data) {
-            if (err)
+            if (err) {
+                winston.debug(JSON.stringify(docClient.response));
                 callback(err);
-            else
+            } else {
                 callback(null, data.Item);
+            }
         });
     }.bind(this));
 }
@@ -121,10 +120,11 @@ DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
 DynamoDBHelper.prototype.deleteItem = function(deleteItemParams, credentials, callback) {
     this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
         docClient.delete(deleteItemParams, function(err, data) {
-            if (err)
+            if (err) {
                 callback(err);
-            else
+            } else {
                 callback(null, data);
+            }
         });
     }.bind(this));
 }
@@ -138,10 +138,11 @@ DynamoDBHelper.prototype.deleteItem = function(deleteItemParams, credentials, ca
 DynamoDBHelper.prototype.scan = function(scanParams, credentials, callback) {
     this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
         docClient.scan(scanParams, function(err, data) {
-            if (err)
+            if (err) {
                 callback(err);
-            else
+            } else {
                 callback(null, data.Items);
+            }
         });
     }.bind(this));
 }
@@ -155,10 +156,11 @@ DynamoDBHelper.prototype.scan = function(scanParams, credentials, callback) {
 DynamoDBHelper.prototype.batchGetItem = function(batchGetParams, credentials, callback) {
     this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
         docClient.batchGet(batchGetParams, function(err, data) {
-            if (err)
+            if (err) {
                 callback(err);
-            else
+            } else {
                 callback(null, data);
+            }
         });
     }.bind(this));
 }
@@ -185,9 +187,9 @@ DynamoDBHelper.prototype.createTable = function(dynamodb, callback) {
                } else {
                    var tableName = {TableName: this.tableDefinition.TableName};
                    dynamodb.waitFor('tableExists', tableName, function (err, data) {
-                       if (err)
+                       if (err) {
                            callback(err);
-                       else {
+                       } else {
                            winston.debug("Created table. Table description JSON:", JSON.stringify(data, null, 2));
                            callback(null);
                        }
@@ -214,8 +216,7 @@ DynamoDBHelper.prototype.tableExists = function(tableName, credentials) {
                 dynamodb.describeTable(newTable, function (error, data) {
                     if (error) {
                         winston.error("Error describing table: ", error)
-                    }
-                    else {
+                    } else {
                         resolve(true);
                     }
                 });
@@ -245,18 +246,17 @@ DynamoDBHelper.prototype.getDynamoDB = function(credentials, callback) {
         var ddb = new AWS.DynamoDB(creds);
         if (!this.tableExists) {
             this.createTable(ddb, function (error) {
-                if (error)
+                if (error) {
                     callback(error);
-                else {
+                } else {
                     this.tableExists = true;
                     callback(null, ddb);
                 }
             }.bind(this));
-        }
-        else
+        } else {
             callback(null, ddb);
-    }
-    catch (error) {
+        }
+    } catch (error) {
         callback(error);
     }
 }
@@ -280,19 +280,17 @@ DynamoDBHelper.prototype.getDynamoDBDocumentClient = function(credentials, callb
 
         if (!this.tableExists) {
             this.createTable(ddb, function (error) {
-                if (error)
+                if (error) {
                     callback(error);
-                else {
+                } else {
                     this.tableExists = true;
                     callback(null, docClient)
                 }
             }.bind(this));
-        }
-        else
+        } else {
             callback(docClient);
-
-    }
-    catch (error) {
+        }
+    } catch (error) {
         callback(error);
     }
 }

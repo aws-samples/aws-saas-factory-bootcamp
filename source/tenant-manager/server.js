@@ -35,14 +35,14 @@ app.use(function (req, res, next) {
 var tenantSchema = {
     TableName: configuration.table.tenant,
     KeySchema: [
-        { AttributeName: "id", KeyType: "HASH"}  //Partition key
+        { AttributeName: "tenant_id", KeyType: "HASH"}  //Partition key
     ],
     AttributeDefinitions: [
-        { AttributeName: "id", AttributeType: "S" }
+        { AttributeName: "tenant_id", AttributeType: "S" }
     ],
     ProvisionedThroughput: {
-        ReadCapacityUnits: 10,
-        WriteCapacityUnits: 10
+        ReadCapacityUnits: 5,
+        WriteCapacityUnits: 5
     }
 };
 
@@ -56,7 +56,7 @@ app.get('/tenant/:id', function (req, res) {
 
     // init params structure with request params
     var tenantIdParam = {
-        id: req.params.id
+        tenant_id: req.params.id
     }
 
     tokenManager.getCredentialsFromToken(req, function(credentials) {
@@ -67,8 +67,7 @@ app.get('/tenant/:id', function (req, res) {
             if (err) {
                 winston.error('Error getting tenant: ' + err.message);
                 res.status(400).send('{"Error" : "Error getting tenant"}');
-            }
-            else {
+            } else {
                 winston.debug('Tenant ' + req.params.id + ' retrieved');
                 res.status(200).send(tenant);
             }
@@ -91,40 +90,10 @@ app.get('/tenants', function(req, res) {
             if (error) {
                 winston.error('Error retrieving tenants: ' + error.message);
                 res.status(400).send('{"Error" : "Error retrieving tenants"}');
-            }
-            else {
+            } else {
                 winston.debug('Tenants successfully retrieved');
                 res.status(200).send(tenants);
             }
-
-        });
-    });
-});
-
-app.get('/tenants/system', function(req, res) {
-    winston.debug('Fetching all tenants required to clean up infrastructure');
-    // Note: Reference Architecture not leveraging Client Certificate to secure system only endpoints.
-    // Please integrate the following endpoint with a Client Certificate.
-    var credentials = {};
-    tokenManager.getSystemCredentials(function (systemCredentials) {
-        credentials = systemCredentials;
-        var scanParams = {
-            TableName: tenantSchema.TableName,
-        }
-
-        // construct the helper object
-        var dynamoHelper = new DynamoDBHelper(tenantSchema, credentials, configuration);
-
-        dynamoHelper.scan(scanParams, credentials, function (error, tenants) {
-            if (error) {
-                winston.error('Error retrieving tenants: ' + error.message);
-                res.status(400).send('{"Error" : "Error retrieving tenants"}');
-            }
-            else {
-                winston.debug('Tenants successfully retrieved');
-                res.status(200).send(tenants);
-            }
-
         });
     });
 });
@@ -136,7 +105,7 @@ app.post('/tenant', function(req, res) {
         var tenant = req.body;
         winston.debug("tenant-manager POST new tenant");
         winston.debug(tenant);
-        winston.debug('Creating Tenant: ' + tenant.id);
+        winston.debug('Creating Tenant: ' + tenant.tenant_id);
 
         // construct the helper object
         var dynamoHelper = new DynamoDBHelper(tenantSchema, credentials, configuration);
@@ -145,10 +114,9 @@ app.post('/tenant', function(req, res) {
             if (err) {
                 winston.error('Error calling putItem for new tenant: ' + err.message);
                 res.status(400).send('{"Error" : "Error creating tenant"}');
-            }
-            else {
+            } else {
                 // data will be null because ReturnValues == NONE
-                winston.debug('Tenant ' + tenant.id + ' created');
+                winston.debug('Tenant ' + tenant.tenant_id + ' created');
                 res.status(200).send({status: 'success'});
             }
         });
@@ -160,18 +128,18 @@ app.put('/tenant', function(req, res) {
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         // init the params from the request data
         var keyParams = {
-            id: req.body.id
+            tenant_id: req.body.id
         }
 
         var tenantUpdateParams = {
             TableName: tenantSchema.TableName,
             Key: keyParams,
             UpdateExpression: "set " +
-                "companyName=:companyName, " +
-                "accountName=:accountName, " +
-                "ownerName=:ownerName, " +
-                "tier=:tier, " +
-                "#status=:status",
+                "companyName = :companyName, " +
+                "accountName = :accountName, " +
+                "ownerName = :ownerName, " +
+                "tier = :tier, " +
+                "#status = :status",
             ExpressionAttributeNames: {
                 '#status' : 'status'
             },
@@ -194,7 +162,7 @@ app.put('/tenant', function(req, res) {
                 res.status(400).send('{"Error" : "Error updating tenant"}');
             }
             else {
-                winston.debug('Tenant ' + req.body.title + ' updated');
+                winston.debug('Tenant ' + tenant.tenant_id + ' updated');
                 res.status(200).send(tenant);
             }
         });
@@ -209,7 +177,7 @@ app.delete('/tenant/:id', function(req, res) {
         var deleteTenantParams = {
             TableName : tenantSchema.TableName,
             Key: {
-                id: req.params.id
+                tenant_id: req.params.id
             }
         };
 

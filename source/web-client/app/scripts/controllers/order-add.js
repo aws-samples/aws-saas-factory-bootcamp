@@ -18,10 +18,10 @@ angular.module('clientApp').controller('OrderAddCtrl', function ($scope, $locati
       $scope.order.quantity = 1;
       $scope.order.unitCost = 0;
       $scope.productMap = {};
-      $scope.products.forEach(function (it) { $scope.productMap[it.productId] = it; });
+      $scope.products.forEach(function (it) { $scope.productMap[it.product_id] = it; });
 
       if ($scope.products) {
-        $scope.order.productId = $scope.products[0].productId;
+        $scope.order.productId = $scope.products[0].product_id;
         $scope.order.unitCost = $scope.products[0].unitCost;
       }
     })

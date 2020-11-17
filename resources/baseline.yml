@@ -349,7 +349,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/saas-bootcamp-codebuild-start-${AWS::Region}
-      RetentionInDays: 14
+      RetentionInDays: 7
   LambdaCodeBuildStartBuild:
     Type: AWS::Lambda::Function
     DependsOn: LambdaCodeBuildStartBuildLogs
@@ -546,7 +546,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/saas-bootcamp-update-ecs-${AWS::Region}
-      RetentionInDays: 14
+      RetentionInDays: 7
   CodePipelineUpdateEcsServiceLambda:
     Type: AWS::Lambda::Function
     DependsOn: CodePipelineUpdateEcsServiceLogs
@@ -561,37 +561,38 @@ Resources:
         ZipFile: |
           import json
           import boto3
+          from botocore.exceptions import ClientError
           
           ecs = boto3.client('ecs')
           codepipeline = boto3.client('codepipeline')
           
           def lambda_handler(event, context):
-              job = event.get['CodePipeline.job']
+              job = event['CodePipeline.job']
               job_id = job['id']
               job_params = json.loads(job['data']['actionConfiguration']['configuration']['UserParameters'])
-              cluster = params['cluster']
-              service = params['service']
-              count = params['desiredCount']
+              cluster = job_params['cluster']
+              service = job_params['service']
+              count = job_params['desiredCount']
               
               # If the desired count for the ECS service is less than the requested count
               # update the service before continuing the CodePipeline
               try:
                 current_settings = ecs.describe_services(cluster=cluster, services=[service])
-                for current_setting in current_settings:
+                for current_setting in current_settings['services']:
                     if current_setting['desiredCount'] < count:
                         try:
                             ecs.update_service(cluster=cluster, service=service, desiredCount=count)
-                        except botocore.exceptions.ClientError as ecs_error:
-                            print("ecs:UpdateService %s" % (str(ecs_error))
+                        except ClientError as ecs_error:
+                            print("ecs:UpdateService %s" % str(ecs_error))
                             fail_job(job_id, "Error calling ecs:UpdateService for %s in cluster %s" % (service, cluster), context)
                             raise
-              except botocore.exceptions.ClientError as ecs_error:
+              except ClientError as ecs_error:
                   print("ecs:DescribeServices %s" % str(ecs_error))
                   fail_job(job_id, "Error calling ecs:DescribeServices for %s in cluster %s" % (service, cluster), context)
                   raise
               
               # Tell CodePipeline to continue
-              codepipeline.put_job_success_result(jobId=jobId)
+              codepipeline.put_job_success_result(jobId=job_id)
           
           def fail_job(job_id, message, context):
               try:
@@ -601,7 +602,7 @@ Resources:
                       "externalExecutionId": context.aws_request_id
                   }
                   codepipeline.put_job_failure_result(jobId=job_id, failureDetails=details)
-              except botocore.exceptions.ClientError as codepipeline_error:
+              except ClientError as codepipeline_error:
                   print("codepipeline:PutJobFailureResult %s" % str(codepipeline_error))
                   raise
   CodePipelineUpdateEcsServicePermission:
@@ -633,6 +634,102 @@ Resources:
                 Action:
                   - codepipeline:StartPipelineExecution
                 Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:*
+  ClearEcrImagesExecRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: saas-bootcamp-clear-ecr-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: saas-bootcamp-clear-ecr-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+              - Effect: Allow
+                Action:
+                  - ecr:DescribeImages
+                  - ecr:BatchDeleteImage
+                Resource:
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/user-manager
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/auth-manager
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/tenant-manager
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/order-manager
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/product-manager
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/saas-bootcamp/tenant-registration
+  ClearEcrImagesLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/saas-bootcamp-clear-ecr-${AWS::Region}
+      RetentionInDays: 7
+  ClearEcrImagesLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: ClearEcrImagesLogs
+    Properties:
+      FunctionName: !Sub saas-bootcamp-clear-ecr-${AWS::Region}
+      Role: !GetAtt ClearEcrImagesExecRole.Arn
+      Runtime: python3.7
+      Timeout: 300
+      MemorySize: 512
+      Handler: index.lambda_handler
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+          from botocore.exceptions import ClientError
+          
+          def lambda_handler(event, context):
+              print(json.dumps(event, default=str))
+              if event['RequestType'] in ['Create', 'Update']:
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+              elif event['RequestType'] == 'Delete':
+                  ecr = boto3.client('ecr')
+                  repo = event['ResourceProperties']['Repository']
+                  try:
+                      images = []
+                      token = None
+                      while True:
+                          if not token:
+                              images_response = ecr.describe_images(repositoryName=repo, maxResults=1000)
+                          else:
+                              images_response = ecr.describe_images(repositoryName=repo, nextToken=token, maxResults=1000)
+                          token = images_response['nextToken'] if 'nextToken' in images_response else ''
+                          if 'imageDetails' in images_response:
+                              for image_detail in images_response['imageDetails']:
+                                  images.append({"imageDigest": image_detail['imageDigest']})
+                          if not token:
+                              break
+                      print("Deleting %d images from repo %s" % (len(images), repo))
+                      delete_response = ecr.batch_delete_image(repositoryName=repo, imageIds=images)
+                      if 'failures' in delete_response and len(delete_response['failures']) > 0:
+                          for fail in delete_response['failures']:
+                              print("Failed to delete image %s %s in repo %s" % (fail['imageId']['imageDigest'], fail['failureReason'], repo))
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "ecr:BatchDeleteImage failed"})
+                      else:
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  except ClientError as ecr_error:
+                      print("ecr error %s" % str(ecr_error))
+                      raise
+              else:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "Unknown RequestType %s" % event['RequestType']})
   ApiGateway:
     Type: AWS::CloudFormation::Stack
     DependsOn: ECSLoadBalancer
@@ -652,6 +749,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
         CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
+        LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
         ALBListener: !Ref ALBListener
         ECSCluster: !Ref ECSCluster
@@ -672,6 +770,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
         CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
+        LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
         ALBListener: !Ref ALBListener
         ECSCluster: !Ref ECSCluster
@@ -692,6 +791,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
         CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
+        LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
         ALBListener: !Ref ALBListener
         ECSCluster: !Ref ECSCluster
@@ -712,6 +812,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
         CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
+        LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
         ALBListener: !Ref ALBListener
         ECSCluster: !Ref ECSCluster
@@ -732,6 +833,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
         CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
+        LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
         ALBListener: !Ref ALBListener
         ECSCluster: !Ref ECSCluster
@@ -752,6 +854,7 @@ Resources:
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
         CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
+        LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
         ALBListener: !Ref ALBListener
         ECSCluster: !Ref ECSCluster

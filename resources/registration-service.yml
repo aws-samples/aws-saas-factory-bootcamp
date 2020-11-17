@@ -20,6 +20,9 @@ Parameters:
   LambdaCodeBuildStartBuildArn:
     Description: The Lambda function ARN to start a CodeBuild project
     Type: String
+  LambdaClearEcrImagesArn:
+    Description: The Lambda function ARN to delete the ECR images
+    Type: String
   VPC:
     Description: The SaaS Bootcamp VPC
     Type: String
@@ -49,11 +52,16 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: saas-bootcamp/tenant-registration
+  InvokeClearEcrRepoImages:
+    Type: Custom::CustomResource
+    Properties:
+      ServiceToken: !Ref LambdaClearEcrImagesArn
+      Repository: !Ref ECSRepository
   CodeBuildLogs:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: '/aws/codebuild/saas-bootcamp-registration-svc'
-      RetentionInDays: 14
+      RetentionInDays: 7
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -220,7 +228,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: '/ecs/saas-bootcamp-registration-svc'
-      RetentionInDays: 14
+      RetentionInDays: 7
   ECSTaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -278,6 +286,9 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 10
       Port: 80
       Protocol: HTTP
       TargetType: ip

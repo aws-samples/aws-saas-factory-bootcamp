@@ -24,7 +24,7 @@ angular.module('clientApp').controller('OrderDeleteCtrl', function ($scope, $loc
 
 
   $scope.deleteOrder = function() {
-    $http.delete(Constants.ORDER_MANAGER_URL + '/order/' + $scope.order.orderId)
+    $http.delete(Constants.ORDER_MANAGER_URL + '/order/' + $scope.order.order_id)
       .then(function (response) {
         console.log('Order delete');
         $location.path('/orders');

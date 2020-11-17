@@ -13,7 +13,7 @@ angular.module('clientApp').controller('RegisterCtrl', function ($scope, $http, 
 			$scope.error = "User name and company name are required. Please enter these values.";
 		} else {
 			var tenant = {
-				id: '',
+				tenant_id: '',
 				companyName: $scope.tenant.companyName,
 				accountName: $scope.tenant.companyName,
 				ownerName: $scope.tenant.email,

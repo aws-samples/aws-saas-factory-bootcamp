@@ -39,16 +39,16 @@ app.use(function(req, res, next) {
 var orderSchema = {
     TableName : configuration.table.order,
     KeySchema: [
-        { AttributeName: "tenantId", KeyType: "HASH"},  //Partition key
-        { AttributeName: "orderId", KeyType: "RANGE" }  //Sort key
+        { AttributeName: "tenant_id", KeyType: "HASH"},  //Partition key
+        { AttributeName: "order_id", KeyType: "RANGE" }  //Sort key
     ],
     AttributeDefinitions: [
-        { AttributeName: "tenantId", AttributeType: "S" },
-        { AttributeName: "orderId", AttributeType: "S" }
+        { AttributeName: "tenant_id", AttributeType: "S" },
+        { AttributeName: "order_id", AttributeType: "S" }
     ],
     ProvisionedThroughput: {
-        ReadCapacityUnits: 10,
-        WriteCapacityUnits: 10
+        ReadCapacityUnits: 5,
+        WriteCapacityUnits: 5
     }
 };
 
@@ -62,8 +62,8 @@ app.get('/order/:id', function(req, res) {
     tokenManager.getCredentialsFromToken(req, function(credentials) {
     	// init params structure with request params
 		var params = {
-			tenantId: tenantId,
-			orderId: req.params.id
+			tenant_id: tenantId,
+			order_id: req.params.id
 		}
         // construct the helper object
         var dynamoHelper = new DynamoDBHelper(orderSchema, credentials, configuration);
@@ -84,9 +84,9 @@ app.get('/orders', function(req, res) {
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         var searchParams = {
             TableName: orderSchema.TableName,
-            KeyConditionExpression: "tenantId = :tenantId",
+            KeyConditionExpression: "tenant_id = :tenant_id",
             ExpressionAttributeValues: {
-                ":tenantId": tenantId
+                ":tenant_id": tenantId
             }
         };
         // construct the helper object
@@ -107,8 +107,8 @@ app.post('/order', function(req, res) {
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         var order = req.body;
 		var guid = uuidv4();
-        order.orderId = guid;
-        order.tenantId = tenantId;
+        order.order_id = guid;
+        order.tenant_id = tenantId;
 
         // construct the helper object
         var dynamoHelper = new DynamoDBHelper(orderSchema, credentials, configuration);
@@ -125,24 +125,24 @@ app.post('/order', function(req, res) {
 });
 
 app.put('/order', function(req, res) {
-	winston.debug('Updating order: ' + req.body.orderId);
+	winston.debug('Updating order: ' + req.body.order_id);
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         // init the params from the request data
         var keyParams = {
-            tenantId: tenantId,
-            orderId: req.body.orderId
+            tenant_id: tenantId,
+            order_id: req.body.order_id
         }
         var orderUpdateParams = {
             TableName: orderSchema.TableName,
             Key: keyParams,
             UpdateExpression: "set " +
-                "productId=:productId, " +
-                "productSKU=:productSKU, " +
-                "productDescription=:productDescription, " +
-                "dateOrdered=:dateOrdered, " +
-                "orderedBy=:orderedBy, " +
-                "quantity=:quantity, " +
-                "unitCost=:unitCost",
+                "productId = :productId, " +
+                "productSKU = :productSKU, " +
+                "productDescription = :productDescription, " +
+                "dateOrdered = :dateOrdered, " +
+                "orderedBy = :orderedBy, " +
+                "quantity = :quantity, " +
+                "unitCost = :unitCost",
             ExpressionAttributeValues: {
                 ":productId": req.body.productId,
                 ":productSKU": req.body.productSKU,
@@ -161,7 +161,7 @@ app.put('/order', function(req, res) {
                 winston.error('Error updating order: ' + err.message);
                 res.status(400).send('{"Error" : "Error updating order"}');
             } else {
-                winston.debug('Order ' + req.body.orderId + ' updated');
+                winston.debug('Order ' + req.body.order_id + ' updated');
                 res.status(200).send(order);
             }
         });
@@ -175,8 +175,8 @@ app.delete('/order/:id', function(req, res) {
         var deleteOrderParams = {
             TableName : orderSchema.TableName,
             Key: {
-                tenantId: tenantId,
-                orderId: req.params.id
+                tenant_id: tenantId,
+                order_id: req.params.id
             }
         };
         // construct the helper object

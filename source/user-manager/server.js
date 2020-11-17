@@ -46,29 +46,29 @@ app.use(function (req, res, next) {
 var userSchema = {
     TableName : configuration.table.user,
     KeySchema: [
-        { AttributeName: "tenant_id", KeyType: "HASH"},  //Partition key
-        { AttributeName: "id", KeyType: "RANGE" }  //Sort key
+        { AttributeName: "tenant_id", KeyType: "HASH" },  //Partition key
+        { AttributeName: "user_id", KeyType: "RANGE" }  //Sort key
     ],
     AttributeDefinitions: [
         { AttributeName: "tenant_id", AttributeType: "S" },
-        { AttributeName: "id", AttributeType: "S" }
+        { AttributeName: "user_id", AttributeType: "S" }
     ],
     ProvisionedThroughput: {
-        ReadCapacityUnits: 10,
-        WriteCapacityUnits: 10
+        ReadCapacityUnits: 5,
+        WriteCapacityUnits: 5
     },
     GlobalSecondaryIndexes: [
         {
             IndexName: 'UserNameIndex',
             KeySchema: [
-                { AttributeName: "id", KeyType: "HASH"}
+                { AttributeName: "user_id", KeyType: "HASH" }
             ],
             Projection: {
                 ProjectionType: 'ALL'
             },
             ProvisionedThroughput: {
-                ReadCapacityUnits: 10,
-                WriteCapacityUnits: 10
+                ReadCapacityUnits: 5,
+                WriteCapacityUnits: 5
             }
         }
     ]
@@ -76,139 +76,6 @@ var userSchema = {
 
 app.get('/user/health', function (req, res) {
     res.status(200).send('{"service": "User Manager", "isAlive": "true}');
-});
-
-/**
- * WARNING: THIS WILL REMOVE THE DYNAMODB TABLES FOR THIS QUICKSTART.
- * NOTE: In production, it is recommendended to have a backup of all Tables, and only manage these tables from corresponding micro-services.
- * Delete DynamoDB Tables required for the Infrastructure including the User, Tenant, Product, and Order Tables.
- */
-app.delete('/user/tables', function (req, res) {
-
-        // Delete User Table
-        cognitoUsers.deleteTable(configuration.table.user)
-            .then(function(response) {
-            })
-            .catch(function(err) {
-                res.status(400).send("Error deleting " + configuration.table.user + err.message);
-            });
-        // Delete Tenant Table
-        cognitoUsers.deleteTable(configuration.table.tenant)
-            .then(function(response) {
-            })
-            .catch(function(err) {
-                res.status(400).send("Error deleting " + configuration.table.tenant + err.message);
-            });
-        // Delete Product Table
-        cognitoUsers.deleteTable(configuration.table.product)
-            .then(function(response) {
-            })
-            .catch(function(err) {
-                res.status(400).send("Error deleting " + configuration.table.product + err.message);
-            });
-        // Delete Order Table
-        cognitoUsers.deleteTable(configuration.table.order)
-            .then(function(response) {
-            })
-            .catch(function(err) {
-                res.status(400).send("Error deleting " + configuration.table.order + err.message);
-            });
-
-            res.status(200).send('Initiated removal of DynamoDB Tables');
-
-});
-
-
-/**
- * WARNING: THIS WILL REMOVE ALL THE COGNITO USER POOLS, IDENTITY POOLS, ROLES, AND POLICIES CREATED BY THIS QUICKSTART.
- * Delete Infrastructure Created by Multi-tenant Identity Reference Architecture
- */
-app.delete('/user/tenants', function (req, res) {
-    winston.debug('Cleaning up Identity Reference Architecture: ');
-
-    var input = {};
-    tokenManager.getInfra(input, function (error, response) {
-        // handle error first, so one less indentation later
-        if (error) {
-            res.status(400).send(error);
-            return;
-        }
-        else {
-        var infra = response;
-        var items = Object.keys(infra).length;
-        winston.debug(items + ' Tenants with Infrastructure');
-        winston.debug('-------------------------------------');
-        var pool = "";
-        var i;
-        // process each item in series
-        async.eachSeries(infra, function (item, callback) {
-            // execute your logic
-            pool += item;
-
-            // in this case item is infra[i] in the original code
-            var UserPoolId = item.UserPoolId;
-            var IdentityPoolId = item.IdentityPoolId;
-            var systemAdminRole = item.systemAdminRole;
-            var systemSupportRole = item.systemSupportRole;
-            var trustRole = item.trustRole;
-            var systemAdminPolicy = item.systemAdminPolicy;
-            var systemSupportPolicy = item.systemSupportPolicy;
-
-            // delete user pool
-            cognitoUsers.deleteUserPool(UserPoolId)
-                .then(function (userPoolData) {
-                    //delete identity pool
-                    return cognitoUsers.deleteIdentityPool(IdentityPoolId);
-                })
-                .then(function (identityPoolData) {
-                    //delete role
-                    return cognitoUsers.detachRolePolicy(systemAdminPolicy, systemAdminRole);
-                })
-                .then(function (detachSystemRolePolicyData) {
-                    //delete role
-                    return cognitoUsers.detachRolePolicy(systemSupportPolicy, systemSupportRole);
-                })
-                .then(function (detachSupportRolePolicyData) {
-                    //delete role
-                    return cognitoUsers.deletePolicy(systemAdminPolicy);
-                })
-                .then(function (systemAdminPolicyData) {
-                    //delete role
-                    return cognitoUsers.deletePolicy(systemSupportPolicy);
-                })
-                .then(function (systemSupportPolicyData) {
-                    //delete role
-                    return cognitoUsers.deleteRole(systemAdminRole);
-                })
-                .then(function (systemAdminRoleData) {
-                    //delete role
-                    return cognitoUsers.deleteRole(systemSupportRole);
-                })
-                .then(function (systemSupportRoleData) {
-                    //delete role
-                    return cognitoUsers.deleteRole(trustRole);
-                })
-                .then(function () {
-                    // promises over, return callback without errors
-                    callback();
-                    return;
-                })
-                .catch(function (err) {
-                    // we caught an error, return it back to async.
-                    callback(err);
-                    return;
-                });
-        }, function (err) {
-            // if err is not nil, return 400
-            if (err) {
-                winston.debug(err)
-                res.status(400).send(err);
-                return;
-            }
-            res.status(200).send('Success');
-        });
-    }
-    });
 });
 
 /**
@@ -220,12 +87,12 @@ app.get('/user/pool/:id', function (req, res) {
         lookupUserPoolData(credentials, req.params.id, null, true, function (err, user) {
             if (err) {
                 res.status(400).send('{"Error" : "Error getting user"}');
-            }
-            else {
-                if (user.length == 0)
+            } else {
+                if (user.length == 0) {
                     res.status(400).send('{"Error": "User not found"}');
-                else
+                } else {
                     res.status(200).send(user);
+                }
             }
         });
     });
@@ -241,15 +108,14 @@ app.get('/user/:id', function (req, res) {
         var tenantId = tokenManager.getTenantId(req);
 
         lookupUserPoolData(credentials, req.params.id, tenantId, false, function(err, user) {
-            if (err)
+            if (err) {
                 res.status(400).send('{"Error" : "Error getting user"}');
-            else {
+            } else {
                 cognitoUsers.getCognitoUser(credentials, user, function (err, user) {
                     if (err) {
                         res.status(400);
                         res.json('Error lookup user user: ' + req.params.id);
-                    }
-                    else {
+                    } else {
                         res.json(user);
                     }
                 })
@@ -303,8 +169,7 @@ app.post('/user', function (req, res) {
                         winston.error('Error creating new user in DynamoDB: ' + err.message);
                         res.status(400).send('{"Error" : "Error creating user in DynamoDB"}');
                     });
-            }
-            else {
+            } else {
                 res.status(400).send('{"Error" : "User pool not found"}');
             }
         });
@@ -343,20 +208,18 @@ app.post('/user/system', function (req, res) {
     // get the credentials for the system user
     var credentials = {};
     tokenManager.getSystemCredentials(function (systemCredentials) {
-        if(systemCredentials) {
+        if (systemCredentials) {
             credentials = systemCredentials;
             // provision the tenant admin and roles
             provisionAdminUserWithRoles(user, credentials, configuration.userRole.systemAdmin, configuration.userRole.systemUser,
                 function (err, result) {
                     if (err) {
                         res.status(400).send("Error provisioning system admin user");
-                    }
-                    else {
+                    } else {
                         res.status(200).send(result);
                     }
                 });
-        }
-        else{
+        } else{
             winston.debug("Error Obtaining System Credentials");
         }
     });
@@ -376,12 +239,11 @@ app.post('/user/reg', function (req, res) {
         // provision the tenant admin and roles
         provisionAdminUserWithRoles(user, credentials, configuration.userRole.tenantAdmin, configuration.userRole.tenantUser,
             function(err, result) {
-                if (err)
-                {
+                if (err) {
                     res.status(400).send("Error provisioning tenant admin user");
-                }
-                else
+                } else {
                     res.status(200).send(result);
+                }
             });
     });
 });
@@ -391,10 +253,11 @@ app.post('/user/reg', function (req, res) {
  */
 app.put('/user/enable', function (req, res) {
     updateUserEnabledStatus(req, true, function(err, result) {
-        if (err)
+        if (err) {
             res.status(400).send('Error enabling user');
-        else
+        } else {
             res.status(200).send(result);
+        }
     });
 });
 
@@ -404,10 +267,11 @@ app.put('/user/enable', function (req, res) {
  */
 app.put('/user/disable', function (req, res) {
     updateUserEnabledStatus(req, false, function(err, result) {
-        if (err)
+        if (err) {
             res.status(400).send('Error disabling user');
-        else
+        } else {
             res.status(200).send(result);
+        }
     });
 });
 
@@ -458,7 +322,7 @@ app.delete('/user/:id', function (req, res) {
                         var deleteUserParams = {
                             TableName: userSchema.TableName,
                             Key: {
-                                id: userName,
+                                user_id: userName,
                                 tenant_id: tenantId
                             }
                         };
@@ -471,8 +335,7 @@ app.delete('/user/:id', function (req, res) {
                             if (err) {
                                 winston.error('Error deleting DynamoDB user: ' + err.message);
                                 res.status(400).send('{"Error" : "Error deleting DynamoDB user"}');
-                            }
-                            else {
+                            } else {
                                 winston.debug('User ' + userName + ' deleted from DynamoDB');
                                 res.status(200).send({status: 'success'});
                             }
@@ -702,7 +565,7 @@ function createNewUser(credentials, userPoolId, identityPoolId, clientId, tenant
                 reject(err);
             else {
                 // populate the user to store in DynamoDB
-                newUser.id = newUser.userName;
+                newUser.user_id = newUser.userName;
                 newUser.UserPoolId = userPoolId;
                 newUser.IdentityPoolId = identityPoolId;
                 newUser.client_id = clientId;
@@ -715,8 +578,7 @@ function createNewUser(credentials, userPoolId, identityPoolId, clientId, tenant
                 dynamoHelper.putItem(newUser, credentials, function (err, createdUser) {
                     if (err) {
                         reject(err);
-                    }
-                    else {
+                    } else {
                         resolve(null, createdUser)
                     }
                 });
@@ -729,7 +591,7 @@ function createNewUser(credentials, userPoolId, identityPoolId, clientId, tenant
 
 /**
  * Lookup a user's pool data in the user table
- * @param credentials The credentials used ben looking up the user
+ * @param credentials The credentials used for looking up the user
  * @param userId The id of the user being looked up
  * @param tenantId The id of the tenant (if this is not system context)
  * @param isSystemContext Is this being called in the context of a system user (registration, system user provisioning)
@@ -747,7 +609,7 @@ function lookupUserPoolData(credentials, userId, tenantId, isSystemContext, call
         var searchParams = {
             TableName: userSchema.TableName,
             IndexName: userSchema.GlobalSecondaryIndexes[0].IndexName,
-            KeyConditionExpression: "id = :id",
+            KeyConditionExpression: "user_id = :id",
             ExpressionAttributeValues: {
                 ":id": userId
             }
@@ -758,22 +620,20 @@ function lookupUserPoolData(credentials, userId, tenantId, isSystemContext, call
             if (err) {
                 winston.error('Error getting user: ' + err.message);
                 callback(err);
-            }
-            else {
+            } else {
                 if (users.length == 0) {
                     var err = new Error('No user found: ' + userId);
                     callback(err);
-                }
-                else
+                } else {
                     callback(null, users[0]);
+                }
             }
         });
-    }
-    else {
+    } else {
         // if this is a tenant context, then we must get with tenant id scope
         winston.debug("Fetching user " + userId + " with tenant context " + tenantId);
         var searchParams = {
-            id: userId,
+            user_id: userId,
             tenant_id: tenantId
         }
 
@@ -782,8 +642,7 @@ function lookupUserPoolData(credentials, userId, tenantId, isSystemContext, call
             if (err) {
                 winston.error('Error getting user: ' + err.message);
                 callback(err);
-            }
-            else {
+            } else {
                 winston.debug("Returning user: ");
                 winston.debug(JSON.stringify(user));
                 callback(null, user);
@@ -812,8 +671,7 @@ function updateUserEnabledStatus(req, enable, callback) {
             // if the user pool found, proceed
             if (err) {
                 callback(err);
-            }
-            else {
+            } else {
                 // update the user enabled status
                 cognitoUsers.updateUserEnabledStatus(credentials, userPool.UserPoolId, user.userName, enable)
                     .then(function() {

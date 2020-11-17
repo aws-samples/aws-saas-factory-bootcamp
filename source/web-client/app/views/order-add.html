@@ -3,7 +3,7 @@
   <div class="form-group">
     <label for="productId">Product</label>
     <select class="form-control" id="productId" ng-model="order.productId" ng-change="productChanged(productId)" required="">
-      <option ng-repeat="product in products" ng-value="product.productId">{{product.title}}</option>
+      <option ng-repeat="product in products" ng-value="product.product_id">{{product.title}}</option>
     </select>
   </div>
   <div class="form-group">

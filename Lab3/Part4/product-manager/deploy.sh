@@ -43,7 +43,7 @@ aws sqs purge-queue --queue-url "$DEPLOY_MONITOR_QUEUE" > /dev/null
 
 # Upload the updated code to S3
 echo "Uploading code to S3"
-aws s3 cp server.js s3://${BOOTCAMP_BUCKET}/product-manager/
+aws s3 cp server.js s3://${BOOTCAMP_BUCKET}/source/product-manager/
 
 # Trigger a new build to create a fresh docker image with the updated code
 BUILD_PROJECT=$(aws codebuild start-build --project-name ${CODEBUILD_PROJECT})

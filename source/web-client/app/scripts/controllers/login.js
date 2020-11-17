@@ -22,8 +22,7 @@ angular.module('clientApp').controller('LoginCtrl', function ($scope, $rootScope
         if (response.data.newPasswordRequired) {
           $rootScope.currentUser = $scope.username;
           $location.path('/confirm');
-        }
-        else {
+        } else {
           $rootScope.isUserLoggedIn = true;
           $rootScope.currentUser = $scope.username;
           $rootScope.bearerToken = response.data.token;

@@ -23,7 +23,7 @@ angular.module('clientApp').controller('ProductDeleteCtrl', function ($scope, $l
 
   // delete the product
   $scope.deleteProduct = function() {
-    $http.delete(Constants.PRODUCT_MANAGER_URL + '/product/' + $scope.product.productId)
+    $http.delete(Constants.PRODUCT_MANAGER_URL + '/product/' + $scope.product.product_id)
       .then(function (response) {
         console.log('Product delete');
         $location.path('/products');

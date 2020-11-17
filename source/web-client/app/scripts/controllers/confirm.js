@@ -11,14 +11,11 @@ angular.module('clientApp').controller('ConfirmCtrl', function ($scope, $rootSco
   $scope.formSubmit = function () {
     if ($scope.newPassword !== $scope.confirmPassword) {
       $scope.error = "Passwords do not match.";
-    }
-    else if ($scope.newPassword.length < 6) {
+    } else if ($scope.newPassword.length < 6) {
       $scope.error = "Password must be 6 or more characters long";
-    }
-    else if (!($scope.currentPassword || $scope.newPassword || $scope.confirmPassword)) {
+    } else if (!($scope.currentPassword || $scope.newPassword || $scope.confirmPassword)) {
       $scope.error = "Current, new, and confirm passwords are required. Please enter these values.";
-    }
-    else {
+    } else {
       var user = {
         userName: $rootScope.currentUser,
         password: $scope.currentPassword,

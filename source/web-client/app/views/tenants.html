@@ -22,8 +22,8 @@
     <td>{{ tenant.status }}</td>
     <td ng-if="isSystemAdminUser()" >
       <div class="button-group">
-        <a ng-href="/#!/tenant/edit/{{ tenant.id }}"><span class="glyphicon glyphicon-pencil"></span></a>
-        <a ng-href="/#!/tenant/delete/{{ tenant.id }}"><span class="glyphicon glyphicon-trash"></span></a>
+        <a ng-href="/#!/tenant/edit/{{ tenant.tenant_id }}"><span class="glyphicon glyphicon-pencil"></span></a>
+        <a ng-href="/#!/tenant/delete/{{ tenant.tenant_id }}"><span class="glyphicon glyphicon-trash"></span></a>
       </div>
     </td>
   </tr>

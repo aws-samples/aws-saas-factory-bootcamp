@@ -25,7 +25,7 @@ angular.module('clientApp').controller('TenantEditCtrl', function ($scope, $loca
 
   $scope.saveTenant = function() {
     var tenant = {
-      'id': $scope.tenant.id,
+      'tenant_id': $scope.tenant.id,
       'companyName': $scope.tenant.companyName,
       'accountName': $scope.tenant.accountName,
       'ownerName': $scope.tenant.ownerName,

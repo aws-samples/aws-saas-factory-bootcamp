@@ -104,7 +104,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/saas-bootcamp-s3-copy-${AWS::Region}
-      RetentionInDays: 14
+      RetentionInDays: 7
   CopyS3Objects:
     Type: AWS::Lambda::Function
     DependsOn:
@@ -265,7 +265,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/saas-bootcamp-s3-clear-${AWS::Region}
-      RetentionInDays: 14
+      RetentionInDays: 7
   ClearS3Bucket:
     Type: AWS::Lambda::Function
     Properties:

@@ -18,15 +18,15 @@
     <col width="15%">
     <col ng-if="isTenantAdminUser()" width="7%">
     <tr ng-repeat="product in products">
-      <td><a ng-href="/#!/product/{{ product.productId }}">{{ product.sku }}</a></td>
+      <td><a ng-href="/#!/product/{{ product.product_id }}">{{ product.sku }}</a></td>
       <td>{{ product.title }}</td>
       <td>{{ product.condition }}</td>
       <td>{{ product.numberInStock }}</td>
       <td>{{ product.unitCost | currency }}</td>
       <td ng-if="isTenantAdminUser()">
         <div class="button-group">
-          <a ng-href="/#!/product/edit/{{ product.productId }}"><span class="glyphicon glyphicon-pencil"></span></a>
-          <a ng-href="/#!/product/delete/{{ product.productId }}"><span class="glyphicon glyphicon-trash"></span></a>
+          <a ng-href="/#!/product/edit/{{ product.product_id }}"><span class="glyphicon glyphicon-pencil"></span></a>
+          <a ng-href="/#!/product/delete/{{ product.product_id }}"><span class="glyphicon glyphicon-trash"></span></a>
         </div>
       </td>
     </tr>

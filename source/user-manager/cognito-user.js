@@ -288,8 +288,7 @@ module.exports.createUserPool = function (tenantId) {
         cognitoidentityserviceprovider.createUserPool(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -349,8 +348,7 @@ module.exports.createUserPoolClient = function (poolConfig) {
         cognitoIdenityServiceProvider.createUserPoolClient(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -390,8 +388,7 @@ module.exports.createIdentityPool = function (clientConfigParams) {
         cognitoIdentity.createIdentityPool(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -426,15 +423,15 @@ module.exports.getPolicyTemplate = function(policyType, policyConfig) {
         orderTableArn: databaseArnPrefix + policyConfig.orderTableName
     }
 
-    if (policyType === configuration.userRole.systemAdmin)
+    if (policyType === configuration.userRole.systemAdmin) {
         policyTemplate = getSystemAdminPolicy(policyParams);
-    else if (policyType === configuration.userRole.systemUser)
+    } else if (policyType === configuration.userRole.systemUser) {
         policyTemplate = getSystemUserPolicy(policyParams);
-    else if (policyType === configuration.userRole.tenantAdmin)
+    } else if (policyType === configuration.userRole.tenantAdmin) {
         policyTemplate = getTenantAdminPolicy(policyParams);
-    else if (policyType === configuration.userRole.tenantUser)
+    } else if (policyType === configuration.userRole.tenantUser) {
         policyTemplate = getTenantUserPolicy(policyParams);
-
+    }
     return policyTemplate;
 }
 
@@ -582,7 +579,6 @@ function getTenantUserPolicy(policyParams) {
                         "dynamodb:LeadingKeys": [policyParams.tenantId]
                     }
                 }
-
             },
             {
                 "Sid": "ReadWriteOrderTable",
@@ -615,7 +611,6 @@ function getTenantUserPolicy(policyParams) {
                     "dynamodb:Query",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.productTableArn],
                 "Condition": {
@@ -818,8 +813,7 @@ module.exports.createPolicy = function (policyParams) {
         iam.createPolicy(params, function (err, createdPolicy) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(createdPolicy);
             }
         });
@@ -846,8 +840,7 @@ module.exports.createRole = function (roleParams) {
         iam.createRole(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -872,8 +865,7 @@ module.exports.addPolicyToRole = function (policyRoleParams) {
         iam.attachRolePolicy(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -926,8 +918,7 @@ module.exports.addRoleToIdentity = function (identityPoolRoleParams) {
         cognitoidentity.setIdentityPoolRoles(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -963,20 +954,20 @@ module.exports.updateUserEnabledStatus = function(credentials, userPoolId, userN
         // enable/disable the Cognito user
         if (enable) {
             cognitoIdentityServiceProvider.adminEnableUser(params, function (err, data) {
-                if (err)
+                if (err) {
                     reject(err);
-                else
+                } else {
                     resolve(data);
+                }
             });
-        }
-        else {
+        } else {
             cognitoIdentityServiceProvider.adminDisableUser(params, function (err, data) {
-                if (err)
+                if (err) {
                     reject(err);
-                else
+                } else {
                     resolve(data);
+                }
             });
-
         }
     });
 
@@ -1020,9 +1011,9 @@ module.exports.getUsersFromPool = function (credentials, userPoolId, region) {
 
         // request the list of users from Cognito
         cognitoIdentityServiceProvider.listUsers(searchParams, function (err, data) {
-            if (err)
+            if (err) {
                 reject(err);
-            else {
+            } else {
                 var userList = [];
                 data.Users.forEach(function (cognitoUser) {
                     var user = getUserFromCognitoUser(cognitoUser, cognitoUser.Attributes);
@@ -1075,10 +1066,11 @@ module.exports.updateUser = function(credentials, user, userPoolId, region) {
 
         // send the update to Cognito
         cognitoIdentityServiceProvider.adminUpdateUserAttributes(params, function (err, data) {
-            if (err)
+            if (err) {
                 reject(err);
-            else
+            } else {
                 resolve(data);
+            }
         });
     });
 
@@ -1112,10 +1104,11 @@ module.exports.deleteUser = function (credentials, userId, userPoolId, region) {
 
         // call Cognito to delete the user
         cognitoIdentityServiceProvider.adminDeleteUser(params, function (err, data) {
-            if (err)
+            if (err) {
                 reject(err);
-            else
+            } else {
                 resolve(data);
+            }
         });
     });
 
@@ -1130,22 +1123,20 @@ module.exports.deleteUser = function (credentials, userId, userPoolId, region) {
  */
 module.exports.deleteUserPool = function (userPoolId, region) {
     var promise = new Promise(function(resolve, reject) {
-        // init the identity provider
         var cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
             apiVersion: '2016-04-18',
             region: configuration.aws_region
         });
-
         var params = {
             UserPoolId: userPoolId /* required */
         };
-
         // call Cognito to delete the user
         cognitoIdentityServiceProvider.deleteUserPool(params, function (err, data) {
-            if (err)
+            if (err) {
                 reject(err);
-            else
+            } else {
                 resolve(data);
+            }
         });
     });
 
@@ -1159,20 +1150,15 @@ module.exports.deleteUserPool = function (userPoolId, region) {
  */
 module.exports.deleteIdentityPool = function (IdentityPoolId) {
     var promise = new Promise(function(resolve, reject) {
-
-        // init identity params
         var cognitoIdentity = new AWS.CognitoIdentity({apiVersion: '2014-06-30', region: configuration.aws_region});
-
         var params = {
             IdentityPoolId: IdentityPoolId /* required */
         };
-
         // delete identity pool
         cognitoIdentity.deleteIdentityPool(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -1189,17 +1175,13 @@ module.exports.deleteIdentityPool = function (IdentityPoolId) {
 module.exports.deleteRole = function (role) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
-
-
         var params = {
             RoleName: role /* required */
         };
-
         iam.deleteRole(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });
@@ -1215,15 +1197,13 @@ module.exports.deleteRole = function (role) {
 module.exports.deletePolicy = function (policy) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
-
         var params = {
             PolicyArn: policy /* required */
         };
         iam.deletePolicy(params, function (err, deletedPolicy) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(deletedPolicy);
             }
         });
@@ -1248,8 +1228,7 @@ module.exports.detachRolePolicy = function (policy, role) {
         iam.detachRolePolicy(params, function (err, detachedPolicy) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(detachedPolicy);
             }
         });
@@ -1272,8 +1251,7 @@ module.exports.deleteTable = function (table) {
         dynamodb.deleteTable(params, function (err, data) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve(data);
             }
         });

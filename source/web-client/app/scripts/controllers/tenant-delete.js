@@ -24,11 +24,11 @@ angular.module('clientApp').controller('TenantDeleteCtrl', function ($scope, $lo
 
   $scope.deleteTenant = function() {
     var tenantKey = {
-      'id': $scope.tenant.id,
+      'tenant_id': $scope.tenant.tenant_id,
       'title': $scope.tenant.title
     };
 
-    $http.delete(Constants.TENANT_MANAGER_URL + '/tenant/' + $scope.tenant.id)
+    $http.delete(Constants.TENANT_MANAGER_URL + '/tenant/' + $scope.tenant.tenant_id)
       .then(function (response) {
         console.log('Tenant delete');
         $location.path('/tenants');
