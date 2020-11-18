@@ -179,6 +179,9 @@ Resources:
       SubnetId: !Ref SubnetPublicA
       InstanceType: t3.medium
       Name: SaaS Bootcamp IDE
+      Repositories:
+        - RepositoryUrl: https://github.com/aws-samples/aws-saas-factory-bootcamp
+          PathComponent: aws-saas-factory-bootcamp
       OwnerArn:
         !If [EventEngine, !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/${EventEngineRoleName}/MasterKey", !Ref "AWS::NoValue"]
   CloudTrailBucketPolicy:
