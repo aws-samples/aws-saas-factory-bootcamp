@@ -1,14 +1,14 @@
 # Lab 1 – Tenant Onboarding
 
-### Overview
+## Overview
 
-For this first lab, we're going to look at what it takes to get tenants onboarded to a SaaS system. In many respects, onboarding is one most foundational aspects of SaaS. It creates the footprint of how tenants and users will be represented in our system, determining how tenants will be identified and conveyed as they flow through all the moving parts of our SaaS architecture. 
+For this first lab, we're going to look at what it takes to get tenants onboarded to a SaaS system. In many respects, onboarding is one of the most foundational aspects of SaaS. It creates the footprint of how tenants and users will be represented in our system, determining how tenants will be identified and conveyed as they flow through all the moving parts of our SaaS architecture. 
 
-A key part of this process is to introduce the notion of a **SaaS Identity**. In many systems, the user's identity will often be represented in an identity provider completely separate from its relationship to a tenant. Tenant is then somehow resolved as separate step. This adds overhead and complexity. Instead, in this lab, you'll see how we created a tighter binding between users and tenants that creates a SaaS identity that we can then flow through the various services of our system. This allows tenant context to be promoted to a first-class construct and simplifies the implementation of services that need access to this context.
+A key part of this process is to introduce the notion of a **SaaS Identity**. In many systems, the user's identity will be represented in an identity provider completely separate from its relationship to a tenant. A tenant is then somehow resolved as separate step. This adds overhead and complexity. Instead, in this lab, you'll see how we created a tighter binding between users and tenants that creates a combined user and tenant **SaaS identity** that we can then flow through the various services of our system. This allows tenant context to be promoted to a first-class construct and simplifies the implementation of services that need access to this context because they don't have to resolve tenant context as a separate step.
 
-We'll first look at how users get introduced and represented in an identity provider. More specifically, we'll look at how **Amazon Cognito** can be configured to support the authentication and onboarding flows of our SaaS solution. We'll also use this opportunity to configure user attributes that let us create a connection between users and tenants. This will allow the Cognito authentication process to return tokens that include embedded tenant context.
+We'll first look at how users get introduced and represented in an identity provider. More specifically, we'll look at how **Amazon Cognito** can be configured to support the authentication and onboarding flows of our SaaS solution. We'll also use this opportunity to configure user attributes that let us create a connection between users and tenants. This will allow the Cognito authentication process to return authentication tokens that include embedded tenant context.
 
-Once we have users setup, we'll turn our attention to how tenants get represented. Tenants have their own profile and data that is configured separately from the users that are associated with that tenant. We'll introduce a microservice that will own the creation and management of these tenant options (tiering, status, policies, etc.).
+Once we have users setup, we'll turn our attention to how tenants get represented in our architecture. Tenants have their own profile and data that is configured separately from the users that are associated with that tenant. We'll introduce a microservice that owns the creation and management of these tenant attributes (tiering, status, policies, etc.).
 
 With user and tenant management in place, we'll turn our attention to the end-user web application that acts as the front end to the onboarding system.
 
@@ -18,21 +18,19 @@ By the end of Lab 1, all of the elements will be in place to onboard and authent
 
 <p align="center"><img src="./images/lab1/arch_overview.png" alt="Lab 1 Architecture Overview"/></p>
 
-At the top of the diagram is the web application that provides the user interface for our onboarding and authentication flows. This connects to the microservices via an API Gateway. Below the API Gateway are the various microservices needed to support these flows. Tenant Registration is the orchestrator of the onboarding process, invoking the User Manager (to create users in **Amazon Cognito**) and the Tenant Manager (to create tenants). The Authentication Manager authenticates users via the User Manager service.
+At the top of the diagram is the web application that provides the user interface for our onboarding and authentication flows. This connects to the microservices via an API Gateway. Below the API Gateway are the various microservices needed to support these onboarding flows. Tenant Registration is the orchestrator of the onboarding process, invoking the User Manager (to create users in **Amazon Cognito**) and the Tenant Manager (to create tenants). The Authentication Manager authenticates users via the User Manager service.
 
 ### What You'll Be Building
 As you progress through Lab 1 you'll be creating, configuring, and deploying the elements described above. The following is a breakdown of the steps that you'll be executing to get your SaaS onboarding and authentication experience off the ground:
-* Create and Manage User Identity – For this scenario, we'll be using the User Pool construct from Amazon Cognito to manage users and handle user identity. In this part of the lab we'll take you through the steps to setup the Amazon Cognito environment and deploy the User Management microservice.
-* Create and Manage Tenants – Next, we'll create a DynamoDB database that will be used to store our tenant data. Then, we'll deploy the Tenant Management microservice.
-* Enabled Tenant Onboarding – Now that we can represent users and tenants, we'll add the Tenant Registration microservice, and configure the web application to connect to the application to the underlying microservices. We'll then onboard a tenant and verify the system created all the appropriate elements.
-* Authenticate Users – Once we've created a new tenant, we will be able to authenticate against the system. We'll deploy our orchestration services that own authentication and complete the onboarding process.
-
-**Note**: the GitHub repository referenced throughout this document can be found at: https://github.com/aws-samples/aws-saas-factory-bootcamp
+* Create and Manage User Identity – For this scenario, we'll be using Cognito User Pools to manage users and handle user identity. In this part of the lab we'll take you through the steps to setup the Amazon Cognito environment.
+* Create and Manage Users – Next, we'll examine the User microservice and see how it provides an abstraction API on top of Amazon Cognito. We'll exercise the User microservice by hand using the command line.
+* Enabled Tenant Onboarding – In part 3, we'll look at the features of the Tenant microservice and see how it maintains tenant level data separate from useres. We'll exercise the Tenant microservice by hand using the command line.
+* Orchestrated Onboarding – Finally, we'll launch the web UI experience and onboard a new tenant and its first admin user. This brings all the pieces together and shows how Cognito manages the heavy lifting of the authentication flow. We'll add a non-admin user to the same tenant and see how authorization compliments authentication to restrict access to certain features. We'll finish up by examining the underlying JWT technology used for security tokens.
 
 ## Part 1 - Create and Manage User Identity
-Our goal for this lab is to configure all the elements of Amazon Cognito that will be used to onboard, manage, and authenticate users. We'll also introduce the ability to associate users with tenants that will allow us to create a SaaS Identity. Finally, we'll deploy a User Management microservice to manage our interactions with Cognito.
+Our goal for part 1 is to configure all the elements of Amazon Cognito that will be used to onboard, manage, and authenticate users. We'll also introduce the ability to associate users with tenants, allowing us to create a **SaaS Identity**.
 
-In this bootcamp, we'll be associating each tenant with a separate user pool. Then, configuring the pool to apply the onboarding and identity settings of our tenants.
+In this bootcamp, we'll be associating each tenant with a separate Cognito User Pool. Each pool is configured the same way to apply the onboarding and identity settings of our tenants.
 
 **Step 1** - Navigate to the Amazon Cognito service in the AWS Console and select **"Manage User Pools"** from the Cognito Screen.
 
@@ -42,29 +40,29 @@ In this bootcamp, we'll be associating each tenant with a separate user pool. Th
 
 <p align="center"><img src="./images/lab1/part1/cognito_create_pool.png" alt="Lab 1 Part 1 Cognito Step 2 Create User Pool"/></p>
 
-**Step 3** – You will be presented with a user pool creation experience (shown below) that is used to configure all of the elements of your identity and onboarding experience. The first step in this process is to give your pool a name. Choose any name you'd like (e.g. "**SaaS Bootcamp Users**").
+**Step 3** – You will be presented with a user pool creation experience (shown below) that is used to configure all of the elements of your identity and onboarding experience. The first step in this process is to give your pool a name. Choose any name you'd like (e.g. **SaaS Bootcamp Users**).
 
 <p align="center"><img src="./images/lab1/part1/cognito_step1_name.png" alt="Lab 1 Part 1 Step 3 Cognito Name User Pool"/></p>
 
-**Step 4** - Select "**Step through settings**" so we can configure the pool to support the onboarding experience we want our SaaS users to have.
+**Step 4** - Select **Step through settings** to configure the pool to support the onboarding experience we want our SaaS users to have.
 
-The first step allows us to configure the attributes of the pool. Let's start by looking the sign-in policies. The screen below represents the options you'll have.
+The first step allows us to configure the attributes of the pool. Let's start by looking at the sign-in policies. The screen below represents the options you'll have.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step2_signin.png" alt="Lab 1 Part 1 Step 4 Cognito Attributes Sign In"/></p>
 
-Here we're specifying what options a user can have for their unique identifier (their email in this circumstance). For our solution, we'll check the "**Also allow sign in with a verified phone number**" option.
+Here we're specifying what options a user can have for their unique identifier (their email in this circumstance). For our solution, we'll check the **Also allow sign in with a verified phone number** option.
 
-**Step 5** – Now we move on to the standard attributes portion of the user pool configuration. You are presented with a collection of standardized attributes that are managed by Cognito. Select the **email**, **family name**, **given name**, **phone number**, and **preferred username** attributes.
+**Step 5** – Now we move on to the standard attributes portion of the user pool configuration. You are presented with a collection of standardized attributes that are managed by Cognito. Select the **email**, **family name**, **given name**, **phone number**, and **preferred username** attributes. You may recognize these attributes as the standard OpenID Connect standard claims.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step3_std_attributes.png" alt="Lab 1 Part 1 Step 5 Cognito Standard Attributes"/></p>
 
-**Step 6** – Now we will get more SaaS specific as we turn our attention to configuring the custom attributes of our user pool. This, as stated above, is where we introduce those attributes that will connect users to tenants. When we provision tenants, we'll persist these additional attributes as part of each user's profile. This same data will also be embedded in the tokens that are returned by the authentication process. 
+**Step 6** – Now we will get more SaaS specific as we turn our attention to configuring the custom attributes of our user pool. This is where we introduce attributes that connect users to tenants. When we provision tenants, we'll persist these additional attributes as part of each user's profile. This same data will also be embedded in the tokens that are returned by the authentication process. 
 
-Scroll down the page and click **Add custom attribute**.
+Scroll down the page and click **Add custom attribute** under the "Do you want to add custom attributes?" heading.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step4_add_custom_attribute.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
 
-Add the following tenant attributes we're interested in, selecting Add another attribute to for each new attribute to be added: 
+Add the following tenant attributes, clicking **Add another attribute** for each new attribute to be added: 
 * **tenant_id** (string, default max length, _**not**_ mutable)
 * **tier** (string, default max length, mutable)
 * **company_name** (string, default max length, mutable)
@@ -75,15 +73,27 @@ Your screen should appear as follows:
 
 <p align="center"><img src="./images/lab1/part1/cognito_step4_custom_attributes.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
 
-**Step 7** – Once you've finished configuring the custom attributes, click the "**Next step**" button at the bottom of the screen. This takes us to the policies page. Here we can configure password and administration policies. These policies (and others configured with user pools) allow us to vary the approach of each tenant. In fact, these options could, for some solutions, surface in the tenant administration experience of SaaS solutions, allowing individual tenants to configure their own policies.
+**Step 7** – Once you've finished configuring the custom attributes, click the **Next step** button at the bottom of the screen. This takes us to the policies page.
+
+Here we can configure password and administration policies. These policies (and others configured with user pools) allow us to vary the approach of each tenant. You could, for example, surface these choices in the tenant administration experience of your SaaS solution, allowing individual tenants to configure their own policies.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step5_password_policy.png" alt="Lab 1 Part 1 Step 7 Cognito Password Policy"/></p>
 
-For our solution, we'll override a few of the default options. First, let's turn off the "**Require special character**" option for our password policies. Also, let's select the "**Only allow administrators to create users**" option to limit who can create new users in the system. Finally, set the "**Days to expire**" for the password to **90** days. The figure above provides a snapshot of the user pool configuration screen with these options configured. Once you've completed this section, click the "**Next step**" button at the bottom of the page.
+For our solution, we'll override a few of the default options.
 
-**Step 8** – We're now at the MFA and verifications section. For Some SaaS providers, or even individual tenants, it could be valuable to enable MFA. For this solution, though, _**we'll leave it disabled**_. This page also gives us the option to configure how verifications will be delivered. For this lab _**we'll leave the default settings**_. If you choose to enable phone number verification or MFA, Cognito would need an IAM role for permissions to send an SMS message to the user via Amazon SNS. **For this lab, just click the "Next step" button**.
+First, let's turn off the **Require special character** option for our password policies. Also, select the **Only allow administrators to create users** option to limit who can create new users in the system. Finally, set the **Days to expire** for the password to **7** days. The figure above provides a snapshot of the user pool configuration screen with these options configured.
 
-**Step 9** – The 4th step in the wizard is the **Message customizations** page. As part of our onboarding process, we'll be sending emails to users to verify their identity. We can lean on Cognito for this functionality as well. This screen lets us configure how this verification process will work. _For this bootcamp, we will use the default verification message settings_. Scroll down the page to the "**Do you want to customize your user invitation messages?**" section. Customize the invitation email that will be sent by Cognito as each new tenant signs up as follows:
+Once you've completed this section, click the **Next step** button at the bottom of the page.
+
+**Step 8** – We're now at the MFA and verifications section. For Some SaaS providers, or even individual tenants, it could be valuable to enable MFA. For this solution, though, _**we'll leave it disabled**_.
+
+This page also gives us the option to configure how verifications will be delivered. For this lab _**we'll leave the default settings**_.
+
+If you choose to enable phone number verification or MFA, Cognito would need an IAM role for permissions to send an SMS message to the user via Amazon SNS. **For this lab, just click the "Next step" button**.
+
+**Step 9** – The 4th step in the wizard is the **Message customizations** page. As part of our onboarding process, we'll be sending emails to users to verify their identity. We can lean on Cognito for this functionality as well. This screen lets us configure how this verification process will work. _For this bootcamp, we will use the default verification message settings_.
+
+Scroll down the page to the "**Do you want to customize your user invitation messages?**" section. Customize the invitation email that will be sent by Cognito as each new tenant signs up as follows:
 
 Change the subject from "Your temporary password" to "**New SaaS Bootcamp Tenant**" and the **Email message** text to:
 
@@ -97,27 +107,33 @@ Password: {####}.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step6_custom_invitation.png" alt="Lab 1 Part 1 Step 9 Cognito Invitation Message"/></p>
 
-Cognito also has the ability to customize some of the email headers for your verification and invitation emails. We'll leave these settings alone for this bootcamp. Click on the "**Next step**" button.
+Cognito also has the ability to customize some of the email headers for your verification and invitation emails. We'll leave these settings alone for this bootcamp. Click on the **Next step** button.
 
-**Step 10** – For this bootcamp we will _skip over_ the **Tags** and **Devices** sections. Just click the "**Next step**" button _**twice**_ to advance to the **App clients** screen.
+**Step 10** – For this bootcamp we will _skip over_ the **Tags** and **Devices** sections. Just click the **Next step** button _**twice**_ to advance to the **App clients** screen.
 
-**Step 11** – Now that we have the fundamentals of our user pool created, we need to create an application client for this pool. This client is a fundamental piece of Cognito. It provides the context through which we can access the unauthenticated flows that are required to register and sign in to the system. You can imagine how this is key to our onboarding experience. Select the "**Add an app client**" link from the following screen:
+**Step 11** – Now that we have the fundamentals of our user pool created, we need to create an application client for this pool. This client is a fundamental piece of Cognito. It provides the context through which we can access the unauthenticated flows that are required to register and sign in to the system. You can imagine how this is key to our onboarding experience. Select the **Add an app client** link from the following screen:
 
 <p align="center"><img src="./images/lab1/part1/cognito_step7_add_app_client.png" alt="Lab 1 Part 1 Step 11 Cognito Add App Client"/></p>
 
-**Step 12** – Now we can configure the new application client. Enter the name of "SaaS App Client" and uncheck the three boxes "**Generate client secret**", "**Enable lambda trigger based custom authentication (ALLOW_CUSTOM_AUTH)**", and "**Enable SRP (secure remote password) protocol based authentication (ALLOW_USER_SRP_AUTH)**". While we're disabling the client secret to simplify this experience, you'd want to enable this option for a production environment. Once you've made these changes, select the "**Create app client**" button and then the "**Next step**" button to continue the wizard.
+**Step 12** – Now we can configure the new application client. Enter a name for your client (e.g. **SaaS App Client**), and uncheck the three boxes **Generate client secret**, **Enable lambda trigger based custom authentication (ALLOW_CUSTOM_AUTH)**, and **Enable SRP (secure remote password) protocol based authentication (ALLOW_USER_SRP_AUTH)**.
+
+The client secret option on this screen refers to an OAuth 2.0 client secret. This is not used for "public" (web or mobile) applications where a user will be entering their credentials.
+
+Once you've made these changes, select the **Create app client** button and then the **Next step** button to continue the wizard.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step8_app_client_config.png" alt="Lab 1 Part 1 Step 12 Cognito Configure App Client"/></p>
 
-**Step 13** – For this bootcamp we will _skip over_ the **Triggers** section. Scroll to the bottom of the screen and click the "**Next step**" button to advance to the final review screen and click "**Create pool**".
+**Step 13** – For this bootcamp we will _skip over_ the **Triggers** section. Scroll to the bottom of the screen and click the **Next step** button to advance to the final review screen and click **Create pool**.
 
-**Step 14** – Before moving on, we'll want to record both the id that was generated for this User Pool and the App client id. Copy and paste the **Pool Id** value from the **General Settings** screen into a temporary file or open the next step in a separate web browser window. Also, select the **App clients** tab from the left-hand list and save your **App client id**. We will use both of these values in a subsequent step.
+**Step 14** – Before moving on, we'll want to record both the id that was generated for this User Pool and the App client id. Copy and paste the **Pool Id** value from the **General Settings** screen into a temporary file or open the next step in a separate web browser window or tab. Also, select the **App clients** tab from the left-hand list and save your **App client id**. We will use both of these values in a subsequent step.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step9_pool_id.png" alt="Lab 1 Part 1 Step 14 Cognito Pool Id"/></p>
 
 <p align="center"><img src="./images/lab1/part1/cognito_step9_app_client_id.png" alt="Lab 1 Part 1 Step 14 Cognito App Client Id"/></p>
 
-**Step 15** – The user pool portion is complete. Before we can use this user pool we'll need to connect it with an **identity pool**. Identity pools represent the mechanism that is used to federate identities from many identity providers and manages our access to AWS resources. To setup your identity pool, navigate back to the main page of Cognito by selecting the AWS icon in the upper left and then selecting Cognito again from the list of services. Once here, select the "**Manage Identity Pools**" button.
+**Step 15** – The user pool portion is complete. Before we can use this user pool we'll need to connect it with an **identity pool**. Cognirto Identity Pools provide the mechanism to exchange a User Pool authenticated token for a set of AWS access keys that control access to AWS resources such as S3 buckets or DynamoDB tables.
+
+To setup your identity pool, navigate back to the main page of Cognito by selecting the AWS icon in the upper left and then selecting Cognito again from the list of services. Select the **Manage Identity Pools** button.
 
 <p align="center"><img src="./images/lab1/part1/cognito_splash.png" alt="Lab 1 Part 1 Cognito Manage Identity Pools"/></p>
 
@@ -125,30 +141,28 @@ Cognito also has the ability to customize some of the email headers for your ver
 
 <p align="center"><img src="./images/lab1/part1/cognito_step16_identity_pool_name.png" alt="Lab 1 Part 1 Step 16 Cognito Identity Pool Name"/></p>
 
-**Step 17** – Expand the "**Authentication Providers**" section at the bottom of the screen by clicking on the triangle. Here's where we'll create the connection between our user pool and the identity pool. You'll see a collection of tabs here representing the various identity providers that Cognito supports. We'll be focusing on the first tab, **Cognito**. You'll see options here to enter the user pool id as well as the application client id that were captured above. If you don't have them, you can get them by accessing the attributes of the user pool you created above.
+**Step 17** – Expand the **Authentication Providers** section at the bottom of the screen by clicking on the triangle. Here's where we'll create the connection between our user pool and the identity pool. You'll see a collection of tabs here representing the various identity providers that Cognito supports. We'll use the first tab, **Cognito**. You'll see options here to enter the User Pool ID as well as the App lient id that were captured above. If you didn't copy them down before, you can access them from the attributes of the user pool you created above.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step10_auth_providers.png" alt="Lab 1 Part 1 Step 17 Cognito Authentication Providers"/></p>
 
-**Step 18** – Select the "**Create Pool**" button from the bottom right of the page to trigger the creation of the pool. 
+**Step 18** – Select the **Create Pool** button from the bottom right of the page to trigger the creation of the pool. 
 
-**Step 19** – Finally, select the "**Allow button**" on the next page to enable your new identity pool to access AWS resources. This will complete the creation process.
+**Step 19** – Finally, select the **Allow button** on the next page to enable your new identity pool to access AWS resources. This will complete the creation process.
 
-**Recap**: At this point, you have all the moving parts in place for your SaaS system to manage users and associate those users with tenants. We've also setup the policies that will control how the system validates users during onboarding. This includes the definition of password and username policies. That last bit was to setup an identity pool to enable authentication and access to AWS resources.
+**Recap**: At this point, you have all the moving parts in place for your SaaS system to manage users and associate those users with tenants. We've also setup the policies that will control how the system validates users during onboarding. This includes the definition of password and username policies. The last section setup an identity pool to enable authenticated access to AWS resources.
 
 ## Part 2 - Managing Users
-While we've created the AWS infrastructure to support the management of our user identity with Cognito, we still need some mechanism that allows our application to access and configure these elements of the system. To get there, we need to introduce a microservice that will sit in front of these concepts. This both encapsulates our user management capabilities and simplifies the developer experience, hiding away the details of the Cognito API.
+While we've configured ated the AWS infrastructure to support the management of our user identities with Cognito, we still need some mechanism that allows our application to access and configure these elements at runtime. To get there, we need to introduce a microservice that will sit in front of the Cognito APIs. This both encapsulates our user management capabilities and simplifies the developer experience, hiding away the details of the Cognito API.
 
-Instead of building this microservice from scratch, we're going to simply review the sample code deployed to **Amazon Elastic Container Service** (ECS).
-
-**Note**: the GitHub repository referenced throughout this document can be found at: https://github.com/aws-samples/aws-saas-factory-bootcamp
+Instead of building this microservice from scratch, we're going to simply review the sample code deployed as a Docker container image to **Amazon Elastic Container Service** (ECS).
 
 **Step 1** – Let's crack open the code and take a closer look at what's here. To simplify this bootcamp experience, and make sure everyone has the command line tools necessary to follow along, we have provisioned an **AWS Cloud9** Integrated Development Environment (IDE) for you.
 
-To get started with Cloud9, choose it from the AWS Console under the **Development Tools** category. A screen listing your available IDEs will be displayed. Click on the **Open IDE** button in the **SAASBOOTCAMPIDE** tile to launch Cloud9.
+To get started with Cloud9, choose it from the AWS Console under the **Development Tools** category. A screen listing your available IDEs will be displayed. Click on the **Open IDE** button in the **SaaS Bootcamp IDE** tile to launch Cloud9 in a new browser tab.
 
 <p align="center"><img src="./images/lab1/part2/cloud9_launch.png" alt="Lab 1 Part 2 Step 1 Launch Cloud9 IDE"/></p>
 
-**Step 2** – When your Cloud9 IDE launched, it automatically cloned the GitHub repository for this bootcamp and you should see a folder tree on the left-hand side with the `aws-saas-factory-bootcamp` folder listed. Expand this tree and navigate to the `Lab1/Part2/app/source/user-manager/src` folder. Double-click on the **server.js** file to open it in the editor pane. This file is a **Node.js** file that uses the **Express** web application framework to implement a REST API for managing users. Below is a list of some of the entry points that may be of interest for this onboarding flow.
+**Step 2** – When your Cloud9 IDE launched, it automatically cloned the GitHub repository for this bootcamp and you should see a folder tree on the left-hand side with the `aws-saas-factory-bootcamp` folder listed. Expand this tree and navigate to the `source/user-manager` folder. Double-click on the **server.js** file to open it in the editor pane. This file is a **Node.js** file that uses the **Express** web application framework to implement a REST API for managing users. Below is a list of some of the entry points that may be of interest for this onboarding flow.
 
 ```javascript
 app.get('/user/pool/:id', function(req, res) {...});
@@ -161,9 +175,9 @@ app.put('/user', function(req, res) {...});
 app.delete('/user/:id', function(req, res) {...});
 ```
 
-These represent entry points into the user manager service and include basic CRUD operations in addition to functionality to support registration and fetch of user pools.
+These represent HTTP entry points into the user manager service and include basic CRUD operations, as well as functionality to support registration and fetch Cognito User Pool data for a given username.
 
-**Step 3** – Since Cognito will serve as the repository to store our users, the user manager service must make calls to the Cognito API to persist new users that are created in the system. To illustrate this, let's take a closer look at an initial version of the POST method in user manager that will persist users to Cognito. You'll see that our POST method gets a JSON formatted user object from the request body that is then passed along to our Cognito user pool via the createUser method.
+**Step 3** – Since Cognito will serve as the repository to store our users, the user manager service must make calls to the Cognito API to persist new users that are created in the system. To illustrate this, let's take a closer look at an initial version of the POST method in user manager that will create new users in Cognito. You'll see that our POST method gets a JSON formatted user object from the request body that is then passed along to our Cognito user pool via the createUser method.
 
 ```javascript
 app.post('/user/create', function (req, res) {
@@ -191,9 +205,9 @@ app.post('/user/create', function (req, res) {
 
 **Step 4** – Now that have a clearer view of what's happening behind the scenes, let's make a call to this REST service to create a user in the **Cognito User Pool** we created for our tenant.
 
-To achieve this, you'll need the URL of the **Application Load Balancer** that our ECS cluster is behind and the **Pool Id** from Cognito that you saved earlier when creating the identity pool.
+To achieve this, you'll need the Invoke URL of the **API Gateway** that our microservice is behind and the **Pool Id** from Cognito that you saved earlier when setting up the User Pool.
 
-Navigate to the **EC2** console listed under the **Compute** heading in the AWS console. Scroll down the left-hand menu and select **Load Balancers**. You'll see a list of load balancers at the top of the screen and below a series of tabs. With the load balancer for the bootcamp selected, in the **Description** tab you will see the public DNS name we can use to invoke our microservices. For example:
+Navigate to the **API Gateway** console listed under the **Networking** heading in the AWS console. Select the **saas-bootcamp-api** API. In the left-hand menu, select the **Stages** link. At the top of the deployed stages tree, you should see a **v1** stage for "version 1". Click on this and in the main area of your screen, you will see the **Invoke URL** for this deployed API Gateway stage. For example:
 
 <p align="center"><img src="./images/lab1/part2/alb_url.png" alt="Lab 1 Part 2 Step 4 Load Balancer DNS Name"/></p>
 
@@ -205,16 +219,16 @@ Navigate to the **EC2** console listed under the **Compute** heading in the AWS 
 
 <p align="center"><img src="./images/lab1/part2/cognito_pool_id.png" alt="Lab 1 Part 2 Step 6 Pool Id"/></p>
 
-**Step 7** – Now that you have the pool id and the load balancer URL you're ready to call the REST method on the user manager service to create a user in Cognito. To call our REST entry point, we'll need to invoke the create user POST method. You can do this via a variety of tools (cURL, Postman, etc.). We will use the terminal command line available in Cloud9.
+**Step 7** – Now that you have the pool id and the invoke URL, you're ready to call the REST method on the user manager service to create a user in Cognito. To call our REST entry point, we'll need to invoke the create user POST method. You can do this via a variety of tools (cURL, Postman, etc.). We will use the terminal command line available in Cloud9.
 
 The Cloud9 Welcome screen will be open as a tab in the editor pane. _Below_ the code editor pane you should see a series of command line tabs. You can use an existing command line or open a new terminal window by clicking on the green plus button and choose **New Terminal** or use the keyboard shortcut `Alt/Opt-T`.
 
 <p align="center"><img src="./images/lab1/part2/cloud9_new_terminal.png" alt="Lab 1 Part 2 Step 7 Cloud9 New Terminal"/></p>
 
-Use the Cloud9 terminal command line to invoke the REST command to create a new user. Copy and paste the following command (be sure to scroll to select the entire command), replacing **USER-POOL-ID** with the pool id you captured from the Cognito User Pool settings and **LOAD-BALANCER-DNS-NAME** with the DNS Name you captured from the Load Balancer settings.
+Use the Cloud9 terminal command line to invoke the REST command to create a new user. Copy and paste the following command (be sure to scroll to select the entire command), replacing **USER-POOL-ID** with the pool id you captured from the Cognito User Pool settings and **INVOKE-URL** with the URL you captured from the API Gateway stage settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"userPoolId": "USER-POOL-ID", "tenant_id": "999", "userName": "test@test.com", "email": "test@test.com", "firstName": "Test", "lastName": "User", "role": "tenantAdmin", "tier": "Advanced"}' http://LOAD-BALANCER-DNS-NAME/user/create
+curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"userPoolId": "USER-POOL-ID", "tenant_id": "999", "userName": "test@test.com", "email": "test@test.com", "firstName": "Test", "lastName": "User", "role": "tenantAdmin", "tier": "Advanced"}' http://INVOKE-URL/user/create
 ```
 
 On success, the newly created user object will be returned in JSON format.
@@ -235,16 +249,16 @@ Select **Users and groups** from the menu on the left. When you select this opti
 
 At this point, we have a way to create users as part of the onboarding process. We also have a way to associate these users with tenants. What we're missing is some ability to store and represent tenants.
 
-Tenants must be represented and managed separate from users. They have policies, tiers, status, and so on—all of which should be managed through a separate contract and service.
+Tenants must be represented and managed separate from users. They have policies, tiers, status, and so on —- all of which should be managed through a separate contract and service.
 
-Fortunately, the management of these services is relative straightforward. It simply requires a CRUD microservice that will manage data stored in a DynamoDB table.
+Fortunately, the management of this service is relatively straightforward. It simply requires a CRUD (create, read, update, delete) microservice that will manage data stored in a DynamoDB table.
 
-**Step 1** – The Tenant Manager Service has also been deployed to an ECS container as a Node.js microservice. It too has a REST API and we can exercise it via the command line just as we did the User Manager Service.
+**Step 1** – The Tenant Manager Service has also been deployed to an ECS Fargate container as a Node.js microservice. It too has a REST API and we can exercise it via the command line just as we did the User Manager Service.
 
-Submit the following command to create a new tenant. Copy and paste the following command (be sure to scroll to select the entire command), replacing **LOAD-BALANCER-DNS-NAME** with the DNS Name you captured from the Load Balancer settings.
+Submit the following command to create a new tenant. Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the DNS Name you captured from the API Gateway stage settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"id": "111", "role": "tenantAdmin", "company_name": "Test SaaS Tenant", "tier": "Advanced", "status": "Active"}' http://LOAD-BALANCER-DNS-NAME/tenant
+curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "111", "role": "tenantAdmin", "company_name": "Test SaaS Tenant", "tier": "Advanced", "status": "Active"}' http://INVOKE-URL/tenant
 ```
 
 **Step 2** – Let's check that our tenant was saved to the database. Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the navigation list in the upper left-hand side of the page.
@@ -255,15 +269,15 @@ curl --header "Content-Type: application/json" --request POST --data '{"id": "11
 
 <p align="center"><img src="./images/lab1/part3/dynamo_tenant_table.png" alt="Lab 1 Part 3 Step 3 DynamoDB Tenant Table"/></p>
 
-**Recap**: The goal of this section was merely to introduce you to the tenant manager service and the separate representation of tenant data. The tenant **id** in this DynamoDB table will be associated with one or more users via the **tenant_id** custom attribute that we created in the prior section. By separating the unique tenant data out from our user attributes, we have a clear path for how tenants are managed and configured.
+**Recap**: The goal of this section was merely to introduce you to the tenant manager service and the separate representation of tenant data. The **tenant_id** in this DynamoDB table will be associated with one or more users via the **tenant_id** custom attribute that we created as a custom attribute in the Cognito user pool. By separating the unique tenant data out from our user attributes, we have a clear path for how tenants are managed and configured.
 
 ## Part 4 - The Onboarding & Authentication Application
 
-All of the microservices are deployed and the backend infrastructure pieces in place to support the onboarding process. Now we'll look at the application that can engage the services to onboard and authenticate tenants. We won't dig too far into the details of the web application. It's a relatively straightforward AngularJS application that is hosted on **Amazon S3**.
+All of the microservices are deployed and the backend infrastructure pieces are in place to support the onboarding process. Now we'll look at the application that can engage the services to onboard and authenticate tenants. We won't dig too far into the details of the web application. It's a relatively straightforward AngularJS application that is hosted on **Amazon S3**.
 
-It's important to note that many of the rules and mechanics of this onboarding reflect the realization of the policies that were created in the prior configuration of Cognito. Validation mechanisms and password policies, for example, will be enforced and orchestrated by Cognito.
+It's important to note that the rules and mechanics of this onboarding workflow reflect the policies and settings choosen when the user pool is created in Cognito. Validation mechanisms and password policies, for example, will be enforced and orchestrated by Cognito.
 
-**Step 1** – Before we open up the web application, let's take a look at a sample from the UI code that will be invoking the REST services that covered above. The code that follows is take from the `register.js` controller found at `Lab1/Part6/app/source/client/src/app/scripts/controllers/register.js`.
+**Step 1** – Before we open up the web application, let's take a look at a sample from the UI code that will be invoking the REST services that we covered above. The code that follows is take from the `register.js` controller found at `source/web-client/app/scripts/controllers/register.js`.
 When the registration form is filled out and the user selects the **Register** button, the system will invoke the following snippet of code:
 
 ```javascript
@@ -272,7 +286,7 @@ $scope.formSubmit = function () {
         $scope.error = "User name and company name are required. Please enter these values.";
     } else {
         var tenant = {
-            id: '',
+            tenant_id: '',
             companyName: $scope.tenant.companyName,
             accountName: $scope.tenant.companyName,
             ownerName: $scope.tenant.email,
@@ -297,23 +311,13 @@ $scope.formSubmit = function () {
 };
 ```
 
-Notice that we extract the contents of the form and construct a JSON `tenant` object that holds all the attributes of our new tenant. Then, we make the REST call that POSTs this JSON tenant data to the tenant registration service. This registration services then makes calls to the user manager and tenant manager to provision all the elements of the tenant footprint.
+Notice that we copy the contents of the HTML form and construct a JSON `tenant` object that holds all the attributes of our new tenant. Then, we make the REST call that POSTs this JSON tenant data to the tenant registration service. This registration services then makes calls to the user manager and tenant manager to provision all the elements of the tenant footprint.
 
-**Step 2** – Our web application is considered static because it uses JavaScript to modify the HTML views directly on the browser without having to reload the entire URI from the server. **Amazon S3** provides for _serverless_ hosting of static websites. We need to capture the URL of our application from S3.
+**Step 2** – Our web application is considered static because it uses JavaScript to modify the HTML views directly on the browser without having to reload the entire URI from the server. **Amazon S3** provides for _serverless_ hosting of static websites. To minimize geographic delay in loading your website and to offload HTTPS encryption, we've put an Amazon CloudFront distribution in front of the S3 bucket hosting our website. We need to capture the URL of our application from CloudFront.
 
-Navigate to the **S3** service under the **Storage** category in the AWS console. An S3 bucket has been created to store our web application and it will be the only bucket marked with **Public** access. Open the detail view for the bucket by clicking on its name.
+Navigate to the **CloudFront** service under the **Network** category in the AWS console. A distribution has been created for our web application. Copy the URL and open it in a new web browser window or tab.
 
-<p align="center"><img src="./images/lab1/part4/s3_public_bucket.png" alt="Lab 1 Part 4 Step 2 S3 Public Bucket"/></p>
-
-Once you're in the detailed view of the bucket, you'll see a list of tabs across the top of the screen. Select the **Properties** tab and then select the **Static website hosting** tile.
-
-<p align="center"><img src="./images/lab1/part4/s3_bucket_properties.png" alt="Lab 1 Part 4 Step 2 S3 Bucket Properties"/></p>
-
-In the Static website hosting settings, you can click on the **Endpoint** URL to open your SaaS Bootcamp web application in a new browser window.
-
-<p align="center"><img src="./images/lab1/part4/s3_website_hosting.png" alt="Lab 1 Part 4 Step 2 S3 Website Hosting"/></p>
-
-**Step 3** – Upon displaying the landing page for the application, you'll be prompted to login. This page is for tenants that have already registered. You don't have any tenants yet, so, you'll need to select the **Register** button (to the right of the **Login** button). Selecting this button will take you to a form where you can register your new tenant.
+**Step 3** – The landing page for the application will prompt you to login. This page is for tenants that have already registered. You don't have any tenants yet, so, you'll need to select the **Register** button (to the right of the **Login** button). Selecting this button will take you to a form where you can register your new tenant.
 
 <p align="center"><img src="./images/lab1/part4/registration.png" alt="Lab 1 Part 4 Step 3 Registration Form"/></p>
 
@@ -331,7 +335,7 @@ Enter the data for your new tenant. The key value here is your email address. _Y
 
 <p align="center"><img src="./images/lab1/part4/change_password.png" alt="Lab 1 Part 4 Step 6 Change Password"/></p>
 
-**Step 7** – Let's confirm that you can authenticate with your newly created account. Enter your username (email address) and the password you just confirmed. You will now be placed at the landing page of the application. (The dashboard totals are fake.)
+**Step 7** – Let's confirm that you can authenticate with your newly created account. Enter your username (email address) and the password you just confirmed. You will now be placed at the landing page of the application. (The dashboard totals are fake).
 
 <p align="center"><img src="./images/lab1/part4/home_page.png" alt="Lab 1 Part 4 Step 7 Home Page"/></p>
 
