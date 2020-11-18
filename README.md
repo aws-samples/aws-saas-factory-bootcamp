@@ -15,7 +15,7 @@ Application developers and architects that are looking to get into the details o
 # How do I start?
 If you are participating in this bootcamp workshop during an AWS event, follow the instructions of the instructors on site.
 
-If you would like to run through the lab exercises in a self-guided manner, all you need to do is launch the [workshop.template](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) Amazon CloudFormation template in your AWS account and then start by clicking the Lab 1 icon below.
+If you would like to run through the lab exercises in a self-guided manner, all you need to do is launch the [workshop.yml](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) Amazon CloudFormation template in your AWS account and then start by clicking the Lab 1 icon below.
 
 Note that this workshop deploys infrastructure into your AWS account that is outside of the free tier, and you should delete the CloudFormation stack when you are finished to minimize costs.
 
