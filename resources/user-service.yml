@@ -68,7 +68,7 @@ Resources:
       GlobalSecondaryIndexes:
       - IndexName: UserNameIndex
         KeySchema:
-        - AttributeName: id
+        - AttributeName: user_id
           KeyType: HASH
         Projection:
           ProjectionType: ALL
