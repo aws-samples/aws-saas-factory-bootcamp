@@ -721,11 +721,14 @@ Resources:
                           if not token:
                               break
                       print("Deleting %d images from repo %s" % (len(images), repo))
-                      delete_response = ecr.batch_delete_image(repositoryName=repo, imageIds=images)
-                      if 'failures' in delete_response and len(delete_response['failures']) > 0:
-                          for fail in delete_response['failures']:
-                              print("Failed to delete image %s %s in repo %s" % (fail['imageId']['imageDigest'], fail['failureReason'], repo))
-                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "ecr:BatchDeleteImage failed"})
+                      if len(images) > 0:
+                          delete_response = ecr.batch_delete_image(repositoryName=repo, imageIds=images)
+                          if 'failures' in delete_response and len(delete_response['failures']) > 0:
+                              for fail in delete_response['failures']:
+                                  print("Failed to delete image %s %s in repo %s" % (fail['imageId']['imageDigest'], fail['failureReason'], repo))
+                              cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "ecr:BatchDeleteImage failed"})
+                          else:
+                              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                       else:
                           cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                   except ClientError as ecr_error:
