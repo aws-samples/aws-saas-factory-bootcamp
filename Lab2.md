@@ -4,7 +4,7 @@
 
 In our first lab, we focused all of our attention on getting tenants onboarding and creating a true notion of **SaaS Identity** where user identity was joined to a tenant identity. With those elements in place, we can now turn our attention to thinking about how we actually build the services and functionality of our application in a multi-tenant fashion. This means applying the tenant identity and context with the services that we build.
 
-So far, the services that we've created (tenant registration, user management, etc.) have all been about the fundamentals of onboarding. Now, let's look at the services that we'll introduce to support the actual functionality of our application. For this scenario, we're building a very basic order management system. It lets you create a product catalog and place orders against that catalog. It's important to note, that as a multi-tenant SaaS solution the compute and storage resources used to implement this functionality will be shared by all tenants.
+So far, the services that we've created (tenant registration, user management, etc.) have all been about the fundamentals of onboarding. Now, let's look at the services that we'll introduce to support the actual functionality of our application. For this scenario, we're building a very basic order management system. It lets you create a product catalog and place orders against that catalog. It's important to note, that as a pooled isolation SaaS solution the compute and storage resources used to implement this functionality will be shared by all tenants.
 
 Below is a high level diagram of the services that will be delivering this functionality:
 
@@ -12,13 +12,14 @@ Below is a high level diagram of the services that will be delivering this funct
 
 This is a very basic diagram that highlights the services and their interactions with the other aspects of the bootcamp's architecture. Notice that these services are connected to the web application via the **API Gateway**, exposing basic **CRUD** operations to create, read, update, and delete both products and orders.
 
-Of course, as part implementing these services, we must also think about what must be done to apply multi-tenancy to these services. These services will need to store data, log metrics, and acquire user identity all with multi-tenant awareness. So, we have to think about how this is achieved and applied within these services.
+Of course as part of implementing these services, we have to think about what must be done to apply multi-tenancy to these services. These services will need to store data, log metrics, and acquire user identity all with multi-tenant awareness. So, we have to think about how this is achieved and applied within these services.
 
-Below is a diagram that provides a conceptual view of what it means to build a multi- tenant aware microservice:
+Below is a diagram that provides a conceptual view of what it means to build a multi-tenant aware microservice:
 
 <p align="center"><img src="./images/lab2/multitenant_diagram.png" alt="Lab 2 Multi-Tenant Overview"/></p>
 
 This somewhat simplified diagram highlights the key areas we're going to focus on for the multi-tenant microservices we'll be deploying. At the center of the diagram are the actual services being built (in our case the product and order managers). Surrounding it are the areas where we need to factor in multi-tenancy. These include:
+
 * **Identity and Tenant Context** – our services need some standard way to acquire the current user's role and authorization along with the tenant context. Almost every action within your services happens in the context of a tenant so we'll need to think about how we acquire and apply that context.
 * **Multi-Tenant Data Partitioning** – our two services will need to store data. This means our storage CRUD operations will all need some injection of tenant context to figure out how to partition, persist, and acquire data in a multi-tenant model.
 * **Tenant Aware Logging, Metering, and Analytics** – as we record logs and metrics about activity in our system, we'll need some way to attribute those activities to a specific tenant. Our services must inject this context into any activity messages that are published for troubleshooting or downstream analytics.
@@ -26,25 +27,23 @@ This somewhat simplified diagram highlights the key areas we're going to focus o
 This backdrop provides you with a view of the fundamental concepts that we'll explore in this lab. While we won't be writing services from scratch, we'll be highlighting how a service will evolve to incorporate these concepts.
 
 ### What You'll Be Building
-To demonstrate the multi-tenant concepts, we'll go through an evolutionary process where we gradually add incremental multi-tenant awareness to our solution. We'll start with a single-tenant version of our product manager service, then progressively add the bits needed to make this a fully multi-tenant aware service. The basic steps in this process include:
+To demonstrate the multi-tenant concepts, we'll go through an evolutionary process where we gradually add multi-tenant awareness to our solution. We'll start with a single-tenant version of our product manager service, then progressively add the bits needed to make this a fully multi-tenant aware service. The basic steps in this process include:
 * Deploy a single-tenant product manager microservice – this is a baseline step to illustrate what the service looks like before we begin to layer on the elements of multi-tenancy. It will be a basic CRUD service with no multi-tenant awareness.
 * Introduce multi-tenant data partitioning – the first phase of multi-tenancy will be to add the ability to partition data based on a tenant identifier supplied as part of an incoming request.
 * Extract tenant context from user identity – add the ability to use the security context of HTTP calls into the service to extract and apply tenant identity for our data partitioning scheme.
 * Introduce a second tenant to demonstrate partitioning – register a new tenant and manage products through that tenant context to illustrate how the system has successfully partitioned the data in the application.
-* Log data with tenant context – in the last step we'll demo how tenant context should also be injected into logs and metering to support tenant-centric analytics.
-When this process is finally completed, you should have a complete multi-tenant aware product manager service that supports both data partitioning, extraction of tenant context from a user's identity, and the ability to inject tenant identity into logs.
 
 ## Part 1 - Deploying a Single-Tenant Product Manager Service
 
 Before we can see how multi-tenancy influences the business services of our application, we need to see a baseline single-tenant service in action. This will provide a foundation for our exploration of multi-tenancy, illustrating how multi-tenancy influences the implementation of our microservice.
 
-In this basic model, we'll deploy a service, create a **DynamoDB** table to hold our product data, then use cURL commands to exercise this new service. This solution will also setup an API Gateway experience, but we'll let the provisioning scripts configure this aspect of the solution (since you've already gotten a taste of configuring resources and methods in the prior lab).
+In this basic model, we'll deploy a service, create a **DynamoDB** table to hold our product data, then use cURL from the command line to exercise this new service.
 
 **Step 1** - Let's start this process by taking a closer look at the single-tenant service that we'll be deploying. Like the prior services implemented in the first lab, the product manager microservice is built with Node.js and Express. It exposes a series of CRUD operations via a REST interface.
 
 The source code for this file is available at `Lab2/Part1/app/source/product-manager/src/server.js`.
 
-In looking at this file, you'll see a number of entry points that correspond to the REST methods (app.get(...), app.post(...), etc.). Within each of these functions is the implementation of the corresponding REST operation. Let's take a look at one of these methods in more detail to get a sense of what's going on here.
+In looking at this file, you'll see a number of entry points that correspond to the REST methods (`app.get(...)`, `app.post(...)`, etc.). Within each of these functions is the implementation of the corresponding REST operation. Let's take a look at one of these methods in more detail to get a sense of what's going on here.
 
 ```javascript
 app.get('/product/:id', function (req, res) {
@@ -70,13 +69,13 @@ app.get('/product/:id', function (req, res) {
 });
 ```
 
-Let's start by looking at the signature of the method. Here you'll see the traditional REST path for a GET method with the `/product` resource followed by an identifier parameter that indicates which product is to be fetched. This value is extracted from the incoming request and populated into a `params` structure. The rest of this function is about calling a DynamoDBHelper to fetch the item from a DynamoDB table.
+Let's start by looking at the signature of the method. Here you'll see the traditional REST path for a GET method with the `/product` resource followed by an identifier parameter that indicates which product is to be fetched. This value is extracted from the incoming request and populated into a `params` structure. The rest of this function is about calling our DynamoDBHelper, which is our data access layer, to fetch the item from a DynamoDB table.
 
-**Step 2** - Our first step is to deploy the single-tenant product manager, within our Cloud9 IDE. Navigate to `Lab2/Part1/scripts` directory, right-click `product-manager-v1.sh`, and click **Run** to execute the shell script.
+**Step 2** - Our first step is to deploy the single-tenant product manager, within our Cloud9 IDE. Navigate to `Lab2/Part1/` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script.png" alt="Lab 2 Part 1 Step 2 Cloud9 Run Script"/></p>
 
-**Step 3** - Wait for the `product-manager-v1.sh` shell script to execute successfully, as confirmed by the **STACK CREATE COMPLETE** message followed by **Process exited with code: 0**.
+**Step 3** - Wait for the `deploy.sh` shell script to execute successfully.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script_complete.png" alt="Lab 2 Part 1 Step 3 Cloud9 Script Finished"/></p>
 
@@ -84,30 +83,30 @@ Let's start by looking at the signature of the method. Here you'll see the tradi
 
 <p align="center"><img src="./images/lab2/part1/dynamo_menu_tables.png" alt="Lab 2 Part 1 Step 4 DynamoDB Menu Tables"/></p>
 
-**Step 5** - Now click the **Create table** button at the top of the page. Enter a table name of **ProductBootcamp** and enter **productId** as the primary key. The table and key names are case sensitive in DynamoDB. Be sure you enter the values correctly. Once you've filled out the form, select the **Create** button at the bottom right of the page to create your new table.
+**Step 5** - Now click the **Create table** button at the top of the page. Enter a table name of **ProductBootcamp** and enter **product_id** as the primary key. The table and key names are case sensitive in DynamoDB. Be sure you enter the values correctly. Once you've filled out the form, select the **Create** button at the bottom right of the page to create your new table.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_create_table.png" alt="Lab 2 Part 1 Step 5 DynamoDB Create Table"/></p>
 
-**Step 6** - At this point the table should be created and your service should be running and accessible via the **Amazon API Gateway**. First, we need the API Gateway URL that exposes our microservices. Navigate to API Gateway in the AWS console and select the **SaaSBootcampApiNoAuth** API. This API was created automatically in the bootcamp environment and includes all resources and methods required to run our SaaS application.
+**Step 6** - At this point the table should be created and your service should be running and accessible via the **Amazon API Gateway**. First, we need the API Gateway URL that exposes our microservices. Navigate to API Gateway in the AWS console and select the **saas-bootcamp-api** API.
 
 <p align="center"><img src="./images/lab2/part1/apigw_select_api.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 7** - Select **Stages** from the left-hand menu and then click on the **prod** stage. The invocation URL will be displayed. This is the base URL (_including **/prod** at the end_) that all of your microservices will be accessible from.
+**Step 7** - Select **Stages** from the left-hand menu and then click on the **v1** (version 1) stage. The invocation URL will be displayed. This is the base URL (_including **/v1** at the end_) that all of your microservices will be accessible from.
 
 <p align="center"><img src="./images/lab2/part1/apigw_invoke_url.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 8** - Now let's verify that the basic plumbing of our Product Manager service is all in place by making a simple call to its health check endpoint. For this step and subsequent steps, you can use either **cURL** or Postman (or the tool of your choice). Let's invoke the GET method on `/product/health` to verify that the service is running. Copy and paste the following command, replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 8** - Now let's verify that the basic plumbing of our Product Manager service is in place by making a simple call to its health check endpoint. For this step and subsequent steps, you can use either **cURL** or Postman (or the tool of your choice). Let's invoke the GET method on `/product/health` to verify that the service is running. Copy and paste the following command, replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl https://API-GATEWAY-PROD-URL/product/health
+curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
 
 **Be sure you've included the API stage name at the end of the URL _before_ /product/health**. You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
 
-**Step 9** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Submit the following REST command to create your first product. Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 9** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Submit the following REST command to create your first product. Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' https://API-GATEWAY-PROD-URL/product
+curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
 **Step 10** - Let's now go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Select the **Items** tab from the top of the screen, you'll see the list of items in your product table, which should include the item you just added.
@@ -120,11 +119,11 @@ curl --header "Content-Type: application/json" --request POST --data '{"sku": "1
 
 The first step in making our service multi-tenant aware is to implement a partitioning model where we can persist data from multiple tenants in our single DynamoDB database. We'll also need to inject tenant context into our REST requests and leverage this context for each of our CRUD operations.
 
-To make this work, will also need a different configuration for our DynamoDB database, introducing a tenant identifier as the partition key. We'll also need a new version of our service that accepts a tenant identifier in each of the REST methods and applies it as it accesses DynamoDB tables.
+To make this work, will need a different configuration for our DynamoDB database, introducing a tenant identifier as the partition key. We'll also need a new version of our service that accepts a tenant identifier in each of the REST methods and applies it as it accesses DynamoDB tables.
 
 The steps that follow will take you through the process of adding these capabilities to the product manager service:
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support data partitioning. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab2/Part2/app/source/product-manager/src`, right-click `server.js` and click **Open**.
+**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support data partitioning. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab2/Part2/product-manager/`, right-click `server.js` and click **Open**.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_open_script.png" alt="Lab 2 Part 2 Step 1 Cloud9 Open Script"/></p>
 
@@ -133,8 +132,8 @@ This file doesn't look all that different than our prior version. In fact, the o
 ```javascript
 app.post('/product', function (req, res) {
     var product = req.body;
-    product.productId = uuidV4();
-    product.tenantId = req.body.tenantId;
+    product.product_id = uuidV4();
+    product.tenant_id = req.body.tenant_id;
     // construct the helper object
     tokenManager.getSystemCredentials(function (credentials) {
         var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
