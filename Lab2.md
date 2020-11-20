@@ -130,72 +130,75 @@ The steps that follow will take you through the process of adding these capabili
 This file doesn't look all that different than our prior version. In fact, the only change here is that we've added a tenant identifier to the parameters that we supply to the DynamoDBHelper. Below is a snippet of the code from our file.
 
 ```javascript
-app.post('/product', function (req, res) {
-    var product = req.body;
-    product.product_id = uuidV4();
-    product.tenant_id = req.body.tenant_id;
-    // construct the helper object
-    tokenManager.getSystemCredentials(function (credentials) {
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.putItem(product, credentials, function (err, product) {
-            if (err) {
-                winston.error('Error creating new product: ' + err.message);
-                res.status(400).send('{"Error" : "Error creating product"}');
-            } else {
-                winston.debug('Product ' + req.body.title + ' created');
-                res.status(200).send({status: 'success'});
-            }
-        });
-    });
+app.post('/product', function(req, res) {
+	var product = req.body;
+	var guid = uuidv4();
+	product.product_id = guid;
+	product.tenant_id = req.body.tenant_id;
+	winston.debug(JSON.stringify(product));
+	// construct the helper object
+	tokenManager.getSystemCredentials(function(credentials) {
+		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+		dynamoHelper.putItem(product, credentials, function(err, product) {
+			if (err) {
+				winston.error('Error creating new product: ' + err.message);
+				res.status(400).send('{"Error": "Error creating product"}');
+			} else {
+				winston.debug('Product ' + req.body.title + ' created');
+				res.status(200).send({status: 'success'});
+			}
+		});
+	});
 });
 ```
 
-The line `product.tenantId = req.body.tenantId;` represents the only change you'll see on the surface here. It extracts the tenant identifier from the incoming request and adds it to our product object. This, of course, means that REST calls to this method must also supply a tenant identifier with each invocation of this method.
+The line `product.tenant_id = req.body.tenant_id;` represents the only change you'll see between this version and the original. It extracts the tenant identifier from the incoming request and adds it to our product object. This, of course, means that REST calls to this method must supply a tenant identifier with each invocation of this method.
 
-**Step 2** - Up to this point, we haven't really looked at the **DynamoDBHelper** to see how it accommodates our attempts to get items from the DynamoDB table. In most respects, this module is wrapper of the AWS provided DynamoDB client, adding elements to support isolation. In fact, even as we're introducing this tenant identifier model, it does not change how DynamoDBHelper processes this request. Below is a snipped of code from the DynamoDBHelper `getItem()` method:
+**Step 2** - Up to this point, we haven't really looked at the **DynamoDBHelper** to see how it accommodates our ability to get items from the DynamoDB table. This module is a wrapper of the AWS-provided DynamoDB client with some added elements to support isolation. In fact, even as we're introducing this tenant identifier model, it does not change how DynamoDBHelper processes this request. Below is a snipped of code from the DynamoDBHelper for the `getItem()` method:
 
 ```javascript
-DynamoDBHelper.prototype.getItem = function (keyParams, credentials, callback) {
+DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
     this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
         var fetchParams = {
             TableName: this.tableDefinition.TableName,
             Key: keyParams
-        };
-
-        docClient.get(fetchParams, function (err, data) {
-            if (err)
+        }
+        docClient.get(fetchParams, function(err, data) {
+            if (err) {
+                winston.debug(JSON.stringify(docClient.response));
                 callback(err);
-            else
+            } else {
                 callback(null, data.Item);
+            }
         });
     }.bind(this));
-};
+}
 ```
 
-You'll notice that we're passing through all the parameters that we constructed in our product manager service as the `keyParams` value in the `fetchParams` structure. The client will simply use the parameters to match the partition key for the table. The key takeaway here is that nothing unique is done in the code to support the partitioning by a tenant identifier. It's simply just another key in our DynamoDB table.
+You'll notice that we're passing through all the parameters that we constructed in our product manager service as the `keyParams` value in the `fetchParams` structure. The client will simply use the parameters to match the partition key for the table. The takeaway here is that nothing unique is done in the code to support the partitioning by a tenant identifier. It's simply just another key in our DynamoDB table.
 
-**Step 3** - Now that you have a better sense of how this service changes to accommodate data partitioning, let's go ahead and deploy version 2 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part2/scripts` directory, right-click `product-manager-v2.sh`, and click **Run** to execute the shell script.
+**Step 3** - Now that you have a better sense of how this service changes to accommodate data partitioning, let's go ahead and deploy version 2 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part2/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script.png" alt="Lab 2 Part 2 Step 3 Cloud9 Run Script"/></p>
 
-**Step 4** - Wait for the `product-manager-v2.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+**Step 4** - Wait for the `deploy.sh` shell script to execute successfully.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script_complete.png" alt="Lab 2 Part 2 Step 4 Cloud9 Script Finished"/></p>
 
-**Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **productId** as the partition key. We now need to have **tenantId** be our partition key and have the **productId** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
+**Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **product_d** as the partition key. We now need to have **tenant_id** be our partition key and have the **product_id** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
 
-Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch logs to complete the process.
+Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch alarms to complete the process.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_delete_table.png" alt="Lab 2 Part 2 Step 5 DynamoDB Delete Table"/></p>
 
-**Step 6** - Now we can start the table creation process from scratch. Select the **Create table** button from the top of the page. As before, enter **ProductBootcamp** for the table name, but this time enter **tenantId** for the partition key. Now click on the **Add sort key** checkbox and we'll enter **productId** as the sort key. Click the **Create** button to finalize the table.
+**Step 6** - Now we can start the table creation process from scratch. Select the **Create table** button from the top of the page. As before, enter **ProductBootcamp** for the table name, but this time enter **tenant_id** for the partition key. Now click on the **Add sort key** checkbox and we'll enter **product_id** as the sort key. Click the **Create** button to finalize the table.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_create_table.png" alt="Lab 2 Part 2 Step 6 DynamoDB Create Table"/></p>
 
-**Step 7** - The service has now been modified to support the introduction of a tenant identifier and we've modified DynamoDB to partition the data with this tenant identifier. It's time now to validate that the new version of the service is up-and-running. Issue the following cURL command to invoke the health check on the service. Refer to Part 1 if you need to find your API Gateway URL. Copy and paste the following command, replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 7** - The service has now been modified to support the introduction of a tenant identifier and we've modified DynamoDB to partition the data with this tenant identifier. It's time now to validate that the new version of the service is up-and-running. Issue the following cURL command to invoke the health check on the service. Refer to Part 1 if you need to find your API Gateway URL. Copy and paste the following command, replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl https://API-GATEWAY-PROD-URL/product/health
+curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
 
 You should get a 200 response from your request indicating that the request was successfully processed and the service is ready to process requests.
@@ -203,22 +206,22 @@ You should get a 200 response from your request indicating that the request was 
 **Step 8** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Unlike our prior REST call, this one must provide the tenant identifier as part of the request. Submit the following REST command to create a product for tenant "**123**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"tenantId": "123", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' https://API-GATEWAY-PROD-URL/product
+curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "123", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-This looks much like the prior example. However, notice that we pass a parameter of tenant id ("123") in the body.
+This looks much like the prior example. However, notice that we pass a parameter of `tenant_id` ("123") in the body.
 
-**Step 9** - Before we verify that this data was successfully written, let's introduce another product for a different tenant. This will highlight the fact that our partitioning scheme can store data separately for each tenant. To add another product for a different tenant, we just issue another POST command for a different tenant. Submit the following POST for tenant "**456**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Step 9** - Before we verify that this data was successfully written, let's introduce another product for a different tenant. This will highlight the fact that our partitioning scheme can store data separately for each tenant. To add another product for a different tenant, we just issue another POST command for a different tenant. Submit the following POST for tenant "**456**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
 ```bash
-curl --header "Content-Type: application/json" --request POST --data '{"tenantId": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' https://API-GATEWAY-PROD-URL/product
+curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
 **Step 10** - Let's go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Now select the **Items** tab from the top of the screen and you'll see the list of items in your table which should include the two items you just added. Verify that these two items exist and are partitioned based on the two tenant identifiers that you suppled ("123" and "456").
 
 <p align="center"><img src="./images/lab2/part2/dynamo_scan_table.png" alt="Lab 2 Part 2 Step 10 DynamoDB Scan Table"/></p>
 
-**Recap**: You've now successfully introduced data partitioning into your service. The microservice achieved this by adding a tenant identifier parameter to the product manager service and changing the product table to use **tenantId** as the partition key. Now, all of your CRUD operations are multi-tenant aware.
+**Recap**: You've now successfully introduced data partitioning into your service. The microservice achieved this by adding a tenant identifier parameter to the product manager service and changing the product table to use **tenant_id** as the partition key. Now, all of your CRUD operations are multi-tenant aware.
 
 ## Part 3 - Applying Tenant Context
 
@@ -228,7 +231,7 @@ So, our next step is to enable our service to be aware of these security tokens 
 
 For this section, we'll see how our product manager service gets retrofitted with new code to extract these tokens from the HTTP request and applies them to our security and data partitioning model.
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support acquiring tenant context from identity tokens. View the new version of our Product Manager service in Cloud9 by opening `Lab2/Part3/app/source/product-manager/src/server.js`.
+**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support acquiring tenant context from identity tokens. View the new version of our Product Manager service in Cloud9 by opening `Lab2/Part3/product-manager/server.js`.
 
 Version 3 of our product manager service introduces a new **TokenManager** helper object that abstracts away many aspects of the token processing. Let's take a look at a snippet of this updated version to see how tenant context is acquired from the user's identity:
 
@@ -245,64 +248,64 @@ app.use(function (req, res, next) {
 });
 ```
 
-The `getTenantId` function shown here, which appears in most of the services of our application, provides the mechanism for acquiring the tenant identifier from the **HTTP headers** for each REST request. It achieves this by using the middleware construct of the Express framework. This middleware allows you to introduce a function that intercepts and pre-processes each request before it is processed by the functions for each REST method.
+The TokenManager's `getTenantId` function shown here, which appears in most of the services of our application, provides the mechanism for acquiring the tenant identifier from the **HTTP headers** for each REST request. It achieves this by using the middleware construct of the Express framework. This middleware allows you to introduce a function that intercepts and pre-processes each HTTP request before it is processed by the functions for each REST method.
 
 You'll see after the response headers are set, the bearer token is extracted from the **HTTP Authorization** header. This token holds the data we want to use to acquire our tenant context. We then use the **TokenManager** helper to get the tenant identifier out of the request. The call to this function returns the tenant identifier and assigns it to the `tenantId` variable. This variable is then referenced throughout the service to acquire tenant context.
 
 **Step 2** - Now that you have the tenant identifier, the application of this is relatively straightforward. You can see that we've changed the way we're acquiring the tenant identifier, referencing the **tenantId** that we extracted from the bearer token in the middleware in Step 1 (instead of pulling this from the incoming requests).
 
 ```javascript
-app.get('/product/:id', function (req, res) {
-    winston.debug('Fetching product: ' + req.params.id);
-    // init params structure with request params
-    var params = {
-        tenantId: tenantId,
-        productId: req.params.id
-    };
-    
-    tokenManager.getSystemCredentials(function (credentials) {
-        // construct the helper object
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.getItem(params, credentials, function (err, product) {
-            if (err) {
-                winston.error('Error getting product: ' + err.message);
-                res.status(400).send('{"Error" : "Error getting product"}');
-            } else {
-                winston.debug('Product ' + req.params.id + ' retrieved');
-                res.status(200).send(product);
-            }
-        });
-    });
+app.get('/product/:id', function(req, res) {
+	winston.debug('Fetching product: ' + req.params.id);
+	// init params structure with request params
+	var params = {
+		tenant_id: tenantId,
+		product_id: req.params.id
+	};
+	tokenManager.getSystemCredentials(function(credentials) {
+		// construct the helper object
+		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+		dynamoHelper.getItem(params, credentials, function(err, product) {
+			if (err) {
+				winston.error('Error getting product: ' + err.message);
+				res.status(400).send('{"Error": "Error getting product"}');
+			} else {
+				winston.debug('Product ' + req.params.id + ' retrieved');
+				res.status(200).send(product);
+			}
+		});
+	});
 });
 ```
 
 **Step 3** - As you can imagine, most of the token processing work here is intentionally embedded in the helper class. Let's take a quick look at what is in that class to see how it's extracting this context from the tokens.
 
-Below is a snippet of the code from the TokenManager that is invoked to extract the token. This function extracts the security token from the Authorization header of the HTTP request, decodes it, then acquires the tenantId from the decoded token. In a production environment, this unpacking would use a signed certificate as a security measure to ensure the token contents were not modified during transmission.
+Below is a snippet of the code from the TokenManager that is invoked to extract the token. This function extracts the security token from the Authorization header of the HTTP request, decodes it, then acquires the tenantId from the decoded token. _In a production environment, this unpacking would use a signed certificate as a security measure to ensure the token contents were not modified during transmission_.
 
 ```javascript
-module.exports.getTenantId = function (req) {
+module.exports.getTenantId = function(req) {
     var tenantId = '';
     var bearerToken = req.get('Authorization');
     if (bearerToken) {
         bearerToken = bearerToken.substring(bearerToken.indexOf(' ') + 1);
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             tenantId = decodedIdToken['custom:tenant_id'];
+        }
     }
     return tenantId;
-};
+}
 ```
 
-**Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 3 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/scripts` directory, right-click `product-manager-v3.sh`, and click **Run** to execute the shell script.
+**Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 3 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/product-manager/` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script.png" alt="Lab 2 Part 3 Step 4 Cloud9 Run Script"/></p>
 
-**Step 5** - Wait for the `product-manager-v3.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+**Step 5** - Wait for the `deploy.sh` shell script to execute successfully.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script_complete.png" alt="Lab 2 Part 3 Step 5 Cloud9 Script Finished"/></p>
 
-**Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the application, which already has the ability to authenticate a user and acquire a valid token. First, we'll need to register a couple of new tenants through the application.
+**Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the web application, which already has the ability to authenticate a user and acquire a valid token from our identity provider, Cognito. First, we'll need to register a couple of new tenants through the application.
 
 Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the S3 bucket settings.
 
@@ -344,11 +347,11 @@ After you've successfully changed your password, you'll be logged into the appli
 
 **Step 18** - After completing this onboarding process and adding these products for two separate tenants, we can now go see how this data landed in DynamoDB tables that support this experience.
 
-Navigate to the **DynamoDB** service in the AWS console and select **Tables** from the list of options at the top left of the page. Select the **ProductBootcamp** table and then the **Items** tab. Notice that the table is partitioned by tenantId. You should be able to see the products you entered through the web application while logged in as the 2 different tenants (separate from the products you entered via the REST API earlier in the lab).
+Navigate to the **DynamoDB** service in the AWS console and select **Tables** from the list of options at the top left of the page. Select the **ProductBootcamp** table and then the **Items** tab. Notice that the table is partitioned by `tenant_id`. You should be able to see the products you entered through the web application while logged in as the 2 different tenants (separate from the products you entered via the REST API earlier in the lab).
 
 <p align="center"><img src="./images/lab2/part3/product_table.png" alt="Lab 2 Part 3 Step 18 Product Table"/></p>
 
-**Step 19** - If you review the **TenantBootcamp** table, you should see entries for the tenants you onboarded through the web application and their automatically generated GUIDs in the **id** field will match the **tenantId** field in the entries in the **ProductBootcamp** table.
+**Step 19** - If you review the **TenantBootcamp** table, you should see entries for the tenants you onboarded through the web application and their automatically generated GUIDs in the **tenant_id** field will match the **tenant_id** field in the entries in the **ProductBootcamp** table.
 
 **Recap**: You've now elevated the mechanism of acquiring tenant context in our microservices by extracting our custom "claims" from the security token passed in the Authorization HTTP header. We reduced developer complexity in applying the tenant context by creating a custom TokenManager helper class that takes advantage of the Express framework's "middleware" concept to intercept all incoming requests prior to executing a REST resource's method.
 

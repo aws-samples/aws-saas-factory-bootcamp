@@ -2,7 +2,7 @@
 
 ### Overview
 
-At this stage, we have addressed many of the core elements of SaaS architecture. What we really haven't touched on, though, is tenant isolation. As a SaaS provider, you must make every attempt to ensure that that each tenant's resources are protected from any kind of cross-tenant access. This is especially challenging when these tenants are sharing elements of their infrastructure. If, for some reason, one tenant was able to access another tenant's environment, that could represent a huge setback for a SaaS business.
+At this stage, we have addressed many of the core elements of SaaS architecture. What we really haven't touched on, though, is tenant isolation. As a SaaS provider, you must make every attempt to ensure that each tenant's resources are protected from any kind of cross-tenant access. This is especially challenging when these tenants are sharing elements of their infrastructure. If, for some reason, one tenant was able to access another tenant's environment, that could represent a huge setback for a SaaS business.
 
 To address this, we must move beyond basic authentication. We must introduce policies and access controls that ensure that we are doing everything we can to isolate and protect tenant environments. Even in SaaS environments where resources are not shared, we must take extra measures to be sure that we've minimized our exposure to cross-tenant access.
 
@@ -10,9 +10,9 @@ For this bootcamp, we'll focus squarely on how to isolate the data that resides 
 
 <p align="center"><img src="./images/lab3/table_partitioning.png" alt="Lab 3 Isolating Tenant Data Overview Table Partitioning"/></p>
 
-In these tables, you'll see that we have data from multiple tenants living side-by-side as items in these tables. So, if I get access to one of these tables, I could presumably get access to any tenant's data.
+In this example graphic, you'll see that we have data from multiple tenants living side-by-side as items in these tables. So, if I get access to one of these tables, I could presumably get access to any tenant's data.
 
-Our goal, then, is to implement a security model that can scope access to these tables down to the item level. Essentially, I want to build a view of the table that constrains access to just those items that are valid for a given tenant.
+Our goal then is to implement a security model that can scope access to these tables down to the item level. Essentially, I want to build a view of the table that constrains access to just those items that are valid for a given tenant.
 
 For this bootcamp, we're going to leverage a combination of Amazon Cognito, Amazon Identity and Access Management (IAM), and AWS Security Token Service
 (STS) to limit access to these tables. This will connect directly to the notion of SaaS identity we discussed earlier, leveraging the tokens from the experience to bind a user to a scoped set of policies.
@@ -27,7 +27,7 @@ The second phase of isolation comes into play when you are accessing resources f
 
 <p align="center"><img src="./images/lab3/authentication.png" alt="Lab 3 Isolating Tenant Data Overview Authentication"/></p>
 
-In this example, you'll see that our product manager service is invoked from the UI with a request to get a list of products. You'll note that the token (acquired during authentication) is passed along here in the Authorization header of our HTTP request. This token includes data about the user identity, role, and tenant identity. While this token is valuable for conveying user and tenant attributes, it does nothing to control a tenant's access to resources. **Instead, we must use the data in this token to acquire the scoped credentials we need to access our DynamoDB tables**.
+In this example, you'll see that our product manager service is invoked from the UI with a request to get a list of products. The JWT token (acquired during authentication) is passed along here in the Authorization header of our HTTP request. This token includes data about the user identity, role, and tenant identity. While this token is valuable for conveying user and tenant attributes, it does nothing to control a tenant's access to resources. **Instead, we must use the data in this token to acquire the scoped credentials we need to access our DynamoDB tables**.
 
 The remaining bits of the diagram illustrate how these scoped credentials are acquired. Once our `GET` request comes into our product manager service, we'll make a `getCredentialsForIdentity()` call to Cognito, passing in our token. Cognito will then crack that token open, examine the tenant identifier and user role and match it to one of the policies that were created during provisioning. It will then create a **temporary** set of credentials (shown at the bottom) via STS and return those to our product manager service. Our service will use these temporary credentials to access DynamoDB tables with confidence that these credentials will scope access _by tenant id_.
 
@@ -39,7 +39,7 @@ Our goal in this exercise is to walk you through the configuration and creation 
 * **Mapping User Roles to Policies** – with Cognito, we can create rules that determine how a user's role will map to the policies that we've created. In this part you'll see how these policies have been configured for our tenant and user roles.
 * **Acquiring Tenant-Scoped Credentials** – finally you'll see how to orchestrate the acquisition of credentials that are scoped by the policies outlined above. The credentials will control our access to data. You'll see how this explicitly enforces cross-tenant scoping.
 
-With this piece in place, you'll now have added a robust mechanism to your solution that much more tightly controls and scopes access to tenant resources. This solution highlights one of many strategies that could be applied to enforce tenant isolation.
+With this piece in place, you'll have added a robust mechanism to your solution that much more tightly controls and scopes access to tenant resources. This solution highlights one of many strategies that could be applied to enforce tenant isolation.
 
 ## Part 1 - Example of Cross-Tenant Access
 Before we introduce **policies**, it would help to examine a scenario where the absence of richer security policies can open the door to cross-tenant access. We will look at an (admittedly contrived) example where a developer could introduce code that might enable cross-tenant access.
@@ -105,50 +105,48 @@ To do this, we'll return to the product manager service and look at how manually
 
 **Step 15** - Locate the two tenants you created within the list by identifying the tenant with the username/email that you used above. **Capture the tenant identifiers for both of these tenants**. You'll need these values in subsequent steps.
  
-**Step 16** - Now let's go back to the code of our product manager service and make a modification. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/app/source/product-manager/src`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
+**Step 16** - Now let's go back to the code of our product manager service and make a modification. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/product-manager/`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
 
 <p align="center"><img src="./images/lab3/part1/open_server.js.png" alt="Lab 3 Part 1 Step 16 Open server.js"/></p>
 
 **Step 17** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
 
 ```javascript
-app.get('/products', function (req, res) {
-    winston.debug('Fetching Products for Tenant Id: ' + tenantId);
-    var searchParams = {
-        TableName: productSchema.TableName,
-        KeyConditionExpression: "tenantId = :tenantId",
-        ExpressionAttributeValues: {
-            ":tenantId": tenantId
-            //":tenantId": "<INSERT TENANTTWO GUID HERE>"
-        }
-    };
-    // construct the helper object
-    tokenManager.getSystemCredentials(function (credentials) {
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.query(searchParams, credentials, function (error, products) {
-            if (error) {
-                winston.error('Error retrieving products: ' + error.message);
-                res.status(400).send('{"Error" : "Error retrieving products"}');
-            } else {
-                winston.debug('Products successfully retrieved');
-                res.status(200).send(products);
-            }
-
-        });
-    });
+app.get('/products', function(req, res) {
+	var searchParams = {
+		TableName: productSchema.TableName,
+		KeyConditionExpression: "tenant_id = :tenant_id",
+		ExpressionAttributeValues: {
+			":tenant_id": tenantId
+			//":tenant_id": "<INSERT TENANT TW0 GUID HERE>"
+		}
+	};
+	// construct the helper object
+	tokenManager.getSystemCredentials(function(credentials) {
+		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+		dynamoHelper.query(searchParams, credentials, function(error, products) {
+			if (error) {
+				winston.error('Error retrieving products: ' + error.message);
+				res.status(400).send('{"Error": "Error retrieving products"}');
+			} else {
+				winston.debug('Products successfully retrieved');
+				res.status(200).send(products);
+			}
+		});
+	});
 });
 ```
 
-This function is invoked by the application to acquire a list of products that populate the catalog page of system. You can see that it references the `tenantId` that was extracted from the security token passed into our application. Let's consider what might happen if were **manually replace** this `tenantId` with another value. Locate the `tenantId` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenantId` with this value. So, when you're done, it should appear similar to the following:
+This function is invoked by the application to acquire a list of products that populate the catalog page of system. You can see that it references the `tenant_id` that was extracted from the security token passed into our application. Let's consider what might happen if were **manually replace** this `tenant_id` with another value. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
 ```javascript
 app.get('/products', function (req, res) {
     winston.debug('Fetching Products for Tenant Id: ' + tenantId);
     var searchParams = {
         TableName: productSchema.TableName,
-        KeyConditionExpression: "tenantId = :tenantId",
+        KeyConditionExpression: "tenant_id = :tenant_id",
         ExpressionAttributeValues: {
-            ":tenantId": "TENANT4c33c2eae9974615951e3dc04c7b9057"
+            ":tenant_id": "TENANT4c33c2eae9974615951e3dc04c7b9057"
         }
     };
     // construct the helper object
@@ -172,17 +170,17 @@ app.get('/products', function (req, res) {
 
 <p align="center"><img src="./images/lab3/part1/cloud9_save.png" alt="Lab 3 Part 1 Step 18 Save server.js"/></p>
 
-**Step 19** - To deploy our modified service, navigate to the `Lab3/Part1/scripts` directory and right-click `product-manager-v5.sh`, and click **Run** to execute the shell script.
+**Step 19** - To deploy our modified service, navigate to the `Lab3/Part1/product-manager/` directory and right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab3/part1/cloud9_run.png" alt="Lab 3 Part 1 Step 19 Cloud9 Run"/></p>
 
-**Step 20** - Wait for the `product-manager-v5.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+**Step 20** - Wait for the `deploy.sh` shell script to execute successfully.
 
 <p align="center"><img src="./images/lab3/part1/cloud9_run_script_complete.png" alt="Lab 3 Part 1 Step 20 Cloud9 Script Finished"/></p>
 
 **Step 21** - With our new version of the service deployed, we can now see how this impacted the application. Let's log back into the system with the credentials for **TenantOne** that you created above (if **TenantTwo** is still logged in, log out using the dropdown at the top right of the page).
 
-**Step 22** - Select the **Catalog** menu option at the top of the page. This should display the catalog for your **TenantOne** user you just authenticated as. However, the _**list actually contains products that are from TenantTwo**_. We've now officially crossed the tenant boundary.
+**Step 22** - Select the **Catalog** menu option at the top of the page. This _should_ display the catalog for your **TenantOne** user you just authenticated as. However, the _**list actually contains products that are from TenantTwo**_. We've now officially crossed the tenant boundary.
 
 **Recap**: The key takeaway here is that authentication alone is not enough to protect your SaaS system. Without additional policies and authorization in place, the code of your system could un-intentionally access data for another tenant. Here we forced this condition more explicitly, but you can imagine how more subtle changes by a developer could have an un-intended side effect.
 
@@ -252,7 +250,7 @@ At this point, all the elements of our isolation scheme are in place. We have au
 
 The steps that follow will guide you through the process of configuring and deploying a new version of the product manager service that successfully acquires these tenant-scoped credentials.
 
-**Step 1** - Let's start by looking at how the product manager service is modified to support tenant isolation. In Cloud9, navigate to `Lab3/Part4/app/source/product-manager/src/` and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
+**Step 1** - Let's start by looking at how the product manager service is modified to support tenant isolation. In Cloud9, navigate to `Lab3/Part4/product-manager/` and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
 
 <p align="center"><img src="./images/lab3/part4/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
 
@@ -264,8 +262,8 @@ app.get('/product/:id', function (req, res) {
     tokenManager.getCredentialsFromToken(req, function (credentials) {
         // init params structure with request params
         var params = {
-            tenantId: tenantId,
-            productId: req.params.id
+            tenant_id: tenantId,
+            product_id: req.params.id
         };
         // construct the helper object
         var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
@@ -322,11 +320,11 @@ Let's highlight the key elements of this function.
 
 It's this call to Cognito that **triggers the role mapping** we configured earlier. Cognito will extract the role from the supplied token and match it to the policy, then construct a **temporary set of scoped credentials** that are returned to the calling function.
 
-**Step 2** - So that's what the code is doing behind the scenes. Now, let's deploy this new version of the product manager service to see it in action. In Cloud9, navigate to the  `Lab3/Part4/scripts` directory, right-click `product-manager-v6.sh`, and click **Run** to execute the shell script.
+**Step 2** - So that's what the code is doing behind the scenes. Now, let's deploy this new version of the product manager service to see it in action. In Cloud9, navigate to the  `Lab3/Part4/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab3/part4/cloud9_run.png" alt="Lab 3 Part 4 Step 2 Cloud9 Run"/></p>
 
-**Step 3** - Wait for the `product-manager-v6.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+**Step 3** - Wait for the `deploy.sh` shell script to execute successfully.
 
 <p align="center"><img src="./images/lab3/part1/cloud9_run_script_complete.png" alt="Lab 3 Part 4 Step 3 Cloud9 Script Finished"/></p>
 
@@ -348,35 +346,35 @@ At this point, we have incorporated security at the IAM level by leveraging Cogn
 **Step 2** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
 
 ```javascript
-app.get('/products', function (req, res) {
-    winston.debug('Fetching Products for Tenant Id: ' + tenantId);
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
-        var searchParams = {
-            TableName: productSchema.TableName,
-            KeyConditionExpression: "tenantId = :tenantId",
-            ExpressionAttributeValues: {
-                ":tenantId": tenantId
-                //":tenantId": "<INSERT TENANTTWO GUID HERE>"
-            }
-        };
-        // construct the helper object
-        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-        dynamoHelper.query(searchParams, credentials, function (error, products) {
-            if (error) {
-                winston.error('Error retrieving products: ' + error.message);
-                res.status(400).send('{"Error" : "Error retrieving products"}');
-            } else {
-                winston.debug('Products successfully retrieved');
-                res.status(200).send(products);
-            }
-        });
-    });
+app.get('/products', function(req, res) {
+	winston.debug('Fetching Products for Tenant Id: ' + tenantId);
+	tokenManager.getCredentialsFromToken(req, function (credentials) {
+		var searchParams = {
+			TableName: productSchema.TableName,
+			KeyConditionExpression: "tenant_id = :tenant_id",
+			ExpressionAttributeValues: {
+				":tenant_id": tenantId
+				//":tenant_id": "<INSERT TENANTTWO GUID HERE>"
+			}
+		};
+		// construct the helper object
+		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+		dynamoHelper.query(searchParams, credentials, function(error, products) {
+			if (error) {
+				winston.error('Error retrieving products: ' + error.message);
+				res.status(400).send('{"Error": "Error retrieving products"}');
+			} else {
+				winston.debug('Products successfully retrieved');
+				res.status(200).send(products);
+			}
+		});
+	});
 });
 ```
 
-Locate the `tenantId` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenantId` with this value. So, when you're done, it should appear similar to the following:
+Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
-We will once again **manually inject** the `tenantId` for **TenantTwo** to see if our new code will prevent cross tenant access. Locate the `tenantId` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenantId` with this value. So, when you're done, it should appear similar to the following:
+We will once again **manually inject** the `tenant_id` for **TenantTwo** to see if our new code will prevent cross tenant access. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
 ```javascript
 app.get('/products', function (req, res) {
@@ -384,9 +382,9 @@ app.get('/products', function (req, res) {
     tokenManager.getCredentialsFromToken(req, function (credentials) {
         var searchParams = {
             TableName: productSchema.TableName,
-            KeyConditionExpression: "tenantId = :tenantId",
+            KeyConditionExpression: "tenant_id = :tenant_id",
             ExpressionAttributeValues: {
-                ":tenantId": "TENANT4c33c2eae9974615951e3dc04c7b9057"
+                ":tenant_id": "TENANT4c33c2eae9974615951e3dc04c7b9057"
             }
         };
         // construct the helper object
@@ -408,16 +406,16 @@ app.get('/products', function (req, res) {
 
 <p align="center"><img src="./images/lab3/part5/cloud9_save.png" alt="Lab 3 Part 5 Step 3 Save server.js"/></p>
 
-**Step 4** - To deploy our modified service, navigate to the `Lab3/Part5/scripts` directory and right-click `product-manager-v7.sh`, and click **Run** to execute the shell script.
+**Step 4** - To deploy our modified service, navigate to the `Lab3/Part5/product-manager/` directory and right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_run.png" alt="Lab 3 Part 5 Step 4 Cloud9 Run"/></p>
 
-**Step 5** - Wait for the `product-manager-v7.sh` shell script to execute successfully, as confirmed by the **STARTING NEW CONTAINER** message followed by **Process exited with code: 0**.
+**Step 5** - Wait for the `deploy.sh` shell script to execute successfully.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_run_script_complete.png" alt="Lab 3 Part 5 Step 5 Cloud9 Script Finished"/></p>
 
 **Step 6** - With our new version of the service deployed, we can now see how this impacted the application. Let's log back into the system with the credentials for **TenantOne** that you created above (if **TenantTwo** is still logged in, log out using the dropdown at the top right of the page).
 
-**Step 7** - Select the **Catalog** menu option at the top of the page. This should display the catalog for your **TenantOne** user you just authenticated as. You'll see that **no products are displayed**. In fact, if you look at the logs (use your browser's developer tools), you'll see that this threw an error. This is because we're logged in as **TenantOne** and our service has hard-coded **TenantTwo**. This makes it clear that our isolation policies are being enforced since the **credentials we acquired prohibited us from accessing data for TenantTwo**.
+**Step 7** - Select the **Catalog** menu option at the top of the page. This should display the catalog for your **TenantOne** user you just authenticated as. You'll see that **no products are displayed**. In fact, if you look at the JavaScript console logs (use your browser's developer tools), you'll see that this threw an error. This is because we're logged in as **TenantOne** and our service has hard-coded **TenantTwo**. This makes it clear that our isolation policies are being enforced since the **credentials we acquired prohibited us from accessing data for TenantTwo**.
 
 **Recap**: With this last step, we connected all the concepts of **tenant isolation** in the code of the product manager service. We added specific calls to exchange our authenticated token for a **tenant-scope set of credentials** which we then used to access our DynamoDB data store. With this **new level of isolation enforcement** in place, we attempted to hard-code something that crossed a tenant boundary and confirmed that our policies **prohibited cross-tenant access**.

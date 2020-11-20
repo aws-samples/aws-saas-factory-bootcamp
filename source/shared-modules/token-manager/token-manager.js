@@ -29,8 +29,9 @@ module.exports.getTenantId = function(req) {
     if (bearerToken) {
         bearerToken = bearerToken.substring(bearerToken.indexOf(' ') + 1);
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             tenantId = decodedIdToken['custom:tenant_id'];
+        }
     }
     return tenantId;
 }

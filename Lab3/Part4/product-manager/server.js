@@ -57,38 +57,39 @@ app.get('/product/health', function(req, res) {
 });
 
 // Create REST entry points
-app.get('/product/:id', function(req, res) {
-	winston.debug('Fetching product: ' + req.params.id);
-	// init params structure with request params
-	var params = {
-		tenant_id: tenantId,
-		product_id: req.params.id
-	};
-	tokenManager.getSystemCredentials(function(credentials) {
-		// construct the helper object
-		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
-		dynamoHelper.getItem(params, credentials, function(err, product) {
-			if (err) {
-				winston.error('Error getting product: ' + err.message);
-				res.status(400).send('{"Error": "Error getting product"}');
-			} else {
-				winston.debug('Product ' + req.params.id + ' retrieved');
-				res.status(200).send(product);
-			}
-		});
-	});
+app.get('/product/:id', function (req, res) {
+    winston.debug('Fetching product: ' + req.params.id);
+    tokenManager.getCredentialsFromToken(req, function (credentials) {
+        // init params structure with request params
+        var params = {
+            tenant_id: tenantId,
+            product_id: req.params.id
+        };
+        // construct the helper object
+        var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
+        dynamoHelper.getItem(params, credentials, function (err, product) {
+            if (err) {
+                winston.error('Error getting product: ' + err.message);
+                res.status(400).send('{"Error" : "Error getting product"}');
+            } else {
+                winston.debug('Product ' + req.params.id + ' retrieved');
+                res.status(200).send(product);
+            }
+        });
+    });
 });
 
 app.get('/products', function(req, res) {
-	var searchParams = {
-		TableName: productSchema.TableName,
-		KeyConditionExpression: "tenant_id = :tenant_id",
-		ExpressionAttributeValues: {
-			":tenant_id": tenantId
-		}
-	};
-	// construct the helper object
-	tokenManager.getSystemCredentials(function(credentials) {
+	winston.debug('Fetching Products for Tenant Id: ' + tenantId);
+	tokenManager.getCredentialsFromToken(req, function (credentials) {
+		var searchParams = {
+			TableName: productSchema.TableName,
+			KeyConditionExpression: "tenant_id = :tenant_id",
+			ExpressionAttributeValues: {
+				":tenant_id": tenantId
+			}
+		};
+		// construct the helper object
 		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
 		dynamoHelper.query(searchParams, credentials, function(error, products) {
 			if (error) {
@@ -103,13 +104,12 @@ app.get('/products', function(req, res) {
 });
 
 app.post('/product', function(req, res) {
-	var product = req.body;
-	var guid = uuidv4();
-	product.product_id = guid;
-	product.tenant_id = tenantId;
-	winston.debug(JSON.stringify(product));
-	// construct the helper object
-	tokenManager.getSystemCredentials(function(credentials) {
+	tokenManager.getCredentialsFromToken(req, function (credentials) {
+		var product = req.body;
+		var guid = uuidv4();
+		product.product_id = guid;
+		product.tenant_id = tenantId;
+		// construct the helper object
 		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
 		dynamoHelper.putItem(product, credentials, function(err, product) {
 			if (err) {
@@ -125,38 +125,38 @@ app.post('/product', function(req, res) {
 
 app.put('/product', function(req, res) {
 	winston.debug('Updating product: ' + req.body.product_id);
-	// init the params from the request data
-	var keyParams = {
-		tenant_id: tenantId,
-		product_id: req.body.product_id
-	};
-	var productUpdateParams = {
-		TableName: productSchema.TableName,
-		Key: keyParams,
-		UpdateExpression: "set " +
-				"sku = :sku, " +
-				"title = :title, " +
-				"description = :description, " +
-				"#condition = :condition, " +
-				"conditionDescription = :conditionDescription, " +
-				"numberInStock = :numberInStock, " +
-				"unitCost = :unitCost",
-		ExpressionAttributeNames: {
-			'#condition': 'condition'
-		},
-		ExpressionAttributeValues: {
-			":sku": req.body.sku,
-			":title": req.body.title,
-			":description": req.body.description,
-			":condition": req.body.condition,
-			":conditionDescription": req.body.conditionDescription,
-			":numberInStock": req.body.numberInStock,
-			":unitCost": req.body.unitCost
-		},
-		ReturnValues: "UPDATED_NEW"
-	};
-	// construct the helper object
-	tokenManager.getSystemCredentials(function(credentials) {
+	tokenManager.getCredentialsFromToken(req, function (credentials) {
+		// init the params from the request data
+		var keyParams = {
+			tenant_id: tenantId,
+			product_id: req.body.product_id
+		};
+		var productUpdateParams = {
+			TableName: productSchema.TableName,
+			Key: keyParams,
+			UpdateExpression: "set " +
+					"sku = :sku, " +
+					"title = :title, " +
+					"description = :description, " +
+					"#condition = :condition, " +
+					"conditionDescription = :conditionDescription, " +
+					"numberInStock = :numberInStock, " +
+					"unitCost = :unitCost",
+			ExpressionAttributeNames: {
+				'#condition': 'condition'
+			},
+			ExpressionAttributeValues: {
+				":sku": req.body.sku,
+				":title": req.body.title,
+				":description": req.body.description,
+				":condition": req.body.condition,
+				":conditionDescription": req.body.conditionDescription,
+				":numberInStock": req.body.numberInStock,
+				":unitCost": req.body.unitCost
+			},
+			ReturnValues: "UPDATED_NEW"
+		};
+		// construct the helper object
 		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
 		dynamoHelper.updateItem(productUpdateParams, credentials, function(err, product) {
 			if (err) {
@@ -172,16 +172,16 @@ app.put('/product', function(req, res) {
 
 app.delete('/product/:id', function(req, res) {
 	winston.debug('Deleting product: ' + req.params.id);
-	// init parameter structure
-	var deleteProductParams = {
-		TableName: productSchema.TableName,
-		Key: {
-			tenant_id: tenantId,
-			product_id: req.params.id
-		}
-	};
-	// construct the helper object
-	tokenManager.getSystemCredentials(function(credentials) {
+	tokenManager.getCredentialsFromToken(req, function (credentials) {
+		// init parameter structure
+		var deleteProductParams = {
+			TableName: productSchema.TableName,
+			Key: {
+				tenant_id: tenantId,
+				product_id: req.params.id
+			}
+		};
+		// construct the helper object
 		var dynamoHelper = new DynamoDBHelper(productSchema, credentials, configuration);
 		dynamoHelper.deleteItem(deleteProductParams, credentials, function(err, product) {
 			if (err) {
