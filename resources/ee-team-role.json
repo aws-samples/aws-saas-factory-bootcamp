@@ -1,0 +1,49 @@
+[
+  {
+    "Sid": "SaaSBootcampTeamRolePolicy",
+    "Action": [
+      "cloud9:DescribeEnvironmentMemberships",
+      "apigateway:GET",
+      "waf-regional:ListWebACLs",
+      "waf-regional:AssociateWebACL",
+      "wafv2:ListWebACLs",
+      "wafv2:AssociateWebACL",
+      "cloudfront:List*",
+      "cloudfront:Get*",
+      "application-autoscaling:*",
+      "dynamodb:*",
+      "cognito-identity:*",
+      "cognito-idp:*",
+      "ssm:GetParameter",
+      "sqs:ReceiveMessage",
+      "sqs:PurgeQueue",
+      "sqs:DeleteMessage",
+      "s3:PutObject",
+      "codebuild:*",
+      "ecr:*",
+      "ecs:*",
+      "sns:CreateTopic",
+      "cloudwatch:*",
+      "logs:*"
+    ],
+    "Resource": "*",
+    "Effect": "Allow"
+  },
+  {
+    "Sid": "CognitoIdPoolRoles",
+    "Effect": "Allow",
+    "Action": [
+      "iam:CreateRole",
+      "iam:PutRolePolicy"
+    ],
+    "Resource": "arn:aws:iam::$$teamAccountId:role/Cognito*"
+  },
+  {
+    "Sid": "DynamoDBRequestConditions",
+    "Effect": "Allow",
+    "Action": [
+      "iam:CreatePolicyVersion"
+    ],
+    "Resource": "arn:aws:iam::$$teamAccountId:policy/TENANT*"
+  }
+]
