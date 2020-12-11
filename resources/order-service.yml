@@ -52,14 +52,14 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-      - AttributeName: tenantId
+      - AttributeName: tenant_id
         AttributeType: S
-      - AttributeName: orderId
+      - AttributeName: order_id
         AttributeType: S
       KeySchema:
-      - AttributeName: tenantId
+      - AttributeName: tenant_id
         KeyType: HASH
-      - AttributeName: orderId
+      - AttributeName: order_id
         KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
