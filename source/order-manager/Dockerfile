@@ -1,4 +1,4 @@
-FROM node:10-alpine
+FROM public.ecr.aws/bitnami/node:10-prod
 
 WORKDIR /usr/src/app
 RUN mkdir order-manager shared-modules
