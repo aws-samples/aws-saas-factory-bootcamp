@@ -77,7 +77,7 @@ Attributes are case-sensitive. Your screen should appear as follows:
 
 Here we can configure password and administration policies. These policies (and others configured with user pools) allow us to vary the approach of each tenant. You could, for example, surface these choices in the tenant administration experience of your SaaS solution, allowing individual tenants to configure their own policies.
 
-<p align="center"><img src="./images/lab1/part1/cognito_step5_password_policy.png" alt="Lab 1 Part 1 Step 7 Cognito Password Policy"/></p>
+<p align="center"><img src="./images/lab1/part1/cognito_step7_password_policy.png" alt="Lab 1 Part 1 Step 7 Cognito Password Policy"/></p>
 
 For our solution, we'll override a couple of the default options.
 
