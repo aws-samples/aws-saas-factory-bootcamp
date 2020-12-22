@@ -209,7 +209,7 @@ To achieve this, you'll need the Invoke URL of the **API Gateway** that our micr
 
 Navigate to the **API Gateway** console listed under the **Networking** heading in the AWS console. Select the **saas-bootcamp-api** API. In the left-hand menu, select the **Stages** link. At the top of the deployed stages tree, you should see a **v1** stage for "version 1". Click on this and in the main area of your screen, you will see the **Invoke URL** for this deployed API Gateway stage. For example:
 
-<p align="center"><img src="./images/lab1/part2/alb_url.png" alt="Lab 1 Part 2 Step 4 Load Balancer DNS Name"/></p>
+<p align="center"><img src="./images/lab1/part2/apigateway_stage_url.png" alt="Lab 1 Part 2 Step 4 API Gateway stage URL"/></p>
 
 **Step 5** – If you need to retrieve your user pool id again, navigate to the Cognito service in the AWS console and select the **Manage User Pools** button. You will be presented with a list of user pools that have been created in your account. Select the user pool that you created earlier to display information about the user pool.
 
