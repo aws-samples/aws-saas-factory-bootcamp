@@ -99,7 +99,7 @@ To do this, we'll return to the product manager service and look at how manually
 
 <p align="center"><img src="./images/lab3/part1/add_product2.png" alt="Lab 3 Part 1 Step 13 Add Product"/></p>
 
-**Step 14** - Now we have a **2** tenants with products that belong exclusively to each tenant. Let's go find the tenant identifiers for these newly created tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page.
+**Step 14** - Now we have a **2** tenants with products that belong exclusively to each tenant. Let's go find the tenant identifiers for these newly created tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page. Select the **TenantBootcamp** table and then the **Items** tab
 
 <p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 Dynamo TenantBootcamp Table"/></p>
 
