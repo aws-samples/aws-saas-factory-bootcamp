@@ -50,7 +50,7 @@ app.get('/product/:id', function (req, res) {
     winston.debug('Fetching product: ' + req.params.id);
     // init params structure with request params
     var params = {
-        product_Id: req.params.id
+        product_id: req.params.id
     };
     tokenManager.getSystemCredentials(function (credentials) {
         // construct the helper object
