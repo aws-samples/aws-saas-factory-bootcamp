@@ -41,7 +41,7 @@ In this basic model, we'll deploy a service, create a **DynamoDB** table to hold
 
 **Step 1** - Let's start this process by taking a closer look at the single-tenant service that we'll be deploying. Like the prior services implemented in the first lab, the product manager microservice is built with Node.js and Express. It exposes a series of CRUD operations via a REST interface.
 
-The source code for this file is available at `Lab2/Part1/app/source/product-manager/src/server.js`.
+The source code for this file is available at `Lab2/Part1/product-manager/server.js`.
 
 In looking at this file, you'll see a number of entry points that correspond to the REST methods (`app.get(...)`, `app.post(...)`, etc.). Within each of these functions is the implementation of the corresponding REST operation. Let's take a look at one of these methods in more detail to get a sense of what's going on here.
 
@@ -50,7 +50,7 @@ app.get('/product/:id', function (req, res) {
     winston.debug('Fetching product: ' + req.params.id);
     // init params structure with request params
     var params = {
-        productId: req.params.id
+        product_id: req.params.id
     };
     tokenManager.getSystemCredentials(function (credentials) {
         // construct the helper object
@@ -71,7 +71,7 @@ app.get('/product/:id', function (req, res) {
 
 Let's start by looking at the signature of the method. Here you'll see the traditional REST path for a GET method with the `/product` resource followed by an identifier parameter that indicates which product is to be fetched. This value is extracted from the incoming request and populated into a `params` structure. The rest of this function is about calling our DynamoDBHelper, which is our data access layer, to fetch the item from a DynamoDB table.
 
-**Step 2** - Our first step is to deploy the single-tenant product manager, within our Cloud9 IDE. Navigate to `Lab2/Part1/` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Step 2** - Our first step is to deploy the single-tenant product manager, within our Cloud9 IDE. Navigate to `Lab2/Part1/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script.png" alt="Lab 2 Part 1 Step 2 Cloud9 Run Script"/></p>
 
@@ -185,7 +185,7 @@ You'll notice that we're passing through all the parameters that we constructed 
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script_complete.png" alt="Lab 2 Part 2 Step 4 Cloud9 Script Finished"/></p>
 
-**Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **product_d** as the partition key. We now need to have **tenant_id** be our partition key and have the **product_id** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
+**Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **product_id** as the partition key. We now need to have **tenant_id** be our partition key and have the **product_id** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
 
 Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch alarms to complete the process.
 
@@ -200,8 +200,7 @@ Navigate to the DynamoDB service in the AWS console and select the **Tables** op
 ```bash
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
-
-You should get a 200 response from your request indicating that the request was successfully processed and the service is ready to process requests.
+**Be sure you've included the API stage name at the end of the URL before /product/health.** You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
 
 **Step 8** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Unlike our prior REST call, this one must provide the tenant identifier as part of the request. Submit the following REST command to create a product for tenant "**123**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **API-GATEWAY-PROD-URL** with the URL and trailing stage name you captured from the API Gateway settings.
 
@@ -232,6 +231,8 @@ So, our next step is to enable our service to be aware of these security tokens 
 For this section, we'll see how our product manager service gets retrofitted with new code to extract these tokens from the HTTP request and applies them to our security and data partitioning model.
 
 **Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support acquiring tenant context from identity tokens. View the new version of our Product Manager service in Cloud9 by opening `Lab2/Part3/product-manager/server.js`.
+
+<p align="center"><img src="./images/lab2/part3/cloud9_open_script.png" alt="Lab 2 Part 3 Step 1 Cloud9 Open Script"/></p>
 
 Version 3 of our product manager service introduces a new **TokenManager** helper object that abstracts away many aspects of the token processing. Let's take a look at a snippet of this updated version to see how tenant context is acquired from the user's identity:
 
@@ -307,7 +308,7 @@ module.exports.getTenantId = function(req) {
 
 **Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the web application, which already has the ability to authenticate a user and acquire a valid token from our identity provider, Cognito. First, we'll need to register a couple of new tenants through the application.
 
-Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the S3 bucket settings.
+Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the **CloudFront** service.
 
 **Step 7** - Fill in the form with data about your new tenant. Since we're creating two tenants as part of this flow, you'll need **two separate** email addresses. If you don't have two, you can use the same trick with the plus (**+**) symbol in the username before the at (**@**) symbol as described in Lab 1. After you've filled in the form, select the **Register** button.
 
@@ -315,7 +316,7 @@ Enter the URL to your application (created in Lab 1) and select the **Register**
 
 <p align="center"><img src="./images/lab2/part3/cognito_email.png" alt="Lab 2 Part 3 Step 8 Cognito Validation Email"/></p>
 
-**Step 9** - We can now login to the application using these credentials. Return to the application using the public URL generated by S3 to host your site. Enter the temporary credentials that were provided in your email and select the **Login** button.
+**Step 9** - We can now login to the application using these credentials. Return to the application using the public URL (created in Lab 1). Enter the temporary credentials that were provided in your email and select the **Login** button.
 
 <p align="center"><img src="./images/lab2/part3/login.png" alt="Lab 2 Part 3 Step 9 Login"/></p>
 

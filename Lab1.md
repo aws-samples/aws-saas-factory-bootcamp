@@ -77,7 +77,7 @@ Attributes are case-sensitive. Your screen should appear as follows:
 
 Here we can configure password and administration policies. These policies (and others configured with user pools) allow us to vary the approach of each tenant. You could, for example, surface these choices in the tenant administration experience of your SaaS solution, allowing individual tenants to configure their own policies.
 
-<p align="center"><img src="./images/lab1/part1/cognito_step5_password_policy.png" alt="Lab 1 Part 1 Step 7 Cognito Password Policy"/></p>
+<p align="center"><img src="./images/lab1/part1/cognito_step7_password_policy.png" alt="Lab 1 Part 1 Step 7 Cognito Password Policy"/></p>
 
 For our solution, we'll override a couple of the default options.
 
@@ -209,7 +209,7 @@ To achieve this, you'll need the Invoke URL of the **API Gateway** that our micr
 
 Navigate to the **API Gateway** console listed under the **Networking** heading in the AWS console. Select the **saas-bootcamp-api** API. In the left-hand menu, select the **Stages** link. At the top of the deployed stages tree, you should see a **v1** stage for "version 1". Click on this and in the main area of your screen, you will see the **Invoke URL** for this deployed API Gateway stage. For example:
 
-<p align="center"><img src="./images/lab1/part2/alb_url.png" alt="Lab 1 Part 2 Step 4 Load Balancer DNS Name"/></p>
+<p align="center"><img src="./images/lab1/part2/apigateway_stage_url.png" alt="Lab 1 Part 2 Step 4 API Gateway stage URL"/></p>
 
 **Step 5** – If you need to retrieve your user pool id again, navigate to the Cognito service in the AWS console and select the **Manage User Pools** button. You will be presented with a list of user pools that have been created in your account. Select the user pool that you created earlier to display information about the user pool.
 
@@ -319,7 +319,10 @@ Notice that we copy the contents of the HTML form and construct a JSON `tenant` 
 
 **Step 2** – Our web application is considered static because it uses JavaScript to modify the HTML views directly on the browser without having to reload the entire URI from the server. **Amazon S3** provides for _serverless_ hosting of static websites. To minimize geographic delay in loading your website and to offload HTTPS encryption, we've put an Amazon CloudFront distribution in front of the S3 bucket hosting our website. We need to capture the URL of our application from CloudFront.
 
-Navigate to the **CloudFront** service under the **Networking & Content Delivery** category in the AWS console. A distribution has been created for our web application. Copy the URL value and open it in a new web browser window or tab.
+
+Navigate to the **CloudFront** service under the **Networking & Content Delivery** category in the AWS console. A distribution has been created for our web application. Copy the **Domain Name** and open it in a new web browser window or tab.
+
+<p align="center"><img src="./images/lab1/part4/cloudfront_distributions.png" alt="CloudFront"/></p>
 
 **Step 3** – The landing page for the application will prompt you to login. This page is for tenants that have already registered. You don't have any tenants yet, so, you'll need to select the **Register** button (to the right of the **Login** button). Selecting this button will take you to a form where you can register your new tenant.
 

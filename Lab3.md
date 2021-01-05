@@ -99,7 +99,7 @@ To do this, we'll return to the product manager service and look at how manually
 
 <p align="center"><img src="./images/lab3/part1/add_product2.png" alt="Lab 3 Part 1 Step 13 Add Product"/></p>
 
-**Step 14** - Now we have a **2** tenants with products that belong exclusively to each tenant. Let's go find the tenant identifiers for these newly created tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page.
+**Step 14** - Now we have a **2** tenants with products that belong exclusively to each tenant. Let's go find the tenant identifiers for these newly created tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page. Select the **TenantBootcamp** table and then the **Items** tab
 
 <p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 Dynamo TenantBootcamp Table"/></p>
 
@@ -326,7 +326,7 @@ It's this call to Cognito that **triggers the role mapping** we configured earli
 
 **Step 3** - Wait for the `deploy.sh` shell script to execute successfully.
 
-<p align="center"><img src="./images/lab3/part1/cloud9_run_script_complete.png" alt="Lab 3 Part 4 Step 3 Cloud9 Script Finished"/></p>
+<p align="center"><img src="./images/lab3/part4/cloud9_run_script_complete.png" alt="Lab 3 Part 4 Step 3 Cloud9 Script Finished"/></p>
 
 **Step 4** - Let's verify that all of the moving parts of this process are working. Use the same web application URL you've used throughout. If **TenantTwo** is stilled logged in, log out using the dropdown at the top left of the application navigation bar. Now, login as **TenantOne** and access your data by selecting the **Catalog** menu item and viewing **TenantOne's** products. **Everything should work**.
 
@@ -339,7 +339,7 @@ While seeing this work is great, it's hard to know that this new code is truly e
 At this point, we have incorporated security at the IAM level by leveraging Cognito's
 `getCredentialsForIdentity()`, but we have not evaluated if we can circumvent our security measures. As we did before, we will **manually override the tenant identifier** to see if we can break tenant isolation. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
 
-**Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/app/source/product-manager/src/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Run**.
+**Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/product-manager/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_open_server.js.png" alt="Lab 3 Part 5 Step 1 Cloud9 Open server.js"/></p>
 
@@ -371,8 +371,6 @@ app.get('/products', function(req, res) {
 	});
 });
 ```
-
-Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
 We will once again **manually inject** the `tenant_id` for **TenantTwo** to see if our new code will prevent cross tenant access. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
 
