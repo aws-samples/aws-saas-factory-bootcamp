@@ -14,6 +14,7 @@
       "dynamodb:*",
       "cognito-identity:*",
       "cognito-idp:*",
+      "cognito-sync:*",
       "ssm:GetParameter",
       "sqs:ReceiveMessage",
       "sqs:PurgeQueue",
