@@ -254,7 +254,7 @@ The steps that follow will guide you through the process of configuring and depl
 
 <p align="center"><img src="./images/lab3/part4/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
 
-The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are  used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
+The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialsFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are  used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
 
 ```javascript
 app.get('/product/:id', function (req, res) {
