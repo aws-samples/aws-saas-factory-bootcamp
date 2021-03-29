@@ -409,7 +409,7 @@ module.exports.getPolicyTemplate = function(policyType, policyConfig) {
     // create the ARN prefixes for policies
     var arnPrefix = 'arn:aws:dynamodb:' + policyConfig.region + ':' + policyConfig.accountId + ':table/';
     var databaseArnPrefix = 'arn:aws:dynamodb:' + policyConfig.region + ':' + policyConfig.accountId + ':table/';
-    var cognitoArn = 'arn:aws:cognito-idp' + ':' + policyConfig.region + ':' + policyConfig.accountId + ':userpool/' + policyConfig.userPoolId;
+    var cognitoArn = 'arn:aws:cognito-idp:' + policyConfig.region + ':' + policyConfig.accountId + ':userpool/' + policyConfig.userPoolId;
 
     // populate database params
     // setup params for templates
@@ -507,7 +507,6 @@ function getTenantAdminPolicy(policyParams) {
                     "dynamodb:BatchWriteItem",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.orderTableArn],
                 "Condition": {
@@ -529,7 +528,6 @@ function getTenantAdminPolicy(policyParams) {
                     "dynamodb:BatchWriteItem",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.productTableArn]
             },
@@ -571,7 +569,6 @@ function getTenantUserPolicy(policyParams) {
                     "dynamodb:Query",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.userTableArn, policyParams.userTableArn + '/*'],
                 "Condition": {
@@ -593,7 +590,6 @@ function getTenantUserPolicy(policyParams) {
                     "dynamodb:BatchWriteItem",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.orderTableArn],
                 "Condition": {
@@ -720,7 +716,6 @@ function getSystemUserPolicy(policyParams) {
                     "dynamodb:Query",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.userTableArn]
             },
@@ -734,7 +729,6 @@ function getSystemUserPolicy(policyParams) {
                     "dynamodb:Query",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.orderTableArn]
             },
@@ -748,7 +742,6 @@ function getSystemUserPolicy(policyParams) {
                     "dynamodb:Query",
                     "dynamodb:DescribeTable",
                     "dynamodb:CreateTable"
-
                 ],
                 "Resource": [policyParams.productTableArn]
             },

@@ -299,6 +299,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - cognito-idp:CreateUserPool
+                  - cognito-idp:TagResource
                 Resource: '*'
               - Effect: Allow
                 Action:
