@@ -59,8 +59,7 @@ app.get('/product/:id', function (req, res) {
             if (err) {
                 winston.error('Error getting product: ' + err.message);
                 res.status(400).send('{"Error" : "Error getting product"}');
-            }
-            else {
+            } else {
                 winston.debug('Product ' + req.params.id + ' retrieved');
                 res.status(200).send(product);
             }
@@ -306,9 +305,9 @@ module.exports.getTenantId = function(req) {
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script_complete.png" alt="Lab 2 Part 3 Step 5 Cloud9 Script Finished"/></p>
 
-**Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the web application, which already has the ability to authenticate a user and acquire a valid token from our identity provider, Cognito. First, we'll need to register a couple of new tenants through the application.
+**Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the web application, which already has the ability to authenticate a user and acquire a valid token from our identity provider, Cognito. First, we'll need to make sure we have at least two tenants registered.
 
-Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the **CloudFront** service.
+You already registered a tenant in Lab 1. Let's add a second tenant following the same steps as in Lab 1. Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the **CloudFront** service.
 
 **Step 7** - Fill in the form with data about your new tenant. Since we're creating two tenants as part of this flow, you'll need **two separate** email addresses. If you don't have two, you can use the same trick with the plus (**+**) symbol in the username before the at (**@**) symbol as described in Lab 1. After you've filled in the form, select the **Register** button.
 
@@ -326,25 +325,26 @@ Enter the URL to your application (created in Lab 1) and select the **Register**
 
 After you've successfully changed your password, you'll be logged into the application and landed at the home page. We won't get into the specifics of the application yet.
 
-**Step 11** - Create another tenant by repeating steps 6-10 again, supplying a different email address for your tenant.
+**Step 11** - You must have two tenants to finish the lab exercises. If you only have one tenant registered, create another by repeating steps 6-10 again, supplying a different email address for your tenant.
 
-**Step 12** - Now that our tenants have been created through the onboarding flow let's actually create some products via the application. Assuming you're still logged in as the last tenant added, you can now navigate to the **Catalog** menu item at the top of the page.
+**Step 12** - Now that our tenants have been created through the onboarding flow let's actually create some products via the application. Log into the application as your first tenant and navigate to the **Catalog** menu item at the top of the page.
 
 <p align="center"><img src="./images/lab2/part3/catalog.png" alt="Lab 2 Part 3 Step 12 Catalog Page"/></p>
 
-**Step 13** - With the **Catalog** page open, Select the **Add Product** button to add a new product. Fill in the form with the product details and select the **Save** button. **_Repeat this process a couple of times to get a few products into the catalog for this tenant_**.
+**Step 13** - With the **Catalog** page open, select the **Add Product** button from the top right of the page. Fill in the details with the product data of your choice. However, for the **SKU**, precede all of your SKU's with **TENANTONE**. So, SKU one might be "**TENANTONE-ABC**". The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+<p align="center"><img src="./images/lab3/part1/add_product1.png" alt="Lab 3 Part 1 Step 7 Add Product"/></p>
 
-<p align="center"><img src="./images/lab2/part3/add_product.png" alt="Lab 2 Part 3 Step 13 Add Product"/></p>
-
-**Step 14** - Once you've entered in a couple of products for one of your newly registered tenants, select the dropdown menu with your tenant name at the top right of the screen and select **Logout**. This will return you to the login page.
+**Step 14** - Once you've added a couple of products for one of your tenants, select the dropdown menu with your tenant name at the top right of the screen and select **Logout**. This will return you to the login page.
 
 <p align="center"><img src="./images/lab2/part3/logout.png" alt="Lab 2 Part 3 Step 14 Logout"/></p>
 
-**Step 15** - Enter the credentials of the other tenant that you created in the step above and select the **Login** button. You're now logged in as a different tenant and you should see a different name in the profile menu selection in the upper right of the screen.
+**Step 15** - Enter the credentials of the other tenant that you created and select the **Login** button. You're now logged in as a different tenant and you should see a different name in the profile menu selection in the upper right of the screen.
 
-**Step 16** - Now navigate to the **Catalog** view again. You should note that the list of products is empty at this point. The products that you previously created were associated with another tenant so they are intentionally not show here. The illustrates that our partitioning is working.
+**Step 16** - Now navigate to the **Catalog** view again. You should note that the list of products is empty at this point. The products that you previously created were associated with another tenant so they are intentionally not show here. **The illustrates that our partitioning is working**.
 
-**Step 17** - Select the **Add Product** button in the products view to create a product for this tenant. Enter data for the product and select the **Save** button. **_Repeat this process a couple of times to create a few products for this other tenant_**.
+**Step 17** - As before, click the **Add Product** button to fill in the details with the product data of your choice. However, for the SKU, precede all of your SKU's with **TENANTTWO**. So, SKU one might be **TENANTTWO-ABC**. The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+
+<p align="center"><img src="./images/lab3/part1/add_product2.png" alt="Lab 3 Part 1 Step 13 Add Product"/></p>
 
 **Step 18** - After completing this onboarding process and adding these products for two separate tenants, we can now go see how this data landed in DynamoDB tables that support this experience.
 
