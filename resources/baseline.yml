@@ -19,9 +19,6 @@ Parameters:
   WebsiteBucket:
     Description: S3 bucket to host the website
     Type: String
-  WebsiteBucketWebsiteURL:
-    Description: The S3 website URL for CloudFront to proxy
-    Type: String
   CloudTrailBucket:
     Description: S3 bucket for CloudTrail to publish logs to
     Type: String
@@ -877,7 +874,6 @@ Resources:
       Parameters:
         BootcampBucket: !Ref BootcampBucket
         WebsiteBucket: !Ref WebsiteBucket
-        WebsiteBucketWebsiteURL: !Ref WebsiteBucketWebsiteURL
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
