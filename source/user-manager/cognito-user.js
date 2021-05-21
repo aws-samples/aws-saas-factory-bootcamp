@@ -530,6 +530,8 @@ function getTenantAdminPolicy(policyParams) {
                     "dynamodb:CreateTable"
                 ],
                 "Resource": [policyParams.productTableArn]
+                // No request condiions because we want the user
+                // to create them in Lab 3
             },
             {
                 "Sid": "TenantCognitoAccess",

@@ -393,7 +393,6 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CloudTrailBucket: !Ref CloudTrailBucket
         WebsiteBucket: !Ref WebsiteBucket
-        WebsiteBucketWebsiteURL: !GetAtt WebsiteBucket.WebsiteURL
 Outputs:
   SaaSFactoryServerlessSaaSWorkshopStack:
     Description: Saas Bootcamp CloudFormation stack
