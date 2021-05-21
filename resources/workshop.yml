@@ -394,7 +394,7 @@ Resources:
         CloudTrailBucket: !Ref CloudTrailBucket
         WebsiteBucket: !Ref WebsiteBucket
 Outputs:
-  SaaSFactoryServerlessSaaSWorkshopStack:
+  SaaSFactoryBootcampStack:
     Description: Saas Bootcamp CloudFormation stack
     Value: !Ref AWS::StackName
 ...
