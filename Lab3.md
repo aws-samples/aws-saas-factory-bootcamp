@@ -46,11 +46,13 @@ Before we introduce **policies**, it would help to examine a scenario where the 
 
 To do this, we'll return to the product manager service and look at how manually injected tenant context could surface data in your application that should not be surfaced. This will set the stage for understanding how the introduction of **policies** can prevent this from happening.
 
-**Step 1** - In [Lab 2](Lab2.md) we added products to the catalogs for each of our two tenants. Let's go find the tenant identifiers for our two different tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page. Select the **TenantBootcamp** table and then the **Items** tab.
+**Step 1** - In [Lab 2](Lab2.md) we added products to the catalogs for each of our two tenants. If you do not have two tenants registered at this point with at least 1 product each, please follow the steps in Lab 2 to complete that now.
+
+To artificially create cross tenant access, we need the unique tenant identifiers. Let's go find the tenant id's for our two different tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page. Select the **TenantBootcamp** table and then the **Items** tab.
 
 <p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 Dynamo TenantBootcamp Table"/></p>
 
-**Step 2** - Locate the two tenants you created within the list by identifying the tenant with the username/email that you used. **Capture the tenant identifiers for both of these tenants**. You'll need these values in subsequent steps.
+**Step 2** - Locate the two tenants you created within the list by matching the tenant with the username/email that you used. **Capture the tenant_id value for both of these tenants**. You'll need these values in subsequent steps.
  
 **Step 3** - Now let's go back to the code of our product manager service and make a modification. Open our product manager `server.js` file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/product-manager/`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
 
@@ -159,7 +161,7 @@ Instead of creating new policies from scratch, let's edit policies that were pro
 
 <p align="center"><img src="./images/lab3/part2/iam_add_request_condition.png" alt="Lab 3 Part 2 Step 6 IAM Policy Add Request Condition"/></p>
 
-This process created a new **request condition** for our policy that now indicates that the value of our partition key in our DynamoDB table must include the tenant identifier when you user attempts to access items in the table.
+This process created a new **request condition** for our policy that now indicates that the value of our partition key in our DynamoDB table must match the tenant identifier when you user attempts to access items in the table.
 
 **Step 7** - We now want to repeat this same process for **TenantTwo**. Complete steps 2-6 again replacing all references to TenantOne with **TenantTwo**. This will ensure that TenantTwo is also protected.
 
