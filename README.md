@@ -17,7 +17,7 @@ If you are participating in this bootcamp workshop during an AWS event, follow t
 
 If you would like to run through the lab exercises in a self-guided manner, all you need to do is launch the [workshop.yml](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) Amazon CloudFormation template in your AWS account and then start by clicking the Lab 1 icon below.
 
-Note that this workshop deploys infrastructure into your AWS account that is outside of the free tier, and you should delete the CloudFormation stack when you are finished to minimize costs.
+Note that this workshop deploys infrastructure into your AWS account that is outside of the free tier, and you should delete the CloudFormation stack when you are finished to minimize costs. The Cognito resources and IAM roles and policies created by the onboarding system will need to be removed manually after the stack delete. 
 
 # Lab Guides
 ### Lab 1 - Identity and Onboarding
@@ -30,4 +30,4 @@ Note that this workshop deploys infrastructure into your AWS account that is out
 [![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab3.md "Lab 3")
 
 # License
-This workshop is licensed under the Apache 2.0 License. See the LICENSE file.
+This workshop is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file.
