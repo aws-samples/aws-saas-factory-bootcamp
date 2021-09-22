@@ -9,7 +9,7 @@
   "dependencies": {
     "amazon-cognito-identity-js": "latest",
     "amazon-cognito-js": "latest",
-    "node-fetch": "latest",
+    "node-fetch": "2.x",
     "body-parser": "latest",
     "config": "latest",
     "express": "latest",
