@@ -21,13 +21,13 @@ Observe que este workshop cria infraestrutura em sua conta da AWS que está fora
 
 # Laboratórios
 ### Lab 1 - Identidade e Onboarding/Integração
-[![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
+[![Lab1](images/lab1.png)](https://github.com/tiagoReichert/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
 
 ### Lab 2 - Segurança Multi-Tenant & Roles/Funções de usuários
-[![Lab2](images/lab2.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab2.md "Lab 2")
+[![Lab2](images/lab2.png)](https://github.com/tiagoReichert/aws-saas-factory-bootcamp/blob/master/Lab2.md "Lab 2")
 
 ### Lab 3 - Isolamento de Dados
-[![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab3.md "Lab 3")
+[![Lab3](images/lab3.png)](https://github.com/tiagoReichert/aws-saas-factory-bootcamp/blob/master/Lab3.md "Lab 3")
 
 # Licença
 Este workshop é licenciado pela Licença Apache 2.0. Veja o arquivo de [LICENÇA](LICENSE).
