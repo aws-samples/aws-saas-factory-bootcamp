@@ -3,7 +3,7 @@
 ![SaaSAWS](images/SaaS-Factory.png "SaaS Factory")
 
 # Introdução
-O SaaS apresenta aos desenvolvedores uma combinação única de desafios: multi-tenancy, integração/onboarding, segurança, particionamento de dados, isolamento de tenants e identidade.
+SaaS (Software as a Service) apresenta aos desenvolvedores uma combinação única de desafios: multi-tenancy, integração/onboarding, segurança, particionamento de dados, isolamento de tenants e identidade.
 
 Uma das melhores maneiras de entender os princípios arquitetônicos de SaaS é examinar exemplos de design, construção e otimização. Neste workshop, vamos expor você aos principais conceitos da arquitetura SaaS, onde você pode ver as partes móveis de uma solução SaaS em ação.
 
@@ -19,7 +19,7 @@ Se você gostaria de executar os exercícios do laboratório de maneira autoguia
 
 Observe que este workshop cria infraestrutura em sua conta da AWS que está fora do nível gratuito (free tier), e você deve excluir a stack do CloudFormation quando terminar para minimizar os custos. Os recursos do Amazon Cognito e as funções e políticas do AWS IAM criadas pelo sistema integrado precisarão ser removidos manualmente após a exclusão da stack.
 
-# Guias de Laboratório
+# Laboratórios
 ### Lab 1 - Identidade e Onboarding/Integração
 [![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
 
@@ -29,5 +29,5 @@ Observe que este workshop cria infraestrutura em sua conta da AWS que está fora
 ### Lab 3 - Isolamento de Dados
 [![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab3.md "Lab 3")
 
-# License
-This workshop is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file.
+# Licença
+Este workshop é licenciado pela Licença Apache 2.0. Veja o arquivo de [LICENÇA](LICENSE).
