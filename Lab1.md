@@ -1,155 +1,155 @@
-# Lab 1 – Tenant Onboarding
+# Lab 1 – Identidade e Onboarding/Integração
 
-## Overview
+## Visão geral
 
-For this first lab, we're going to look at what it takes to get tenants onboarded to a SaaS system. In many respects, onboarding is one of the most foundational aspects of SaaS. It creates the footprint of how tenants and users will be represented in our system, determining how tenants will be identified and conveyed as they flow through all the moving parts of our SaaS architecture. 
+Neste primeiro laboratório, veremos o que é necessário para fazer com que novos tenants sejam integrados em um sistema SaaS. A integração é um dos aspectos mais básicos de SaaS. Ela cria a forma de como os tenants e usuários serão representados em nosso sistema, determinando como os tenants serão identificados e transmitidos à medida que fluem por todas as partes da arquitetura SaaS.
 
-A key part of this process is to introduce the notion of a **SaaS Identity**. In many systems, the user's identity will be represented in an identity provider completely separate from its relationship to a tenant. A tenant is then somehow resolved as separate step. This adds overhead and complexity. Instead, in this lab, you'll see how to make a tighter binding between users and tenants that creates a combined user and tenant **SaaS identity** that we can then flow through the various services of our system. This allows tenant context to be promoted to a first-class construct and simplifies the implementation of services that need access to this context because they don't have to resolve tenant context as a separate step.
+Uma parte importante desse processo é apresentar a noção de uma **Identidade SaaS**. Em muitos sistemas, a identidade do usuário será representada em um provedor de identidade completamente separado de seu relacionamento com um tenant. Um tenant é então resolvido de alguma forma como uma etapa separada. Isso adiciona sobrecarga e complexidade. Em vez disso, neste laboratório, você verá como fazer uma relação mais próxima entre usuários e tenant e criar uma **identidade SaaS** que podemos então encaminhar pelos vários serviços de nosso sistema. Isso simplifica a implementação de serviços que precisam de acesso ao contexto de tenant pois não precisam resolver em uma etapa separada.
 
-We'll first look at how users get introduced and represented in an identity provider. More specifically, we'll look at how **Amazon Cognito** can be configured to support the authentication and onboarding flows of our SaaS solution. We'll also use this opportunity to configure user attributes that let us create a connection between users and tenants. This will allow the Cognito authentication process to return authentication tokens that include embedded tenant context.
+Veremos primeiro como os usuários são representados em um provedor de identidade. Mais especificamente, veremos como o **Amazon Cognito** pode ser configurado para suportar os fluxos de autenticação e integração de nossa solução SaaS. Também usaremos essa oportunidade para configurar atributos de usuário que nos permitem criar uma conexão entre usuários e tenant. Isso permitirá que o processo de autenticação do Cognito retorne tokens de autenticação que incluem contexto de tenant.
 
-Once we have users setup, we'll turn our attention to how tenants get represented in our architecture. Tenants have their own profile and data that is configured separately from the users that are associated with that tenant. We'll introduce a microservice that owns the creation and management of these tenant attributes (tiering, status, policies, etc.).
+Depois de configurar os usuários, voltaremos nossa atenção para como os tenants são representados em nossa arquitetura. Os tenants têm seu próprio perfil e dados configurados separadamente dos usuários associados a esse tenant. Apresentaremos um microsserviço que possui a criação e o gerenciamento desses atributos de tenant (níveis, status, políticas, etc.).
 
-With user and tenant management in place, we'll turn our attention to the end-user web application that acts as the front end to the onboarding system.
+Com o gerenciamento de usuários e inquilinos implementado, voltaremos nossa atenção para a aplicação web do usuário final que atua como front-end para o sistema de integração.
 
-After onboarding a new tenant and an underprivileged user of that tenant using the web application, we'll look at how the orchestrating authentication and registration system uses the custom claims feature of the OpenID Connect standard to broker our SaaS Identity through security tokens in the HTTP headers.
+Depois de criar um novo tenant e um usuário com baixo privilégio neste tenant usando a aplicação web, veremos como o sistema de orquestração de autenticação e registro usa o recurso de custom claims do padrão OpenID Connect para intermediar nossa identidade SaaS por meio de tokens de segurança nos cabeçalhos HTTP.
 
-By the end of Lab 1, all of the elements will be in place to onboard and authenticate tenants and their users. The diagram below highlights the key elements that are needed to support this experience.
+Ao final do Laboratório 1, todos os elementos estarão prontos para integrar e autenticar os tenants e seus usuários. O diagrama abaixo destaca os principais elementos necessários para dar suporte a essa experiência.
 
 <p align="center"><img src="./images/lab1/arch_overview.png" alt="Lab 1 Architecture Overview"/></p>
 
-At the top of the diagram is the web application that provides the user interface for our onboarding and authentication flows. This connects to the microservices via an API Gateway. Below the API Gateway are the various microservices needed to support these onboarding flows. Tenant Registration is the orchestrator of the onboarding process, invoking the User Manager (to create users in **Amazon Cognito**) and the Tenant Manager (to create tenants). The Authentication Manager authenticates users via the User Manager service.
+No topo do diagrama está a aplicação web **Web Application** que fornece a interface para nossos fluxos de integração e autenticação. Ela se conecta aos microsserviços por meio de um gateway de API. Abaixo do Amazon API Gateway estão os vários microsserviços necessários para dar suporte a esses fluxos de integração. O **Tenant Registration** é o orquestrador do processo de integração, invocando o **User Manager** para criar usuários no Amazon Cognito e o **Tenant Manager** para criar os tenants. O **Authentication** autentica usuários por meio do serviço **User Manager**.
 
-### What You'll Be Building
-As you progress through Lab 1 you'll be creating, configuring, and deploying the elements described above. The following is a breakdown of the steps that you'll be executing to get your SaaS onboarding and authentication experience off the ground:
-* Create and Manage User Identity – For this scenario, we'll be using Cognito User Pools to manage users and handle user identity. In this part of the lab we'll take you through the steps to setup the Amazon Cognito environment.
-* Create and Manage Users – Next, we'll examine the User microservice and see how it provides an abstraction API on top of Amazon Cognito. We'll exercise the User microservice by hand using the command line.
-* Create and Manage Tenants – In part 3, we'll look at the features of the Tenant microservice and see how it maintains tenant level data separate from users. We'll exercise the Tenant microservice by hand using the command line.
-* Orchestrated Onboarding – Finally, we'll launch the web UI experience and onboard a new tenant and its first admin user. This brings all the pieces together and shows how Cognito manages the heavy lifting of the authentication flow. We'll add a non-admin user to the same tenant and see how authorization compliments authentication to restrict access to certain features. We'll finish up by examining the underlying JWT technology used for security tokens.
+### O que você estará construindo
+Conforme você avança no Laboratório 1, você criará, configurará e implantará os elementos descritos acima. A seguir está uma análise das etapas que você executará para obter experiência de integração e autenticação SaaS:
+* Criar o pool de usuários - neste cenário usaremos os pools de usuários do Cognito para gerenciar e lidar com a identidade do usuário. Nesta parte do laboratório, vamos guiá-lo pelas etapas de configuração do Amazon Cognito.
+* Criar e gerenciar usuários - a seguir, examinaremos o microsserviço **User Manager** afim de observar como ele fornece uma API de abstração. Vamos testar o microsserviço manualmente, usando a linha de comando. 
+* Criar e gerenciar tenants - na parte 3, examinaremos os recursos do microsserviço **Tenant Manager** afim de observar como ele mantém os dados de nível do tenant separados dos usuários. Vamos testar o microsserviço manualmente, usando a linha de comando. 
+* Integração orquestrada - Por fim, utilizando a interface web integraremos um novo tenant e seu primeiro usuário administrador. Isso reúne todas as peças e mostra como o Cognito gerencia o trabalho pesado do fluxo de autenticação. Adicionaremos um usuário não administrador ao mesmo tenant e veremos como a autorização complementa a autenticação para restringir o acesso a determinados recursos. Concluiremos examinando a tecnologia JWT usada nos tokens de segurança.
 
-## Part 1 - Create and Manage User Identity
-Our goal for part 1 is to have you configure all the elements of Amazon Cognito by hand so that you understand all of the pieces that will be used by the full solution to onboard, manage, and authenticate users. We'll also introduce the ability to associate users with tenants, allowing us to create a **SaaS Identity**.
+## Parte 1 - Criar o pool de usuários
+Nosso objetivo para a parte 1 é que você configure todos os elementos do Amazon Cognito manualmente para que você entenda todas as partes que serão usadas pela solução completa para integrar, gerenciar e autenticar usuários. Também apresentaremos a capacidade de associar usuários a tenants, o que nos permite criar uma **Identidade SaaS**.
 
-In this bootcamp, we'll be associating each tenant with a separate Cognito User Pool. The final solution creates these Cognito pools during onboarding. Each pool is configured the same way to apply the onboarding and identity settings of our tenants.
+Neste workshop, estaremos associando cada tenant a um pool de usuários Cognito separado. A solução final cria esses pools Cognito durante a integração. Cada pool é configurado da mesma maneira para aplicar as configurações de integração e identidade de nossos tenants.
 
-**Step 1** - Navigate to the Amazon Cognito service in the AWS Console and select **Manage User Pools** from the Cognito Screen.
-
+**Etapa 1** - Navegue até o serviço Amazon Cognito no AWS Console e selecione **Manage User Pools**.
+￼
 <p align="center"><img src="./images/lab1/part1/cognito_splash.png" alt="Lab 1 Part 1 Cognito Manage User Pools"/></p>
 
-**Step 2** - Select **Create A User Pool** from the top right of the Cognito console.
+**Etapa 2** - Selecione **Create A User Pool** no canto superior direito do console Cognito.
 
 <p align="center"><img src="./images/lab1/part1/cognito_create_pool.png" alt="Lab 1 Part 1 Cognito Step 2 Create User Pool"/></p>
 
-**Step 3** – You will be presented with a user pool creation experience (shown below) that is used to configure all of the elements of your identity and onboarding experience. The first step in this process is to give your pool a name. Choose any name you'd like (e.g. **SaaS Bootcamp Users**).
+**Etapa 3** - Você verá uma experiência de criação de pool de usuários (mostrada abaixo) que é usada para configurar todos os elementos de sua identidade e experiência de integração. O primeiro passo neste processo é dar um nome ao seu pool. Escolha o nome que desejar (por exemplo, **SaaS Bootcamp Users**).
 
 <p align="center"><img src="./images/lab1/part1/cognito_step1_name.png" alt="Lab 1 Part 1 Step 3 Cognito Name User Pool"/></p>
 
-**Step 4** - Select **Step through settings** to configure the pool to support the onboarding experience we want our SaaS users to have.
+**Etapa 4** - Selecione **Step through settings** para configurar o pool para oferecer suporte à experiência de integração que desejamos que nossos usuários de SaaS tenham.
 
-The first step allows us to configure the attributes of the pool. Let's start by looking at the sign-in policies. The screen below represents the options you'll have.
+A primeira etapa nos permite configurar os atributos do pool. Vamos começar examinando as políticas de login. A tela abaixo representa as opções que você terá.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step2_signin.png" alt="Lab 1 Part 1 Step 4 Cognito Attributes Sign In"/></p>
 
-Here we're specifying what options a user can have for their unique identifier (their email in this circumstance). For our solution, we'll check the **Also allow sign in with a verified phone number** option.
+Estamos especificando quais opções um usuário pode ter para seu identificador exclusivo (seu e-mail nesta circunstância). Para nossa solução, vamos marcar a opção **Also allow sign in with a verified phone number**.
 
-**Step 5** – Now we move on to the standard attributes portion of the user pool configuration. You are presented with a collection of standardized attributes that are managed by Cognito. Select the **email**, **family name**, **given name**, **phone number**, and **preferred username** attributes. You may recognize these attributes as OpenID Connect standard claims.
+**Etapa 5** - Agora passamos para a parte dos atributos padrão da configuração do pool de usuários. É apresentado a você uma coleção de atributos padronizados que são gerenciados pelo Cognito. Selecione os atributos **e-mail**, ** family name**, **given name**, **phone number** e **preferred username**.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step3_std_attributes.png" alt="Lab 1 Part 1 Step 5 Cognito Standard Attributes"/></p>
 
-**Step 6** – Now we will get more SaaS specific as we turn our attention to configuring the custom attributes of our user pool. This is where we introduce attributes that connect users to tenants. When we provision tenants, we'll persist these additional attributes as part of each user's profile. This same data will also be embedded in the tokens that are returned by the authentication process. 
+**Etapa 6** - Agora vamos configurar mais detalhes de SaaS nos atributos personalizados de nosso pool de usuários. É aqui que apresentamos os atributos que conectam usuários a tenants. Ao provisionar tenants, manteremos esses atributos adicionais como parte do perfil de cada usuário. Esses mesmos dados também serão incorporados aos tokens que são retornados pelo processo de autenticação.
 
-Scroll down the page and click **Add custom attribute** under the "Do you want to add custom attributes?" heading.
+Role a página para baixo e clique em **Add custom attribute** na seção "Do you want to add custom attributes?"
 
 <p align="center"><img src="./images/lab1/part1/cognito_step4_add_custom_attribute.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
 
-Add the following tenant attributes, clicking **Add another attribute** for each new attribute to be added: 
+Adicione os seguintes atributos de tenant, clicando em **Add another attribute** para cada novo atributo a ser adicionado:
 * **tenant_id** (string, default max length, _**not**_ mutable)
 * **tier** (string, default max length, mutable)
 * **company_name** (string, default max length, mutable)
 * **role** (string, default max length, mutable)
 * **account_name** (string, default max length, mutable)
 
-Attributes are case-sensitive. Your screen should appear as follows:
+Os atributos são case-sensitive. Sua tela deve ficar da seguinte forma:
 
 <p align="center"><img src="./images/lab1/part1/cognito_step4_custom_attributes.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
 
-**Step 7** – Once you've finished configuring the custom attributes, click the **Next step** button at the bottom of the screen. This takes us to the policies page.
+**Etapa 7** - Depois de configurar os atributos personalizados, clique no botão ** Next step** na parte inferior da tela. Isso nos leva à página de políticas.
 
-Here we can configure password and administration policies. These policies (and others configured with user pools) allow us to vary the approach of each tenant. You could, for example, surface these choices in the tenant administration experience of your SaaS solution, allowing individual tenants to configure their own policies.
+Aqui podemos configurar a senha e as políticas de administração. Essas políticas (e outras configuradas com pools de usuários) nos permitem variar a abordagem de cada tenant. Você poderia, por exemplo, trazer à tona essas opções na experiência de administração de tenant de sua solução SaaS, permitindo que tenants individuais configurem suas próprias políticas.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step7_password_policy.png" alt="Lab 1 Part 1 Step 7 Cognito Password Policy"/></p>
 
-For our solution, we'll override a couple of the default options.
+Para nossa solução, substituiremos algumas das opções padrão.
 
-First, let's turn off the **Require special character** option for our password policies. Also, select the **Only allow administrators to create users** option to limit who can create new users in the system. The figure above provides a snapshot of the user pool configuration screen with these options configured.
+Primeiro, vamos desativar a opção **Require special character** para nossas políticas de senha. Além disso, selecione a opção **Only allow administrators to create users** para limitar quem pode criar novos usuários no sistema.
 
-Once you've completed this section, click the **Next step** button at the bottom of the page.
+Depois de concluir esta seção, clique no botão **Next step** na parte inferior da página.
 
-**Step 8** – We're now at the MFA and verifications section. For Some SaaS providers, or even individual tenants, it could be valuable to enable MFA. For this solution, though, _**we'll leave it disabled**_. Don't change anything on this screen.
+**Etapa 8** - Estamos agora na seção MFA e verificações. Para alguns provedores de SaaS, ou mesmo tenants individuais, pode ser valioso habilitar o MFA. Para esta solução, no entanto **vamos deixá-lo desabilitado**. Não mude nada nesta tela.
 
-This page gives us the option to configure how verifications will be delivered. For this lab _**we'll leave the default settings**_.
+Esta página nos dá a opção de configurar como as verificações serão entregues. Para este laboratório **vamos deixar as configurações padrão **.
 
-If you choose to enable phone number verification or MFA, Cognito would need an IAM role for permissions to send an SMS message to the user via Amazon SNS. **For this lab, just click the "Next step" button**.
+Se você optar por habilitar a verificação do número de telefone ou MFA, o Cognito precisaria de uma função IAM para permissões para enviar uma mensagem SMS para o usuário via Amazon SNS. **Para este laboratório, basta clicar no botão "Next step"**.
 
-**Step 9** – The 4th step in the wizard is the **Message customizations** page. As part of our onboarding process, we'll be sending emails to users to verify their identity. We can lean on Cognito for this functionality as well. This screen lets us configure how this verification process will work. _For this bootcamp, we will use the default verification message settings_.
+**Etapa 9** - A quarta etapa do assistente é a página **Personalizações de mensagens**. Como parte de nosso processo de integração, enviaremos e-mails aos usuários para verificar sua identidade. Também podemos confiar no Cognito para essa funcionalidade. Essa tela nos permite configurar como esse processo de verificação funcionará. _Para este bootcamp, usaremos as configurações de mensagem de verificação padrão_.
 
-Scroll down the page to the "**Do you want to customize your user invitation messages?**" section. Customize the invitation email that will be sent by Cognito as each new tenant signs up as follows:
+Role a página para baixo até a seção “**Do you want to customize your user invitation messages?**”. Personalize o e-mail de convite que será enviado pela Cognito à medida que cada novo tenant se inscrever da seguinte forma:
 
-Change the subject from "Your temporary password" to "**New SaaS Bootcamp Tenant**" and the **Email message** text to:
+Altere o assunto de "Your temporary password" para "**Novo tenant do workshop de SaaS**" e o texto **Email message* para:
 
 ```html
 <img src="https://d0.awsstatic.com/partner-network/logo_apn.png" alt="AWSPartner"> <br><br>
-Welcome to the SaaS on AWS Bootcamp. <br><br>
-Login to the SaaS system. <br><br>
+Bem-vindo ao workshop de SaaS na AWS. <br><br>
 Username: {username} <br><br>
 Password: {####}.
 ```
 
 <p align="center"><img src="./images/lab1/part1/cognito_step6_custom_invitation.png" alt="Lab 1 Part 1 Step 9 Cognito Invitation Message"/></p>
 
-Cognito also has the ability to customize some of the email headers for your verification and invitation emails. We'll leave these settings alone for this bootcamp. Click on the **Next step** button.
+O Cognito também tem a capacidade de customizar alguns dos cabeçalhos de e-mail para seus e-mails de verificação e convite. Vamos deixar essas configurações padrão para este workshop. Clique no botão **Next step**.
 
-**Step 10** – For this bootcamp we will _skip over_ the **Tags** and **Devices** sections. Just click the **Next step** button _**twice**_ to advance to the **App clients** screen.
+**Etapa 10 * - Para este workshop, _pularemos_ as seções **Tags** e **Devices**. Basta clicar no botão **Next step** _ **duas vezes * _ para avançar para a tela de **App clients**.
 
-**Step 11** – Now that we have the fundamentals of our user pool created, we need to create an application client for this pool. This client is a fundamental piece of Cognito. It provides the context through which we can access the _unauthenticated_ flows that are required to register and sign in to the system. You can't login to a page that requires you to be logged in. You can imagine how this is key to our onboarding experience. Select the **Add an app client** link from the following screen:
+**Etapa 11** - Agora que criamos os fundamentos de nosso pool de usuários, precisamos criar um App client para esse pool. Este cliente é uma peça fundamental do Cognito. Ele fornece o contexto pelo qual podemos acessar os fluxos _unauthenticated_ que são necessários para se registrar e entrar no sistema. Você pode imaginar como isso é fundamental para nossa experiência de integração. Selecione o link **Add an app client** na tela a seguir:
 
 <p align="center"><img src="./images/lab1/part1/cognito_step7_add_app_client.png" alt="Lab 1 Part 1 Step 11 Cognito Add App Client"/></p>
 
-**Step 12** – Now we can configure the new application client. Enter a name for your client (e.g. **SaaS App Client**), and uncheck the three boxes **Generate client secret**, **Enable lambda trigger based custom authentication (ALLOW_CUSTOM_AUTH)**, and **Enable SRP (secure remote password) protocol based authentication (ALLOW_USER_SRP_AUTH)**.
+**Etapa 12** - Agora podemos configurar o novo aplicativo cliente. Digite um nome para o seu cliente (por exemplo, **SaaS App Client**) e desmarque as três caixas **Generate client secret**, **Enable lambda trigger based custom authentication (ALLOW_CUSTOM_AUTH)** e **Enable SRP (secure remote password) protocol based authentication (ALLOW_USER_SRP_AUTH)**.
 
-The client secret option on this screen refers to an OAuth 2.0 client secret. This is not used for "public" (web or mobile) applications where a user will be entering their credentials.
+A opção de segredo do cliente nesta tela se refere a um segredo do cliente OAuth 2.0. Isso não é usado para aplicativos "públicos" (web ou móveis) em que um usuário digitará suas credenciais.
 
-Once you've made these changes, select the **Create app client** button and then the **Next step** button to continue the wizard.
+Depois de fazer essas alterações, selecione o botão **Create app client** e, em seguida, o botão **Next step** para continuar o assistente.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step8_app_client_config.png" alt="Lab 1 Part 1 Step 12 Cognito Configure App Client"/></p>
 
-**Step 13** – For this bootcamp we will _skip over_ the **Triggers** section. Scroll to the bottom of the screen and click the **Next step** button to advance to the final review screen and click **Create pool**.
+**Etapa 13** - Para este bootcamp, _pularemos_ a seção **Triggers**. Role até a parte inferior da tela e clique no botão **Next step** para avançar para a tela de revisão final e clique em **Create pool**.
 
-**Step 14** – Before moving on, we'll want to record both the id that was generated for this User Pool and the App client id. Copy and paste the **Pool Id** value from the **General Settings** screen into a temporary file or open the next step in a separate web browser window or tab. Also, select the **App clients** tab from the left-hand list and save your **App client id**. We will use both of these values in a subsequent step.
+**Etapa 14** - Antes de prosseguir, queremos registrar a id que foi gerada para este pool de usuários e a id do cliente do aplicativo. Copie e cole o valor **Pool Id** da tela **General Settings** em um arquivo temporário ou abra a próxima etapa em uma janela ou guia separada do navegador da web. Além disso, selecione a guia **App clients** na lista à esquerda e salve seu **App client id**. Usaremos esses dois valores em uma etapa subsequente.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step9_pool_id.png" alt="Lab 1 Part 1 Step 14 Cognito Pool Id"/></p>
 
 <p align="center"><img src="./images/lab1/part1/cognito_step9_app_client_id.png" alt="Lab 1 Part 1 Step 14 Cognito App Client Id"/></p>
 
-**Step 15** – The user pool portion is complete. Before we can use this user pool we'll need to connect it with an **Identity Pool**. Cognito Identity Pools provide the mechanism to exchange a User Pool authenticated token for a set of AWS access keys that control access to AWS resources such as S3 buckets or DynamoDB tables.
+**Etapa 15** - A parte do pool de usuários está concluída. Antes de podermos usar esse pool de usuários, precisaremos conectá-lo a um **Identity Pool**. Os Cognito Identity Pools fornecem o mecanismo para trocar um token autenticado do User Pool por um conjunto de chaves de acesso da AWS que controlam o acesso aos recursos da AWS, como buckets S3 ou tabelas DynamoDB.
 
-To setup your identity pool, navigate back to the main page of Cognito by selecting the AWS icon in the upper left and then selecting Cognito again from the list of services. Select the **Manage Identity Pools** button.
+Para configurar seu pool de identidade, navegue de volta à página principal do Cognito selecionando o ícone AWS no canto superior esquerdo e, em seguida, selecionando Cognito novamente na lista de serviços. Selecione o botão **Manage Identity Pools**.
 
 <p align="center"><img src="./images/lab1/part1/cognito_splash.png" alt="Lab 1 Part 1 Cognito Manage Identity Pools"/></p>
 
-**Step 16** – The Getting started wizard should launch for you to create a new identity pool because you don't have any existing pools to list. Enter the name of your new identity pool (e.g. **SaaS Identity Pool**).
+**Etapa 16** - O assistente deve ser iniciado para que você crie um novo pool de identidade porque você não tem nenhum pool existente para listar. Digite o nome do seu novo pool de identidade (por exemplo, **SaaS Identity Pool**).
 
 <p align="center"><img src="./images/lab1/part1/cognito_step16_identity_pool_name.png" alt="Lab 1 Part 1 Step 16 Cognito Identity Pool Name"/></p>
 
-**Step 17** – Expand the **Authentication Providers** section at the bottom of the screen by clicking on the triangle. Here's where we'll create the connection between our user pool and the identity pool. You'll see a collection of tabs here representing the various identity providers that Cognito supports. We'll use the first tab, **Cognito**. You'll see options here to enter the User Pool ID as well as the App client id that were captured above. If you didn't copy them down before, you can access them from the attributes of the user pool you created above.
+**Etapa 17** - Expanda a seção **Authentication Providers** na parte inferior da tela clicando no triângulo. Aqui é onde criaremos a conexão entre nosso pool de usuários e o pool de identidade. Você verá uma coleção de guias aqui que representam os vários provedores de identidade que o Cognito suporta. Usaremos a primeira guia, **Cognito**. Você verá opções aqui para inserir o User Pool ID, bem como o App client id que foram capturadas acima. Se você não os copiou antes, você pode acessá-los a partir dos atributos do pool de usuários que você criou acima.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step10_auth_providers.png" alt="Lab 1 Part 1 Step 17 Cognito Authentication Providers"/></p>
 
-**Step 18** – Select the **Create Pool** button from the bottom right of the page to trigger the creation of the pool. 
 
-**Step 19** – Finally, select the **Allow button** on the next page to enable your new identity pool to access AWS resources. This will complete the creation process.
+**Etapa 18** - Selecione o botão **Create Pool** no canto inferior direito da página.
 
-**Recap**: At this point, you have all the moving parts in place for your SaaS system to manage users and associate those users with tenants. We've also setup the policies that will control how the system validates users during onboarding. This includes the definition of password and username policies. The last section setup an identity pool to enable authenticated access to AWS resources.
+**Etapa 19** - Finalmente, selecione o botão **Allow** na próxima página para permitir que seu novo pool de identidade acesse os recursos da AWS. Isso completará o processo de criação.
+
+**Recapitulando**: Até agora, você tem todas as peças móveis instaladas para que seu sistema SaaS gerencie usuários e associe esses usuários a tenants. Também configuramos as políticas que controlarão como o sistema valida os usuários durante a integração. Isso inclui a definição de políticas de senha e nome de usuário. A última seção configurou um pool de identidade para permitir o acesso autenticado aos recursos da AWS.
 
 ## Part 2 - Managing Users
 While we've configured the AWS infrastructure to support the management of our user identities with Cognito, we still need some mechanism that allows our application to access and configure these elements at runtime. To get there, we need to introduce a microservice that will sit in front of the Cognito APIs. This both encapsulates our user management capabilities and simplifies the developer experience, hiding away the details of the Cognito API.
