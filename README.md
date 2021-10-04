@@ -1,32 +1,32 @@
-# Building SaaS Solutions on AWS
+# Criando Soluções SaaS na AWS
 
 ![SaaSAWS](images/SaaS-Factory.png "SaaS Factory")
 
-# Introduction
-SaaS presents developers with a unique blend of challenges: multi-tenancy, onboarding, security, data partitioning, tenant isolation, and identity.
+# Introdução
+O SaaS apresenta aos desenvolvedores uma combinação única de desafios: multi-tenancy, integração/onboarding, segurança, particionamento de dados, isolamento de tenants e identidade.
 
-One of the best ways to understand architectural principles of SaaS is to dig into working examples of designing, building, and optimizing SaaS. In this bootcamp workshop, we’ll expose you to the core concepts of SaaS architecture by diving into a reference SaaS architecture where you can see the moving parts of a SaaS solution in action.
+Uma das melhores maneiras de entender os princípios arquitetônicos de SaaS é examinar exemplos de design, construção e otimização. Neste workshop, vamos expor você aos principais conceitos da arquitetura SaaS, onde você pode ver as partes móveis de uma solução SaaS em ação.
 
-This workshop provides a series of activities for attendees to interact with a functional solution, and hands-on exercises that introduce code and configuration to realize and extend the capabilities of this SaaS environment. The combination of lecture and exercises through the lens of a working reference solution give greater insight into SaaS on AWS best practices.
+Este workshop fornece uma série de atividades para os participantes interagirem com uma solução funcional e exercícios práticos que apresentam código e configuração para realizar e estender os recursos deste ambiente SaaS.
 
-# Who should participate?
-Application developers and architects that are looking to get into the details of implementing a SaaS solution on AWS are encouraged to participate. The content of the bootcamp is geared toward those newer to SaaS. However, even if you have a background in SaaS, this experience could still expose you to specifics of delivering SaaS on AWS.
+# Quem deve participar?
+Os desenvolvedores e arquitetos de aplicações que desejam entrar em detalhes sobre a implementação de uma solução SaaS na AWS são incentivados a participar. O conteúdo do bootcamp/workshop é voltado para os mais novos com SaaS. No entanto, mesmo se você tiver experiência em SaaS, essa experiência ainda pode expô-lo a especificidades de uma arquitetura SaaS na AWS.
 
-# How do I start?
-If you are participating in this bootcamp workshop during an AWS event, follow the instructions of the instructors on site.
+# Como começar?
+Se você estiver participando deste workshop durante um evento da AWS, siga as instruções dos instrutores no local.
 
-If you would like to run through the lab exercises in a self-guided manner, all you need to do is launch the [workshop.yml](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) AWS CloudFormation template in your AWS account and then start by clicking the Lab 1 icon below.
+Se você gostaria de executar os exercícios do laboratório de maneira autoguiada, tudo que você precisa fazer é utilizar o template [workshop.yml](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/resources/workshop.yml) do AWS CloudFormation em sua conta da AWS e em seguida comece clicando no ícone do Lab 1 abaixo.
 
-Note that this workshop deploys infrastructure into your AWS account that is outside of the free tier, and you should delete the CloudFormation stack when you are finished to minimize costs. The Cognito resources and IAM roles and policies created by the onboarding system will need to be removed manually after the stack delete. 
+Observe que este workshop cria infraestrutura em sua conta da AWS que está fora do nível gratuito (free tier), e você deve excluir a stack do CloudFormation quando terminar para minimizar os custos. Os recursos do Amazon Cognito e as funções e políticas do AWS IAM criadas pelo sistema integrado precisarão ser removidos manualmente após a exclusão da stack.
 
-# Lab Guides
-### Lab 1 - Identity and Onboarding
+# Guias de Laboratório
+### Lab 1 - Identidade e Onboarding/Integração
 [![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
 
-### Lab 2 - Multi-Tenant Security & User Roles
+### Lab 2 - Segurança Multi-Tenant & Roles/Funções de usuários
 [![Lab2](images/lab2.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab2.md "Lab 2")
 
-### Lab 3 - Data Isolation
+### Lab 3 - Isolamento de Dados
 [![Lab3](images/lab3.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab3.md "Lab 3")
 
 # License
