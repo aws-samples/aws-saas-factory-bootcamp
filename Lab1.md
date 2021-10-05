@@ -10,7 +10,7 @@ Veremos primeiro como os usuários são representados em um provedor de identida
 
 Depois de configurar os usuários, voltaremos nossa atenção para como os tenants são representados em nossa arquitetura. Os tenants têm seu próprio perfil e dados configurados separadamente dos usuários associados a esse tenant. Apresentaremos um microsserviço que possui a criação e o gerenciamento desses atributos de tenant (níveis, status, políticas, etc.).
 
-Com o gerenciamento de usuários e inquilinos implementado, voltaremos nossa atenção para a aplicação web do usuário final que atua como front-end para o sistema de integração.
+Com o gerenciamento de usuários e tenants implementado, voltaremos nossa atenção para a aplicação web do usuário final que atua como front-end para o sistema de integração.
 
 Depois de criar um novo tenant e um usuário com baixo privilégio neste tenant usando a aplicação web, veremos como o sistema de orquestração de autenticação e registro usa o recurso de custom claims do padrão OpenID Connect para intermediar nossa identidade SaaS por meio de tokens de segurança nos cabeçalhos HTTP.
 
@@ -151,18 +151,19 @@ Para configurar seu pool de identidade, navegue de volta à página principal do
 
 **Recapitulando**: Até agora, você tem todas as peças móveis instaladas para que seu sistema SaaS gerencie usuários e associe esses usuários a tenants. Também configuramos as políticas que controlarão como o sistema valida os usuários durante a integração. Isso inclui a definição de políticas de senha e nome de usuário. A última seção configurou um pool de identidade para permitir o acesso autenticado aos recursos da AWS.
 
-## Part 2 - Managing Users
-While we've configured the AWS infrastructure to support the management of our user identities with Cognito, we still need some mechanism that allows our application to access and configure these elements at runtime. To get there, we need to introduce a microservice that will sit in front of the Cognito APIs. This both encapsulates our user management capabilities and simplifies the developer experience, hiding away the details of the Cognito API.
+## Parte 2 - Gerenciando Usuários
+
+Embora tenhamos configurado a infraestrutura AWS para suportar o gerenciamento de nossas identidades de usuário com o Cognito, ainda precisamos de algum mecanismo que permita que nosso aplicativo acesse e configure esses elementos em tempo de execução. Para chegar lá, precisamos apresentar um microsserviço que ficará na frente das APIs do Cognito. Isso encapsula nossos recursos de gerenciamento de usuário e simplifica a experiência do desenvolvedor, ocultando os detalhes da API Cognito.
 
 Instead of building this microservice from scratch, we're going to simply review the sample code deployed as a Docker container image to **Amazon Elastic Container Service** (ECS).
 
-**Step 1** – Let's crack open the code and take a closer look at what's here. To simplify this bootcamp experience, and make sure everyone has the command line tools necessary to follow along, we have provisioned an **AWS Cloud9** Integrated Development Environment (IDE) for you.
+**Etapa 1** - Vamos abrir o código e dar uma olhada. Para simplificar essa experiência e garantir que todos tenham as ferramentas de linha de comando necessárias para acompanhar, provisionamos uma IDE (Integrated Development Environment) **AWS Cloud9** para você.
 
-To get started with Cloud9, choose it from the AWS Console under the **Development Tools** category. A screen listing your available IDEs will be displayed. Click on the **Open IDE** button in the **SaaS Bootcamp IDE** tile to launch Cloud9 in a new browser tab.
+Para começar a usar o Cloud9, escolha-o no AWS Console na categoria **Development Tools**. Uma tela listando seus IDEs disponíveis será exibida. Clique no botão **Open IDE** no**SaaS Bootcamp IDE** para iniciar o Cloud9 em uma nova guia do navegador.
 
 <p align="center"><img src="./images/lab1/part2/cloud9_launch.png" alt="Lab 1 Part 2 Step 1 Launch Cloud9 IDE"/></p>
 
-**Step 2** – When your Cloud9 IDE launched, it automatically cloned the GitHub repository for this bootcamp and you should see a folder tree on the left-hand side with the `aws-saas-factory-bootcamp` folder listed. Expand this tree and navigate to the `source/user-manager` folder. Double-click on the **server.js** file to open it in the editor pane. This file is a **Node.js** file that uses the **Express** web application framework to implement a REST API for managing users. Below is a list of some of the entry points that may be of interest for this onboarding flow.
+**Etapa 2** - Quando seu IDE Cloud9 foi iniciado, ele clonou automaticamente o repositório GitHub para este workshop e você deve ver uma árvore de pastas no lado esquerdo com a pasta `aws-saas-factory-bootcamp` listada. Expanda esta árvore e navegue até a pasta `source/user-manager`. Clique duas vezes no arquivo **server.js** para abri-lo no painel do editor. Este arquivo é um arquivo **Node.js** que usa a estrutura de aplicativo da web **Express** para implementar uma API REST para gerenciar usuários. Abaixo está uma lista de alguns dos pontos de entrada que podem ser de interesse para este fluxo de integração.
 
 ```javascript
 app.get('/user/pool/:id', function(req, res) {...});
@@ -175,9 +176,9 @@ app.put('/user', function(req, res) {...});
 app.delete('/user/:id', function(req, res) {...});
 ```
 
-These represent HTTP entry points into the user manager service and include basic CRUD (create, read, update, delete) operations, as well as functionality to support registration and fetch Cognito User Pool data for a given username.
+Estes representam pontos de entrada HTTP no serviço de gerenciador de usuário e incluem operações CRUD básicas (criar, ler, atualizar, excluir), bem como funcionalidade para suportar o registro e busca de dados do Cognito User Pool para um determinado nome de usuário.
 
-**Step 3** – Since Cognito will serve as the repository to store our users, the user manager service must make calls to the Cognito API to persist new users that are created in the system. To illustrate this, let's take a closer look at an initial version of the POST method in user manager that will create new users in Cognito. You'll see that our `app.post` method gets a JSON formatted user object from the request body that is then passed along to our Cognito user pool via the createUser method from the Cognito SDK.
+**Etapa 3** - Como o Cognito servirá como o repositório para armazenar nossos usuários, o serviço de gerenciador de usuários deve fazer chamadas para a API do Cognito para persistir novos usuários que são criados no sistema. Para ilustrar isso, vamos dar uma olhada mais de perto em uma versão inicial do método POST no gerenciador de usuários que criará novos usuários no Cognito. Você verá que nosso método `app.post` obtém um objeto de usuário formatado em JSON do corpo da solicitação que é então passado para nosso pool de usuários do Cognito por meio do método `createUser` do SDK do Cognito.
 
 ```javascript
 app.post('/user/create', function (req, res) {
@@ -203,77 +204,77 @@ app.post('/user/create', function (req, res) {
 });
 ```
 
-**Step 4** – Now that have a clearer view of what's happening behind the scenes, let's make a call to this REST service to create a user in the **Cognito User Pool** we created for our tenant.
+**Etapa 4** - Agora que temos uma visão mais clara do que está acontecendo nos bastidores, vamos fazer uma chamada para este serviço REST para criar um usuário no **Pool de usuários Cognito** para nosso tenant.
 
-To achieve this, you'll need the Invoke URL of the **API Gateway** that our microservice is behind and the **Pool Id** from Cognito that you saved earlier when setting up the User Pool.
+Para conseguir isso, você precisará da URL de chamada do **API Gateway** que está na frente do nosso microsserviço e do **Pool Id** do Cognito que você salvou antes ao configurar o User Pool.
 
-Navigate to the **API Gateway** console listed under the **Networking** heading in the AWS console. Select the **saas-bootcamp-api** API. In the left-hand menu, select the **Stages** link. At the top of the deployed stages tree, you should see a **v1** stage for "version 1". Click on this and in the main area of your screen, you will see the **Invoke URL** for this deployed API Gateway stage. For example:
+Navegue até o console do **API Gateway** listado sob o título **Networking** no console da AWS. Selecione a API **saas-bootcamp-api**. No menu à esquerda, selecione o link **Stages**. No topo da árvore de estágios implantados, você deve ver um estágio **v1** para a "versão 1". Clique nele e, na área principal da tela, você verá o **Invoke URL** para este estágio do API Gateway implementado. Por exemplo:
 
 <p align="center"><img src="./images/lab1/part2/apigateway_stage_url.png" alt="Lab 1 Part 2 Step 4 API Gateway stage URL"/></p>
 
-**Step 5** – If you need to retrieve your user pool id again, navigate to the Cognito service in the AWS console and select the **Manage User Pools** button. You will be presented with a list of user pools that have been created in your account. Select the user pool that you created earlier to display information about the user pool.
+**Etapa 5** - Se você precisar recuperar seu ID do pool de usuários novamente, navegue até o serviço Cognito no console da AWS e selecione o botão **Manage User Pools**. Você verá uma lista de pools de usuários que foram criados em sua conta. Selecione o pool de usuários que você criou anteriormente para exibir informações sobre o pool de usuários.
 
 <p align="center"><img src="./images/lab1/part2/your_user_pools.png" alt="Lab 1 Part 2 Step 5 Your User Pools"/></p>
 
-**Step 6** – After you've selected the pool, you'll be presented with a summary page that identifies the attributes of your user pool. The data you're after is the **Pool Id**, which is shown at the top of the page (similar to what is shown below).
+**Etapa 6** - Depois de selecionar o pool, será apresentada uma página de resumo que identifica os atributos do seu pool de usuários. O que você procura é o **Pool Id**, que é mostrado no topo da página (semelhante ao que é mostrado abaixo).
 
 <p align="center"><img src="./images/lab1/part2/cognito_pool_id.png" alt="Lab 1 Part 2 Step 6 Pool Id"/></p>
 
-**Step 7** – Now that you have the pool id and the invoke URL, you're ready to call the REST method on the user manager service to create a user in Cognito. To call our REST entry point, we'll need to invoke the create user POST method. You can do this via a variety of tools (cURL, Postman, etc.). We will use the terminal command line available in Cloud9.
+**Etapa 7** - Agora que você tem a id do pool e a URL de chamada, está pronto para chamar o método REST no serviço de gerenciador de usuários para criar um usuário no Cognito. Para chamar nosso ponto de entrada REST, precisaremos invocar o método POST de criação de usuário. Você pode fazer isso por meio de uma variedade de ferramentas (cURL, Postman, etc.). Usaremos a linha de comando do terminal disponível na Cloud9.
 
-The Cloud9 Welcome screen will be open as a tab in the editor pane. _Below_ the code editor pane you should see a series of command line tabs. You can use an existing command line or open a new terminal window by clicking on the green plus button and choose **New Terminal** or use the keyboard shortcut `Alt/Opt-T`.
+A tela de boas-vindas do Cloud9 será aberta como uma guia no painel do editor. _Abaixo_ do painel do editor de código, você deve ver uma série de guias de linha de comando. Você pode usar uma linha de comando existente ou abrir uma nova janela de terminal clicando no botão verde de mais e escolher **New Terminal** ou usar o atalho de teclado `Alt/Opt-T`.
 
 <p align="center"><img src="./images/lab1/part2/cloud9_new_terminal.png" alt="Lab 1 Part 2 Step 7 Cloud9 New Terminal"/></p>
 
-Use the Cloud9 terminal command line to invoke the REST command to create a new user. Copy and paste the following command (be sure to scroll to select the entire command), replacing **USER-POOL-ID** with the pool id you captured from the Cognito User Pool settings and **INVOKE-URL** with the URL you captured from the API Gateway stage settings.
+Use a linha de comando do terminal Cloud9 para invocar o comando REST para criar um novo usuário. Copie e cole o seguinte comando (certifique-se de rolar para selecionar o comando inteiro), substituindo **USER-POOL-ID** pelo ID do pool que você capturou nas configurações do Pool de usuários do Cognito e **INVOKE-URL** pela URL que você capturou das configurações do estágio do API Gateway.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"userPoolId": "USER-POOL-ID", "tenant_id": "999", "userName": "test@test.com", "email": "test@test.com", "firstName": "Test", "lastName": "User", "role": "tenantAdmin", "tier": "Advanced"}' INVOKE-URL/user/create
 ```
 
-On success, the newly created user object will be returned in JSON format.
+Em caso de sucesso, o objeto de usuário recém-criado será retornado no formato JSON.
 
-**Step 8** – You can now verify that your new user was created in the Cognito user pool. Once again, let's return to the Cognito service in the AWS console. After selecting the service, select **Manager User Pools** and select the user pool created above to drill into that pool.
+**Etapa 8** - Agora você pode verificar se seu novo usuário foi criado no pool de usuários do Cognito. Mais uma vez, vamos retornar ao serviço Cognito no console da AWS. Depois de selecionar o serviço, selecione **Manage User Pools** e selecione o pool de usuários criado acima para detalhar esse pool.
 
-Select **Users and groups** from the menu on the left. When you select this option, you'll see the list of users in your pool. You may have to click the small refresh icon in the upper right corner to see all users.
+Selecione **Users and groups** no menu à esquerda. Ao selecionar esta opção, você verá a lista de usuários em seu pool. Você pode ter que clicar no pequeno ícone de atualização no canto superior direito para ver todos os usuários.
 
 <p align="center"><img src="./images/lab1/part2/cognito_users_and_groups.png" alt="Lab 1 Part 2 Step 8 Cognito Users and Groups"/></p>
 
-**Step 9** – Your newly added user should appear in this list. Select the link for your username to get more detailed information about the user. You'll see how you user landed in the system with the tenant, name, and email address you provided via your REST command.
+**Etapa 9** - Seu usuário recém-adicionado deve aparecer nesta lista. Selecione o link do nome de usuário para obter informações mais detalhadas sobre o usuário. Você verá informações do usuário com o tenant, o nome e o endereço de e-mail que você forneceu por meio do comando REST.
 
 <p align="center"><img src="./images/lab1/part2/cognito_user_detail.png" alt="Lab 1 Part 2 Step 9 Cognito User Detail"/></p>
 
-**Recap**: In this part we introduced the AWS Cloud9 IDE for ease in viewing the bootcamp sample source code and for its built-in Linux terminal command line tools. We investigated how we built a User Management Service in a microservices architecture to abstract away the details of the Cognito API. You also were able to see how the user management service created new users in your user pool.
+**Recapitulando**: Nesta sessão, apresentamos o AWS Cloud9 IDE para facilitar a visualização do código-fonte de exemplo do workshop e suas ferramentas de linha de comando de terminal Linux integradas. Investigamos como construímos um serviço de gerenciamento de usuários em uma arquitetura de microsserviços para abstrair os detalhes da API Cognito. Você também pode ver como o serviço de gerenciamento de usuários criou novos usuários em seu pool de usuários.
 
-While we've focused here on performing user pool and user creation as manual step, the final version of this solution will automate the creation of the user pool for each tenant during onboarding.
+Embora tenhamos nos concentrado aqui em criar o pool de usuários e usuários de forma manual, a versão final desta solução automatizará a criação do pool de usuários para cada tenant durante a integração.
 
-## Part 3 - Managing Tenants
+## Parte 3 - Gerenciando Tenants
 
-At this point, we have a way to create users as part of the onboarding process. We also have a way to associate these users with tenants. What we're missing is some ability to store and represent tenants.
+Neste ponto, temos uma maneira de criar usuários como parte do processo de integração. Também temos uma maneira de associar esses usuários a tenants. O que está faltando é alguma capacidade de armazenar e representar os tenants.
 
-Tenants must be represented and managed separate from users. They have policies, tiers, status, and so on —- all of which should be managed through a separate contract and service.
+Os tenants devem ser representados e gerenciados separadamente dos usuários. Eles têm políticas, níveis, status e assim por diante - todos os quais devem ser gerenciados por meio de um contrato e serviço separados.
 
-Fortunately, the management of this service is relatively straightforward. It simply requires a CRUD (create, read, update, delete) microservice that will manage data stored in a DynamoDB table.
+Felizmente, o gerenciamento desse serviço é relativamente simples. Ele simplesmente requer um microsserviço CRUD (criar, ler, atualizar, excluir) que gerenciará os dados armazenados em uma tabela do DynamoDB.
 
-**Step 1** – The Tenant Manager Service has also been deployed to an ECS Fargate container as a Node.js microservice. It too has a REST API and we can exercise it via the command line just as we did the User Manager Service.
+**Etapa 1** - O Tenant Manager também foi implantado em um contêiner ECS Fargate como um microsserviço Node.js. Ele também tem uma API REST e podemos exercitá-la por meio da linha de comando, assim como fizemos com o serviço User Manager.
 
-Submit the following command to create a new tenant. Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL you captured from the API Gateway stage settings.
+Envie o seguinte comando para criar um novo tenant. Copie e cole o seguinte comando (certifique-se de rolar para selecionar o comando inteiro), substituindo **INVOKE-URL** pelo URL que você capturou das configurações de estágio do API Gateway.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "111", "role": "tenantAdmin", "company_name": "Test SaaS Tenant", "tier": "Advanced", "status": "Active"}' INVOKE-URL/tenant
 ```
 
-**Step 2** – Let's check that our tenant was saved to the database. Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the navigation list in the upper left-hand side of the page.
+**Etapa 2** - Vamos verificar se nosso tenant foi salvo no banco de dados. Navegue até o serviço DynamoDB no console AWS e selecione a opção **Tables** na lista de navegação no canto superior esquerdo da página.
 
 <p align="center"><img src="./images/lab1/part3/dynamo_menu_tables.png" alt="Lab 1 Part 3 Step 2 DynamoDB Menu Tables"/></p>
 
-**Step 3** – Locate and select the **TenantBootcamp** table hyperlink from the list of DynamoDB tables and then select the **Items** tab to view the data in the table.
+**Etapa 3** - Localize e selecione o hyperlink da tabela **TenantBootcamp** na lista de tabelas do DynamoDB e selecione a guia **Items** para visualizar os dados na tabela.
 
 <p align="center"><img src="./images/lab1/part3/dynamo_tenant_table.png" alt="Lab 1 Part 3 Step 3 DynamoDB Tenant Table"/></p>
 
-You should see an item in the table containing all the attributes you submitted via the cURL command.
+Você deve ver um item na tabela contendo todos os atributos enviados por meio do comando cURL.
 
-**Recap**: The goal of this section was merely to introduce you to the tenant manager service and the separate representation of tenant data. The **tenant_id** in this DynamoDB table will be associated with one or more users via the **tenant_id** custom attribute that we created as a custom attribute in the Cognito user pool. By separating the unique tenant data out from our user attributes, we have a clear path for how tenants are managed and configured.
+**Recapitulando**: o objetivo desta seção era apenas apresentar a você o serviço gerenciador de tenants e a representação separada dos dados de tenants. O **tenant_id** nesta tabela DynamoDB será associado a um ou mais usuários por meio do atributo **tenant_id** que criamos como um atributo personalizado no pool de usuários do Cognito. Ao separar os dados de tenant de nossos atributos de usuário, temos um caminho claro para como os tenants são gerenciados e configurados.
 
 ## Part 4 - The Onboarding & Authentication Application
 
