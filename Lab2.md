@@ -1,49 +1,56 @@
 # Lab 2 – Building Multi-Tenant Microservices
 
-### Overview
+### Visão Geral
 
-In our first lab, we focused all of our attention on getting tenants onboarding and creating a true notion of **SaaS Identity** where user identity was joined to a tenant identity. With those elements in place, we can now turn our attention to thinking about how we actually build the services and functionality of our application in a multi-tenant fashion. This means applying the tenant identity and context with the services that we build.
+Em nosso primeiro laboratório, concentramos toda a nossa atenção na integração dos tenants e na criação de um conceito de **Identidade SaaS**, onde a identidade do usuário foi unida a uma identidade de tenant. Com esses elementos em vigor, agora podemos voltar nossa atenção para pensar sobre como realmente construímos os serviços e a funcionalidade de nosso aplicativo de maneira multitenant. Isso significa aplicar a identidade e o contexto do tenant aos serviços que construímos.
 
-So far, the services that we've created (tenant registration, user management, etc.) have all been about the fundamentals of onboarding. Now, let's look at the services that we'll introduce to support the actual functionality of our application. For this scenario, we're building a very basic order management system. It lets you create a product catalog and place orders against that catalog. It's important to note, that as a pooled isolation SaaS solution the compute and storage resources used to implement this functionality will be shared by all tenants.
+Até agora, os serviços que criamos (registro de tenants, gerenciamento de usuários etc.) foram apenas para construir os fundamentos de integração. Agora, vamos dar uma olhada nos serviços que serão utilizados para suportar a funcionalidade real do nosso aplicativo. Para esse cenário, estamos construindo um sistema de gerenciamento de pedidos muito básico. Ele permite que você crie um catálogo de produtos e faça pedidos desses produtos. É importante observar que, como uma solução SaaS com isolamento a nível de pool, os recursos de computação e armazenamento usados para implementar essa funcionalidade serão compartilhados por todos os tenants.
 
-Below is a high level diagram of the services that will be delivering this functionality:
+Abaixo temos um diagrama em alto nível dos serviços utilizados:
 
 <p align="center"><img src="./images/lab2/arch_overview.png" alt="Lab 2 Architecture Overview"/></p>
 
-This is a very basic diagram that highlights the services and their interactions with the other aspects of the bootcamp's architecture. Notice that these services are connected to the web application via the **API Gateway**, exposing basic **CRUD** operations to create, read, update, and delete both products and orders.
+Este é um diagrama muito básico que destaca os serviços e suas interações com os outros aspectos da arquitetura do bootcamp. Observe que esses serviços estão conectados ao aplicativo por meio do **API Gateway**, expondo operações básicas de **CRUD** para criar, ler, atualizar e excluir produtos e pedidos.
 
 Of course as part of implementing these services, we have to think about what must be done to apply multi-tenancy to these services. These services will need to store data, log metrics, and acquire user identity all with multi-tenant awareness. So, we have to think about how this is achieved and applied within these services.
 
-Below is a diagram that provides a conceptual view of what it means to build a multi-tenant aware microservice:
+Obviamente, como parte da implementação desses serviços, temos que pensar sobre o que deve ser feito para aplicar o conceito de multi-tenancy a esses serviços. Esses serviços precisarão armazenar dados, registrar métricas e obter a identidade do usuário tendo em mente o cenário de multi-tenant. Portanto, temos que pensar em como isso é alcançado e aplicado nesses serviços.
+
+Abaixo temos um diagrama que mostra uma visão conceitual do que significa construir um microserviço que leva em consideração o multi-tenancy *(multi-tenant aware)*:
 
 <p align="center"><img src="./images/lab2/multitenant_diagram.png" alt="Lab 2 Multi-Tenant Overview"/></p>
 
-This somewhat simplified diagram highlights the key areas we're going to focus on for the multi-tenant microservices we'll be deploying. At the center of the diagram are the actual services being built (in our case the product and order managers). Surrounding it are the areas where we need to factor in multi-tenancy. These include:
+Esse diagrama um pouco simplificado destaca as principais áreas em que vamos nos concentrar para os microsserviços multi-tenant que implantaremos. No centro do diagrama estão os serviços que estão sendo construídos (no nosso caso, os gerenciadores de produtos e pedidos). Ao redor estão as áreas em que precisamos levar em consideração o multi-tenancy. Isso inclui:
 
-* **Identity and Tenant Context** – our services need some standard way to acquire the current user's role and authorization along with the tenant context. Almost every action within your services happens in the context of a tenant so we'll need to think about how we acquire and apply that context.
-* **Multi-Tenant Data Partitioning** – our two services will need to store data. This means our storage CRUD operations will all need some injection of tenant context to figure out how to partition, persist, and acquire data in a multi-tenant model.
+* **Contexto de Identidade e Tenant** - nossos serviços precisam de alguma forma padrão de adquirir a função e a autorização do usuário atual, juntamente com o contexto do tenant. Quase todas as ações em seus serviços acontecem no contexto de um tenant, então precisaremos pensar sobre como adquirimos e aplicamos esse contexto.
+* **Particionamento de dados Multi-Tenant** – nossos dois serviços precisarão armazenar dados. Isso significa que nossas operações CRUD precisarão de alguma injeção de contexto do tenant para descobrir como particionar, persistir e adquirir dados em um modelo multi-tenant.
 * **Tenant Aware Logging, Metering, and Analytics** – as we record logs and metrics about activity in our system, we'll need some way to attribute those activities to a specific tenant. Our services must inject this context into any activity messages that are published for troubleshooting or downstream analytics.
- 
-This backdrop provides you with a view of the fundamental concepts that we'll explore in this lab. While we won't be writing services from scratch, we'll be highlighting how a service will evolve to incorporate these concepts.
+* **Logs, Métricas e Analytics Tenant Aware** – à medida que gravamos logs e métricas sobre a atividade em nosso sistema, precisaremos de alguma forma de atribuir essas atividades a um tenant específico. Nossos serviços devem injetar esse contexto em qualquer mensagem de atividade gerada para solução de problemas ou análises futuras.
 
-### What You'll Be Building
-To demonstrate the multi-tenant concepts, we'll go through an evolutionary process where we gradually add multi-tenant awareness to our solution. We'll start with a single-tenant version of our product manager service, then progressively add the bits needed to make this a fully multi-tenant aware service. The basic steps in this process include:
-* Deploy a single-tenant product manager microservice – this is a baseline step to illustrate what the service looks like before we begin to layer on the elements of multi-tenancy. It will be a basic CRUD service with no multi-tenant awareness.
-* Introduce multi-tenant data partitioning – the first phase of multi-tenancy will be to add the ability to partition data based on a tenant identifier supplied as part of an incoming request.
-* Extract tenant context from user identity – add the ability to use the security context of HTTP calls into the service to extract and apply tenant identity for our data partitioning scheme.
-* Introduce a second tenant to demonstrate partitioning – register a new tenant and manage products through that tenant context to illustrate how the system has successfully partitioned the data in the application.
+Esse cenário fornece uma visão dos conceitos fundamentais que exploraremos neste laboratório. Embora não estejamos escrevendo os serviços do zero, destacaremos como um serviço evolui para incorporar esses conceitos.
 
-## Part 1 - Deploying a Single-Tenant Product Manager Service
+
+### O que você irá construir
+Para demonstrar os conceitos multi-tenant, passaremos por um processo evolucionário em que gradualmente adicionamos o *multi-tenancy awareness* à nossa solução. Começaremos com uma versão single-tenant do nosso serviço de gestão de produtos e, em seguida, adicionaremos progressivamente os componentes necessários para tornar esse serviço totalmente *multi-tenant aware*. As etapas básicas desse processo incluem:
+
+* Implantar um microsserviço gerenciador de produtos single-tenant - esse é um passo base para ilustrar como o serviço seria antes de começarmos a colocar os elementos de multi-tenancy. Será um serviço básico CRUD sem nenhum *multi-tenant awareness*.
+* Introduzir o particionamento de dados multi-tenant - a primeira fase de multi-tenancy será adicionar a capacidade de particionar dados baseados em um identificador de tenant fornecido como parte de uma requisição.
+* Extrair o contexto de tenant a partir da identidade do usuário - adicionar a capacidade de usar o contexto de segurança das chamadas HTTP ao serviço para extrair e aplicar a identidade de tenant no mecanismo de particionamento de dados.
+* Introduzir um segundo tenant para demonstrar o particionamento - registrar um novo tenant e gerenciar produtos através do contexto desse tenant para ilustrar como o sistema particionou os dados na aplicação com sucesso.
+
+## Parte 1 - Implantação de um Serviço Gerenciador de Produtos Single-Tenant
 
 Before we can see how multi-tenancy influences the business services of our application, we need to see a baseline single-tenant service in action. This will provide a foundation for our exploration of multi-tenancy, illustrating how multi-tenancy influences the implementation of our microservice.
 
-In this basic model, we'll deploy a service, create a **DynamoDB** table to hold our product data, then use cURL from the command line to exercise this new service.
+Antes de podermos ver como a estratégia multi-tenant influencia os serviços de negócio de nosso aplicativo, iremos ver um serviço single-tenant em ação, para termos uma base para a exploração dos conceitos de multi-tenancy e como isso influencia na implementação de nosso microsserviço. 
 
-**Step 1** - Let's start this process by taking a closer look at the single-tenant service that we'll be deploying. Like the prior services implemented in the first lab, the product manager microservice is built with Node.js and Express. It exposes a series of CRUD operations via a REST interface.
+Neste modelo básico, iremos implantar um serviço, criar uma tabela **DynamoDB** para armazenar os dados de produtos, e então usar o cURL a partir da linha de comando para acessar esse novo serviço.
 
-The source code for this file is available at `Lab2/Part1/product-manager/server.js`.
+**Passo 1** - Vamos começar o processo observando mais de perto o serviço single-tenant que implantaremos. Da mesma forma que nos laboratórios anteriores, o microsserviço de gestão de produtos é desenvolvido com Node.js e Express. Ele expõe uma série de operações CRUD através de uma interface REST.
 
-In looking at this file, you'll see a number of entry points that correspond to the REST methods (`app.get(...)`, `app.post(...)`, etc.). Within each of these functions is the implementation of the corresponding REST operation. Let's take a look at one of these methods in more detail to get a sense of what's going on here.
+O código fonte para esse arquivo está disponível em `Lab2/Part1/product-manager/server.js`.
+
+Ao olhar esse arquivo, você verá diversos *entry points* que correspondem aos métodos REST (`app.get(...)`, `app.post(...)`, etc.). Dentro de cada uma dessas funções está a implementação da operação REST correspondente. Vamos ver em mais detalhes um desses métodos para ter idéia do que está acontecendo.
 
 ```javascript
 app.get('/product/:id', function (req, res) {
@@ -68,65 +75,65 @@ app.get('/product/:id', function (req, res) {
 });
 ```
 
-Let's start by looking at the signature of the method. Here you'll see the traditional REST path for a GET method with the `/product` resource followed by an identifier parameter that indicates which product is to be fetched. This value is extracted from the incoming request and populated into a `params` structure. The rest of this function is about calling our DynamoDBHelper, which is our data access layer, to fetch the item from a DynamoDB table.
+Vamos começar olhando a assinatura do método. Aqui temos um caminho tradicional REST, para um método GET ao recurso `/product` seguido de um parâmetro identificador que indica qual produto deve ser obtido. Esse valor é extraído da requisição e populado em uma estrutura chamada `params`. O resto dessa função é basicamente chamar o DynamoDBHelper, que é a camada de acesso aos dados, para obter o item de uma tabela DynamoDB.
 
-**Step 2** - Our first step is to deploy the single-tenant product manager, within our Cloud9 IDE. Navigate to `Lab2/Part1/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Passo 2** - Vamos fazer a implantação do gerenciador de produtos single-tenant, através da IDE Cloud9. Navegue até o diretório `Lab2/Part1/product-manager`, clique com o botão direito em `deploy.sh` e clique em **Run** para executar o shell script.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script.png" alt="Lab 2 Part 1 Step 2 Cloud9 Run Script"/></p>
 
-**Step 3** - Wait for the `deploy.sh` shell script to execute successfully.
+**Passo 3** - Aguarde a execução com sucesso do shell script `deploy.sh`.
 
 <p align="center"><img src="./images/lab2/part1/cloud9_run_script_complete.png" alt="Lab 2 Part 1 Step 3 Cloud9 Script Finished"/></p>
 
-**Step 4** - Now that our service is deployed, we have to introduce its supporting elements. Let's start by creating the DynamoDB table that will be used to store product information. First, navigate to the DynamoDB service in the AWS console and select the **Tables** option from the navigation list in the upper left-hand side of the page.
+**Passo 4** - Agora que nosso serviço foi implantado, temos que introduzir os elementos de suporte. Vamos começar criando a tabela do DynamoDB que será utilizada para armazenar as informações dos produtos. Primeiro, navegue até o serviço DynamoDB na console da AWS e selecione a opção **Tables** da lista de navegação no lado superior esquerdo da página.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_menu_tables.png" alt="Lab 2 Part 1 Step 4 DynamoDB Menu Tables"/></p>
 
-**Step 5** - Now click the **Create table** button at the top of the page. Enter a table name of **ProductBootcamp** and enter **product_id** as the primary key. The table and key names are case sensitive in DynamoDB. Be sure you enter the values correctly. Once you've filled out the form, select the **Create** button at the bottom right of the page to create your new table.
+**Passo 5** - Agora clique no botão **Create table** no topo da página. Como nome da tabela, utilize **ProductBootcamp**, e para a chave primária, utilize **product_id**. O DynamoDB diferencia maiúsculas e minúsculas nos nomes de tabela e chave, então verifique se os valores foram digitados corretamente. Assim que os campos do formulário estiverem preenchidos, clique no botão **Create** à direita, no final da página, para criar a nova tabela.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_create_table.png" alt="Lab 2 Part 1 Step 5 DynamoDB Create Table"/></p>
 
-**Step 6** - At this point the table should be created and your service should be running and accessible via the **Amazon API Gateway**. First, we need the API Gateway URL that exposes our microservices. Navigate to API Gateway in the AWS console and select the **saas-bootcamp-api** API.
+**Passo 6** - Neste ponto, a tabela já deve ter sido criada e seu serviço deve estar rodando e ser acessível através do **Amazon API Gateway**. Primeiro, nós precisaremos da URL do API Gateway que expõe nossos microsserviços. Vá até o API Gateway na console da AWS e selecione a API **saas-bootcamp-api**.
 
 <p align="center"><img src="./images/lab2/part1/apigw_select_api.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 7** - Select **Stages** from the left-hand menu and then click on the **v1** (version 1) stage. The invocation URL will be displayed. This is the base URL (_including **/v1** at the end_) that all of your microservices will be accessible from.
+**Passo 7** - No menu esquerdo, clique em **Stages** e então no *stage* **v1** (versão 1). A URL de chamada será mostrada. Essa é a URL base de todos os microsserviços (_incluindo **/v1** no final_).
 
 <p align="center"><img src="./images/lab2/part1/apigw_invoke_url.png" alt="Lab 2 Part 1 Step 6 API Gateway Select API"/></p>
 
-**Step 8** - Now let's verify that the basic plumbing of our Product Manager service is in place by making a simple call to its health check endpoint. For this step and subsequent steps, you can use either **cURL** or Postman (or the tool of your choice). Let's invoke the GET method on `/product/health` to verify that the service is running. Copy and paste the following command, replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Passo 8** - Agora vamos verificar que a base do nosso serviço gerenciador de produtos está funcionando, fazendo uma chamada para seu endpoint de health check. Para este passo e os seguintes, você pode utilizar o **cURL**, Postman ou outra ferramenta de sua preferência. Vamos chamar o método GET em `/product/health` para verificar que o serviço está rodando. Copie e cole o comando abaixo, substituindo **INVOKE-URL** com o endereço e nome do _stage_ que foi disponibilizado no API Gateway no passo anterior.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
 
-**Be sure you've included the API stage name at the end of the URL _before_ /product/health**. You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
+**Garanta que você incluiu o nome do _stage_ da API no final da URL _antes_ de /product/health**. Você deve obter uma mensagem de sucesso no formato JSON do comando **cURL** executado, indicando que a requisição foi processada com sucesso e o serviço está pronto para processar outras requisições.
 
-**Step 9** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Submit the following REST command to create your first product. Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Passo 9** - Agora que sabemos que o serviço está funcionando, podemos adicionar um novo produto ao catálogo através da API REST. Envie o seguinte comando REST para criar o seu primeiro produto. Copie e cole o seguinte comando (garanta que todo o conteúdo está sendo copiado), substituindo **INVOKE-URL** com a URL base obtida no passo 7.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-**Step 10** - Let's now go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Select the **Items** tab from the top of the screen, you'll see the list of items in your product table, which should include the item you just added.
+**Passo 10** - Vamos verificar se os dados enviados foram gravados com sucesso na tabela do DynamoDB que criamos. Vá até o serviço DynamoDB na console AWS e clique em **Tables** na lista de opções no canto superior esquerdo da página. Uma lista de tabelas deve ser exibida no centro da tela. Encontre a tabela **ProductBootcamp** e clique no link com o nome da tabela. Isso irá mostrar algumas informações básicas da tabela. Selecione a aba **Items** no topo da tela, e você verá a lista de itens na tabela produtos, que deverá incluir o item que você acabou de adicionar.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_table_items.png" alt="Lab 2 Part 1 Step 10 DynamoDB Table Items"/></p>
 
-**Recap**: This initial exercise illustrates a single-tenant version of the product manager service. It does not have identity or tenant context built into the service. In many respects, this represents the flavor of service you'd see in many non-SaaS environments. It gives us a good base for thinking about how we can now evolve the service to incorporate multi-tenant concepts.
+**Recap**: Esse exercício inicial ilustra uma versão single-tenant do serviço gerenciador de produtos, que não possui contextos de identidade ou tenant. Em diversos aspectos, ele representa o tipo de serviço que você encontraria em diversos ambientes não-SaaS, e nos dá uma boa base para pensar em como podemos evoluir o serviço para incorporar conceitos multi-tenant.
 
-## Part 2 - Adding Multi-Tenant Data Partitioning
+## Parte 2 - Adicionando Particionamento de Dados Multi-Tenant
 
-The first step in making our service multi-tenant aware is to implement a partitioning model where we can persist data from multiple tenants in our single DynamoDB database. We'll also need to inject tenant context into our REST requests and leverage this context for each of our CRUD operations.
+O primeiro passo para tornar nosso serviço _multi-tenant aware_ é implementar um modelo der particionamento onde podemos persistir dados de múltiplos tentants em um único banco de dados DynamoDB. Também precisaremos injetar um contexto de tenant nas requisições REST e utilizar esse contexto para cada uma das operações CRUD.
 
-To make this work, will need a different configuration for our DynamoDB database, introducing a tenant identifier as the partition key. We'll also need a new version of our service that accepts a tenant identifier in each of the REST methods and applies it as it accesses DynamoDB tables.
+Para fazer isso, precisaremos de uma configuração diferente para o banco de dados DynamoDB, introduzindo um identificador de tenant como partition key. Também precisaremos de uma nova versão do serviço que aceite um identificador de tentant em cada método REST e aplique esse identificador conforme o acesso às tabelas.
 
-The steps that follow will take you through the process of adding these capabilities to the product manager service:
+O processo de adicionar essas funcionalidades ao serviço gerenciador de produtos serão detalhados no passo-a-passo abaixo.
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support data partitioning. Open our product manager server.js file in our Cloud9 IDE. In Cloud9, navigate to `Lab2/Part2/product-manager/`, right-click `server.js` and click **Open**.
+**Passo 1** - Para essa iteração, precisaremos de uma nova versão do nosso serviço. Embora não iremos modificar o código diretamente, vamos dar uma olhada nas mudanças de código realizadas para suportar o particionamento de dados. Abra o arquivo server.js do gerenciador de produtos na IDE Cloud9. No Cloud9, vá até `Lab2/Part2/product-manager/`, clique com o botão direito do mouse em `server.js` e clique em **Open**.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_open_script.png" alt="Lab 2 Part 2 Step 1 Cloud9 Open Script"/></p>
 
-This file doesn't look all that different than our prior version. In fact, the only change here is that we've added a tenant identifier to the parameters that we supply to the DynamoDBHelper. Below is a snippet of the code from our file.
+Este arquivo não parece muito diferente da versão anterior. Na verdade, a única mudança é que adicionamos um identificador de tenant nos parâmetros que fornecemos ao DynamoDBHelper. Abaixo temos um trecho de código do arquivo.
 
 ```javascript
 app.post('/product', function(req, res) {
@@ -151,9 +158,9 @@ app.post('/product', function(req, res) {
 });
 ```
 
-The line `product.tenant_id = req.body.tenant_id;` represents the only change you'll see between this version and the original. It extracts the tenant identifier from the incoming request and adds it to our product object. This, of course, means that REST calls to this method must supply a tenant identifier with each invocation of this method.
+A linha `product.tenant_id = req.body.tenant_id;` representa a única mudança que existe entre essa versão e a original. Ela extrai o identificador de tenant da requisição e adiciona ao objeto do produto. Isso, claro, significa que as chamadas REST para esse método devem fornecer um identificador de tenant em cada invocação desse método.
 
-**Step 2** - Up to this point, we haven't really looked at the **DynamoDBHelper** to see how it accommodates our ability to get items from the DynamoDB table. This module is a wrapper of the AWS-provided DynamoDB client with some added elements to support isolation. In fact, even as we're introducing this tenant identifier model, it does not change how DynamoDBHelper processes this request. Below is a snipped of code from the DynamoDBHelper for the `getItem()` method:
+**Passo 2** - Até esse ponto, não olhamos o **DynamoDBHelper** para ver como ele realiza o acesso aos itens da tabela no DynamoDB. Esse módulo encapsula o cliente do DynamoDB da AWS com alguns elementos para permitir o isolamento entre tenants. Na verdade, mesmo colocando esse modelo de identificador de tenant, isso não muda como o DynamoDBHelper processa a requisição. Abaixo temos um trecho de código do DynamoDBHelper para o método `getItem()`:
 
 ```javascript
 DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
@@ -174,66 +181,67 @@ DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
 }
 ```
 
-You'll notice that we're passing through all the parameters that we constructed in our product manager service as the `keyParams` value in the `fetchParams` structure. The client will simply use the parameters to match the partition key for the table. The takeaway here is that nothing unique is done in the code to support the partitioning by a tenant identifier. It's simply just another key in our DynamoDB table.
+Você pode perceber que estamos passando todos os parâmetros que construímos no serviço gerenciador de produtos como o valor `keyParams` da estrutura `fetchParams`. O cliente usará esses parâmetros para fazer a correspondência com a partition key da tabela. Podemos concluir que nada de especial foi feito no código para permitir o particionamento por um identificador de tenant. É apenas outra chave na nossa tabela DynamoDB.
 
-**Step 3** - Now that you have a better sense of how this service changes to accommodate data partitioning, let's go ahead and deploy version 2 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part2/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+
+**Passo 3** - Agora que você tem uma visão melhor de como esse serviço é alterado para suportar o particionamento de dados, vamos seguir adiante e implantar a versão 2 do gerenciador de produtos, através da IDE Cloud9. Vá até o diretório `Lab2/Part2/product-manager`, clique com o botão direito em `deploy.sh`, e clique em **Run** para rodar o shell script.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script.png" alt="Lab 2 Part 2 Step 3 Cloud9 Run Script"/></p>
 
-**Step 4** - Wait for the `deploy.sh` shell script to execute successfully.
+**Passo 4** - Aguarde a execução do script `deploy.sh`.
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script_complete.png" alt="Lab 2 Part 2 Step 4 Cloud9 Script Finished"/></p>
 
-**Step 5** - With this new partitioning scheme, we must also change the configuration of our DynamoDB table. If you recall, the current table used **product_id** as the partition key. We now need to have **tenant_id** be our partition key and have the **product_id** serve as a secondary index (since we may still want to sort on that value). The easiest way to introduce this change is to simply **_delete_** the existing **ProductBootcamp** table and create a new one with the correct configuration.
+**Passo 5** - Com esse novo esquema de particionamento, nós também devemos modificar a configuração da tabela do DynamoDB. Se você se lembra, a tabela atual usava **product_id** como partition key. Agora precisamos ter **tenant_id** como partition key e utilizar **product_id** como um índice secundário, já que nós podemos fazer uma ordenação nesse valor. A forma mais fácil de fazer essa mudança é simplesmente **_apagar_** a tabela **ProductBootcamp** existente e criar uma nova com a configuração correta.
 
-Navigate to the DynamoDB service in the AWS console and select the **Tables** option from the menu at the top left of the page. Select the radio button for the **ProductBootcamp** table. After selecting the product table, select the **Delete table** button. You will be prompted to confirm removal of CloudWatch alarms to complete the process.
+Vá até o serviço DynamoDB no console da AWS e selecione a opção **Tables** do menu do lado superior esquerdo da página. Selecione o botão para a tabela **ProductBootcamp**. Após selecionar a tabela de produtos, clique no botão **Delete table**. Você será solicitado a confirmar a remoção dos alarmes do CloudWatch para completar o processo.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_delete_table.png" alt="Lab 2 Part 2 Step 5 DynamoDB Delete Table"/></p>
 
-**Step 6** - Now we can start the table creation process from scratch. Select the **Create table** button from the top of the page. As before, enter **ProductBootcamp** for the table name, but this time enter **tenant_id** for the partition key. Now click on the **Add sort key** checkbox and we'll enter **product_id** as the sort key. Click the **Create** button to finalize the table.
+**Passo 6** - Agora podemos começar o processo de criação da tabela do zero. Clique no botão **Create table** no topo da página. Como anteriormente, utilize **ProductBootcamp** como nome da tabela, mas dessa vez, coloque **tenant_id** como partition key. Agora clique na checkbox **Add sort key** e coloque **product_id** como sort key. Clique no botão **Create** para finalizar o processo.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_create_table.png" alt="Lab 2 Part 2 Step 6 DynamoDB Create Table"/></p>
 
-**Step 7** - The service has now been modified to support the introduction of a tenant identifier and we've modified DynamoDB to partition the data with this tenant identifier. It's time now to validate that the new version of the service is up-and-running. Issue the following cURL command to invoke the health check on the service. Refer to Part 1 if you need to find your API Gateway URL. Copy and paste the following command, replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Passo 7** - O serviço foi modificado para suportar a introdução de um identificador de tenant e modificamos a tabela do DynamoDB para particionar os dados com base nesse identificador. Agora precisamos validar que a nova versão do serviço está no ar. Execute o seguinte comando do cURL para chamar o health check no serviço. Se necessário, você pode verificar na Parte 1 como obter a URL do API Gateway. Copie e cole o seguinte comando, substituindo **INVOKE-URL** pela URL e _stage name_ que você obteve nas configurações do API Gateway.
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 ```
-**Be sure you've included the API stage name at the end of the URL before /product/health.** You should get a JSON formatted success message from the **cURL** command indicating that the request was successfully processed and the service is ready to process requests.
+**Garanta que você incluiu o _stage name_ no final da URL antes de /product/health.** Você deverá obter uma mensagem de sucesso no formato JSON do comando **cURL** indicando que a requisição foi processada com sucesso e o serviço está pronto para processar outras requisições.
 
-**Step 8** - Now that we know the service is up-and-running, we can add a new product to the catalog via the REST API. Unlike our prior REST call, this one must provide the tenant identifier as part of the request. Submit the following REST command to create a product for tenant "**123**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Passo 8** - Agora que sabemos que o serviço está no ar, podemos adicionar um novo produto ao catálogo através da API REST. Diferentemente da nossa chamada REST anterior, esta deverá incluir o identificador de tenant como parte da requisição. Execute o seguinte comando REST para criar um produto para o tenant "**123**". Copie e cole o comando a seguir (garanta que você tenha selecionado todo o comando), substituindo **INVOKE-URL** pela URL e _stage name_ que você obteve nas configurações do API Gateway. 
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "123", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-This looks much like the prior example. However, notice that we pass a parameter of `tenant_id` ("123") in the body.
+Esse comando parece muito com o exemplo anterior. No entanto, note que estamos pasando um parâmetro `tenant_id` ("123") no body da requisição.
 
-**Step 9** - Before we verify that this data was successfully written, let's introduce another product for a different tenant. This will highlight the fact that our partitioning scheme can store data separately for each tenant. To add another product for a different tenant, we just issue another POST command for a different tenant. Submit the following POST for tenant "**456**". Copy and paste the following command (be sure to scroll to select the entire command), replacing **INVOKE-URL** with the URL and trailing stage name you captured from the API Gateway settings.
+**Passo 9** - Antes de verificar que essa entrada foi gravada corretamente, vamos inserir um outro produto para outro tenant. Isso demonstra o fato que nosso esquema de particionamento consegue armazenar dados separadamente para cada tenant. Para adicionar um produto para um tenant diferente, nós precisamos apenas executar outro comando POST para um tenant diferente. Realize a chamada POST a seguir para o tenant "**456**". Copie e cole o comando a seguir (garanta que você tenha selecionado todo o comando), substituindo **INVOKE-URL** pela URL e _stage name_ que você obteve nas configurações do API Gateway. 
 
 ```bash
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-**Step 10** - Let's go verify that the data we submitted landed successfully in the DynamoDB table we created. Navigate to the DynamoDB service in the AWS console and select **Tables** from the list of options at the upper left-hand side of the page. The center of the page should now display a list of tables. Find your **ProductBootcamp** table and select the link with the table name. This will display basic information about the table. Now select the **Items** tab from the top of the screen and you'll see the list of items in your table which should include the two items you just added. Verify that these two items exist and are partitioned based on the two tenant identifiers that you suppled ("123" and "456").
+**Passo 10** - Vamos verificar que os dados que enviamos foram gravados com sucesso na tabela DynamoDB que criamos. Vá até o serviço DynamoDB na console da AWS e selecione **Tables** da lista de opções no lado superior esquerdo da página. O centro da página deve mostar uma lista de tabelas. Encontre a tabela **ProductBootcamp** e selecione o link com o nome da tabela. Isso irá mostar informações básicas sobre a tabela. Agora selecione a aba **Items** no topo da tela e você verá a lista de itens na sua tabela, que deverão incluir os dois itens que você acabou de adicionar. Verifique que esses dois itens existem e são particionados com base nos dois identificadores de tenant fornecidos ("123" e "456"). 
 
 <p align="center"><img src="./images/lab2/part2/dynamo_scan_table.png" alt="Lab 2 Part 2 Step 10 DynamoDB Scan Table"/></p>
 
-**Recap**: You've now successfully introduced data partitioning into your service. The microservice achieved this by adding a tenant identifier parameter to the product manager service and changing the product table to use **tenant_id** as the partition key. Now, all of your CRUD operations are multi-tenant aware.
+**Recap**: Você adicionou o particionamento de dados no serviço com sucesso. O microsserviço faz o particionamento ao adicionar um identificador de tenant ao serviço gerenciador de produtos e ao modificar a tabela para usar **tenant_id** como partition key. Agora, todas as operações CRUD são _multi-tenant aware_.
 
-## Part 3 - Applying Tenant Context
+## Parte 3 - Utilizando Contexto de Tenant
 
-At this stage we have data partitioning, but our way of introducing the tenant context was somewhat crude. It's simply not practical or secure to expect that tenant identifiers are to be passed as a parameter to every call to the product management service. Instead, this tenant context should come from the tokens that are part of the authentication process that we setup in the prior lab.
+Nesse ponto, temos particionamento de dados, mas a maneira que adicionamos o contexto de tenant foi, de certa forma, tosca. Não é uma maneira prática ou segura passar como parâmetro os identificadores de tenant em cada chamada efetuada. Para melhorar esse cenário, o contexto de tenant deve vir dos tokens que são parte do processo de autenticação que configuramos no laboratório anterior.
 
-So, our next step is to enable our service to be aware of these security tokens and extract our tenant context from these tokens. Then, our partitioning that we just setup can rely on a tenant identifier that was provisioned during onboarding and simply flowed through to your product manager service in the header of each HTTP request.
+Nosso próximo passo é habilitar o serviço para extrair o contexto de tenant desses tokens de segurança. Dessa forma, o sistema de particionamento que acabamos de configurar pode depender de um identificador de tenant que foi provisionado durante o cadastro e simplesmente passa até o serviço no header de cada requisição HTTP.
 
-For this section, we'll see how our product manager service gets retrofitted with new code to extract these tokens from the HTTP request and applies them to our security and data partitioning model.
+Nesta seção, vamos ver como o serviço gerenciador de produtos é atualizado com códigos novos para extrair esses tokens da requisição HTTP e aplicá-los ao nosso modelo de segurança e particionamento de dados.
 
-**Step 1** - For this iteration, we'll need a new version of our service. While we won't modify the code directly, we'll take a quick look at how the code changes to support acquiring tenant context from identity tokens. View the new version of our Product Manager service in Cloud9 by opening `Lab2/Part3/product-manager/server.js`.
+**Passo 1** - Para essa iteração, precisaremos de uma nova versão do nosso serviço. Embora não iremos modificar o código diretamente, vamos dar uma olhada nas mudanças de código realizadas para suportar a aquisição do contexto de tenant a partir dos tokens de identidade. Abra a nova versão do serviço gerenciador de produtos no Cloud9 abrindo o arquivo `Lab2/Part3/product-manager/server.js`.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_open_script.png" alt="Lab 2 Part 3 Step 1 Cloud9 Open Script"/></p>
 
-Version 3 of our product manager service introduces a new **TokenManager** helper object that abstracts away many aspects of the token processing. Let's take a look at a snippet of this updated version to see how tenant context is acquired from the user's identity:
+A versão 3 do serviço gerenciador de produtos introduz um novo objeto auxiliar **TokenManager** que abstrai vários aspectos do processamento do token. Vamos dar uma olhada em um trecho dessa nova versão para ver como o contexto do tenant é obtido a partir da identidade do usuário:
 
 ```javascript
 app.use(function (req, res, next) {
@@ -247,12 +255,11 @@ app.use(function (req, res, next) {
     next();
 });
 ```
+A função `getTenantId` do TokenManager mostrada aqui, que aparece na maioria dos serviços de nossa aplicação, fornece o mecanismo para obter o identificador de tenant dos **headers HTTP** para cada requisição REST. Isso é feito através do mecanismo de middleware do framework Express. O middleware permite introduzir uma função que intercepta e pré-processa cada requisição HTTP antes de ser processada pelas funções de cada método REST.
 
-The TokenManager's `getTenantId` function shown here, which appears in most of the services of our application, provides the mechanism for acquiring the tenant identifier from the **HTTP headers** for each REST request. It achieves this by using the middleware construct of the Express framework. This middleware allows you to introduce a function that intercepts and pre-processes each HTTP request before it is processed by the functions for each REST method.
+Após os headers da resposta serem definidos, o _bearer token_ é extraído do header **HTTP Authorization**. Esse token possui os dados que queremos utilizar para obter o contexto de tenant. Usamos o **TokenManager** para obter o identificador do tenant da requisição. A chamada para essa função retorna o identificador do tenant e atribui à variavel `tenantId`. Ao longo do código do serviço, são feitas referências a esta variável para obtenção do contexto de tenant.
 
-You'll see after the response headers are set, the bearer token is extracted from the **HTTP Authorization** header. This token holds the data we want to use to acquire our tenant context. We then use the **TokenManager** helper to get the tenant identifier out of the request. The call to this function returns the tenant identifier and assigns it to the `tenantId` variable. This variable is then referenced throughout the service to acquire tenant context.
-
-**Step 2** - Now that you have the tenant identifier, the application of this is relatively straightforward. You can see that we've changed the way we're acquiring the tenant identifier, referencing the **tenantId** that we extracted from the bearer token in the middleware in Step 1 (instead of pulling this from the incoming requests).
+**Passo 2** - Agora que temos o identificador do tenant, as mudanças são relativamente simples. Você pode ver que mudamos a maneira que obtemos o identificador do tenant, fazendo referência ao **tenantId** que extraímos do _bearer token_ no middleware do Passo 1 (ao invés de obter do body da requisição).
 
 ```javascript
 app.get('/product/:id', function(req, res) {
@@ -278,9 +285,9 @@ app.get('/product/:id', function(req, res) {
 });
 ```
 
-**Step 3** - As you can imagine, most of the token processing work here is intentionally embedded in the helper class. Let's take a quick look at what is in that class to see how it's extracting this context from the tokens.
+**Passo 3** - Como você pode imaginar, a maioria do trabalho de processar o token foi intencionalmente colocada na classe auxiliar. Vamos dar uma olhada nessa classe para ver como ela extrai esse contexto dos tokens.
 
-Below is a snippet of the code from the TokenManager that is invoked to extract the token. This function extracts the security token from the Authorization header of the HTTP request, decodes it, then acquires the tenantId from the decoded token. _In a production environment, this unpacking would use a signed certificate as a security measure to ensure the token contents were not modified during transmission_.
+Abaixo temos um trecho do código do TokenManager que é chamado para extrair o token. Essa função extrai o token de segurança do header Authorization da requisição HTTP, o decodifica, e obtém o tenantId a partir do token decodificado. _Em um ambiente de produção, essa extração usaria um certificado assinado como medida de segurança para garantir que o conteúdo do token não foi modificado de forma indevida._
 
 ```javascript
 module.exports.getTenantId = function(req) {
@@ -297,63 +304,64 @@ module.exports.getTenantId = function(req) {
 }
 ```
 
-**Step 4** - Now that you have a better sense of how we've introduced tenant context through HTTP headers, let's go ahead and deploy version 3 of the product manager, within our Cloud9 IDE. Navigate to `Lab2/Part3/product-manager/` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Passo 4** - Agora que você tem uma visão geral de como aplicamos o contexto do tenant através dos headers HTTP, vamos implantar a versão 3 do gerenciador de produtos, dentro da IDE Cloud9. Vá até o diretório `Lab2/Part3/product-manager/`, clique com o botão direito em `deploy.sh`, e clique em **Run** para executar o shell script.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script.png" alt="Lab 2 Part 3 Step 4 Cloud9 Run Script"/></p>
 
-**Step 5** - Wait for the `deploy.sh` shell script to execute successfully.
+**Passo 5** - Aguarde a execução do script `deploy.sh`.
 
 <p align="center"><img src="./images/lab2/part3/cloud9_run_script_complete.png" alt="Lab 2 Part 3 Step 5 Cloud9 Script Finished"/></p>
 
-**Step 6** - Now that the application is deployed, it's time to see how this new tenant and security context gets processed. We'll need to have a valid token for our service to be able to succeed. That means returning our attention to the web application, which already has the ability to authenticate a user and acquire a valid token from our identity provider, Cognito. First, we'll need to make sure we have at least two tenants registered.
+**Passo 6** - Agora que a aplicação foi implantada, é hora de ver como esse novo contexto de tenant e segurança é processado. Temos que ter um token válido para nosso serviço para termos sucesso. Isso significa voltar à aplicação web, que já possui a habilidade de autenticar um usuário e obter um token válido do _identity provider_, o Cognito. Primeiramente, precisamos garantir que temos ao menos dois tenants registrados.
 
-You already registered a tenant in Lab 1. Let's add a second tenant following the same steps as in Lab 1. Enter the URL to your application (created in Lab 1) and select the **Register** button when the login screen appears. Refer to Lab 1 if you need to capture the URL for your application from the **CloudFront** service.
+Você já registrou um tenant no Lab 1. Vamos adicionar um segundo tenant seguindo os mesmos passos do Lab 1. Entre com o endereço da aplicação que você criou no Lab 1 e clique no botão **Register** quando a tela de login aparecer. Se necessário, verifique no guia do Lab 1 como obter a URL da aplicação no serviço **CloudFront**.
 
-**Step 7** - Fill in the form with data about your new tenant. Since we're creating two tenants as part of this flow, you'll need **two separate** email addresses. If you don't have two, you can use the same trick with the plus (**+**) symbol in the username before the at (**@**) symbol as described in Lab 1. After you've filled in the form, select the **Register** button.
+**Passo 7** - Preencha o formulário com as informações do novo tenant. Como estamos criando dois tenants, você precisará de **dois endereços de email**. Se você não tiver dois emails, você pode usar a mesma dica do Lab 1, que utiliza o "mais" (**+**) no username antes do arroba (**@**). Após preencher o formulário, clique no botão **Register**.
 
-**Step 8** - Just like in Lab 1, you'll now check your email for the validation message that was sent by Cognito. You should find a message in your inbox that includes your username (your email address) along with a temporary password (generated by Cognito). The message will be similar to the following:
+**Passo 8** - Da mesma forma que no Lab 1, você precisa verificar seu email para a mensagem de validação que foi enviada pelo Cognito. Você irá encontrar uma mensagem que inclui o username (o endereço de email) junto com uma senha temporária (gerada pelo Cognito). A mensagem vai ser parecida com essa:
 
 <p align="center"><img src="./images/lab2/part3/cognito_email.png" alt="Lab 2 Part 3 Step 8 Cognito Validation Email"/></p>
 
-**Step 9** - We can now login to the application using these credentials. Return to the application using the public URL (created in Lab 1). Enter the temporary credentials that were provided in your email and select the **Login** button.
+**Passo 9** - Agora podemos fazer login na aplicação usando essas credenciais. Retorne à aplicação usando o endereço públco criado no Lab 1. Entre com as credenciais temporárias que foram providas no email e clique no botão **Login**.
 
 <p align="center"><img src="./images/lab2/part3/login.png" alt="Lab 2 Part 3 Step 9 Login"/></p>
 
-**Step 10** - The system will detect that this is a temporary password and indicate that you need to setup a new password for your account. To do this, application redirects you to a new form where you'll setup your new password (as shown below). Create your new password and select the **Confirm** button.
+**Passo 10** - O sistema irá detectar que essa é uma senha temporária e indicar que você precisa definir uma nova senha para sua conta. Para isso, a aplicação redireciona para um novo formulário onde você irá definir sua nova senha (como ilustrado abaixo). Crie a nova senha e clique no botão **Confirm**.
 
 <p align="center"><img src="./images/lab2/part3/change_password.png" alt="Lab 2 Part 3 Step 10 Reset Password"/></p>
 
-After you've successfully changed your password, you'll be logged into the application and landed at the home page. We won't get into the specifics of the application yet.
+Depois de ter alterado a senha, você estará logado na aplicação e visualizando a home page. Não iremos entrar nos detalhes específicos da aplicação ainda.
 
-**Step 11** - You must have two tenants to finish the lab exercises. If you only have one tenant registered, create another by repeating steps 6-10 again, supplying a different email address for your tenant.
+**Passo 11** - Você deve ter dois tenants para terminar os exercícios desse lab. Se você possui apenas um tenant registrado, crie outro, repetindo os passos 6-10 novamente, utilizando um email diferente para esse tenant novo.
 
-**Step 12** - Now that our tenants have been created through the onboarding flow let's actually create some products via the application. Log into the application as your first tenant and navigate to the **Catalog** menu item at the top of the page.
+**Passo 12** - Agora que os tenants foram criados pelo fluxo de onboarding, vamos criar alguns produtos através da aplicação. Entre na aplicação como o tenant 1 e vá até o item **Catalog** no topo da página.
 
 <p align="center"><img src="./images/lab2/part3/catalog.png" alt="Lab 2 Part 3 Step 12 Catalog Page"/></p>
 
-**Step 13** - With the **Catalog** page open, select the **Add Product** button from the top right of the page. Fill in the details with the product data of your choice. However, for the **SKU**, precede all of your SKU's with **TENANTONE**. So, SKU one might be "**TENANTONE-ABC**". The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+**Passo 13** - Com a página **Catalog** aberta, clique no botão **Add Product** no canto superior direito da página. Entre com os detalhes do produto, com dados de sua escolha. No entanto, para o **SKU**, coloque **TENANTONE** antes do valor desejado. Por exemplo, o primeiro SKU pode ser "**TENANTONE-ABC**". O que queremos com isso é ter valores _específicos_ no começo do SKU, para claramente identificar os produtos perntencentes a um tenant específico.
+
 <p align="center"><img src="./images/lab3/part1/add_product1.png" alt="Lab 3 Part 1 Step 7 Add Product"/></p>
 
-**Step 14** - Once you've added a couple of products for one of your tenants, select the dropdown menu with your tenant name at the top right of the screen and select **Logout**. This will return you to the login page.
+**Passo 14** - Adicione alguns produtos para o primeiro tenant. Em seguida, clique no menu com o nome deste tenant no canto superior direito da tela e clique em **Logout**. Você será redirecionado à página de login.
 
 <p align="center"><img src="./images/lab2/part3/logout.png" alt="Lab 2 Part 3 Step 14 Logout"/></p>
 
-**Step 15** - Enter the credentials of the other tenant that you created and select the **Login** button. You're now logged in as a different tenant and you should see a different name in the profile menu selection in the upper right of the screen.
+**Passo 15** - Entre com as credenciais do segundo tenant que você criou, e clique no botão **Login**. Você terá entrado como um tenant diferente, e verá um nome diferente no menu de seleção de perfil no canto superior direito da tela.
 
-**Step 16** - Now navigate to the **Catalog** view again. You should note that the list of products is empty at this point. The products that you previously created were associated with another tenant so they are intentionally not show here. **The illustrates that our partitioning is working**.
+**Passo 16** - Agora vá à tela **Catalog** novamente. Note que a lista de produtos está vazia. Os produtos que você criou anteriormente foram associados com outro tenant, por isso não estão sendo mostrados aqui. **Isso demonstra que o particionamento está funcionando.**
 
-**Step 17** - As before, click the **Add Product** button to fill in the details with the product data of your choice. However, for the SKU, precede all of your SKU's with **TENANTTWO**. So, SKU one might be **TENANTTWO-ABC**. The key here is that we want to have _specific_ values that are prepended to your SKU that clearly identify the products as belonging to this specific tenant.
+**Passo 17** - Como antes, clique em **Add Product** e adicione os dados dos produtos com as informações que desejar. No entanto, para o SKU, comece todos com **TENANTTWO**. Por exemplo, o primeiro SKU pode ser "**TENANTTWO-ABC**". O que queremos com isso é ter valores _específicos_ no começo do SKU, para claramente identificar os produtos perntencentes a este tenant em específico.
 
 <p align="center"><img src="./images/lab3/part1/add_product2.png" alt="Lab 3 Part 1 Step 13 Add Product"/></p>
 
-**Step 18** - After completing this onboarding process and adding these products for two separate tenants, we can now go see how this data landed in DynamoDB tables that support this experience.
+**Passo 18** - Após completar esse processo e adicionar os produtos para dois tenants separados, podemos ver como esses dados foram gravados no DynamoDB. 
 
-Navigate to the **DynamoDB** service in the AWS console and select **Tables** from the list of options at the top left of the page. Select the **ProductBootcamp** table and then the **Items** tab. Notice that the table is partitioned by `tenant_id`. You should be able to see the products you entered through the web application while logged in as the 2 different tenants (separate from the products you entered via the REST API earlier in the lab).
+Vá até o serviço **DynamoDB** na console da AWS, clique em **Tables**, na lista de opções no canto superior esquedo da página. Selecione a tabela **ProductBootcamp** e então a aba **Items**. Note que essa tabela é particionada por `tenant_id`. Você deve ver os produtos que você adicionou pela aplicação web enquanto logado como os dois diferentes tenants (separados dos produtos adicionados pela API REST anteriormente no lab).
 
 <p align="center"><img src="./images/lab2/part3/product_table.png" alt="Lab 2 Part 3 Step 18 Product Table"/></p>
 
-**Step 19** - If you review the **TenantBootcamp** table, you should see entries for the tenants you onboarded through the web application and their automatically generated GUIDs in the **tenant_id** field will match the **tenant_id** field in the entries in the **ProductBootcamp** table.
+**Passo 19** - Se você verificar a tabela **TenantBootcamp**, você deve ver as entradas para os tenants que você criou pela aplicação web, e os GUIDs gerados automaticamente no campo **tenant_id** corresponderão ao campo **tenant_id** nas entradas na tabela **ProductBootcamp**.
 
-**Recap**: You've now elevated the mechanism of acquiring tenant context in our microservices by extracting our custom "claims" from the security token passed in the Authorization HTTP header. We reduced developer complexity in applying the tenant context by creating a custom TokenManager helper class that takes advantage of the Express framework's "middleware" concept to intercept all incoming requests prior to executing a REST resource's method.
+**Recap**: Nesse exercício, você melhorou o mecanismo de obtenção do contexto do tenant nos microsserviços ao extrair os "claims" customizados do token de segurança passado no header HTTP Authorization. Nós reduzimos a complexidade para os desenvolvedores utilizarem o contexto do tenant ao criar uma classe auxiliar TokenManager, que utiliza o mecanismo de "middleware" do framework Express para interceptar todas as requisições antes de executar a função que corresponde à chamada REST.
 
-[Continue to Lab 3](Lab3.md)
+[Continue para o Lab 3](Lab3.md)
