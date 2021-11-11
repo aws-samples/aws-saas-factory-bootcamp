@@ -73,7 +73,7 @@ Os atributos são case-sensitive. Sua tela deve ficar da seguinte forma:
 
 <p align="center"><img src="./images/lab1/part1/cognito_step4_custom_attributes.png" alt="Lab 1 Part 1 Step 6 Cognito Custom Attributes"/></p>
 
-**Etapa 7** - Depois de configurar os atributos personalizados, clique no botão ** Next step** na parte inferior da tela. Isso nos leva à página de políticas.
+**Etapa 7** - Depois de configurar os atributos personalizados, clique no botão **Next step** na parte inferior da tela. Isso nos leva à página de políticas.
 
 Aqui podemos configurar a senha e as políticas de administração. Essas políticas (e outras configuradas com pools de usuários) nos permitem variar a abordagem de cada tenant. Você poderia, por exemplo, trazer à tona essas opções na experiência de administração de tenant de sua solução SaaS, permitindo que tenants individuais configurem suas próprias políticas.
 
@@ -87,7 +87,7 @@ Depois de concluir esta seção, clique no botão **Next step** na parte inferio
 
 **Etapa 8** - Estamos agora na seção MFA e verificações. Para alguns provedores de SaaS, ou mesmo tenants individuais, pode ser valioso habilitar o MFA. Para esta solução, no entanto **vamos deixá-lo desabilitado**. Não mude nada nesta tela.
 
-Esta página nos dá a opção de configurar como as verificações serão entregues. Para este laboratório **vamos deixar as configurações padrão **.
+Esta página nos dá a opção de configurar como as verificações serão entregues. Para este laboratório **vamos deixar as configurações padrão**.
 
 Se você optar por habilitar a verificação do número de telefone ou MFA, o Cognito precisaria de uma função IAM para permissões para enviar uma mensagem SMS para o usuário via Amazon SNS. **Para este laboratório, basta clicar no botão "Next step"**.
 
@@ -108,7 +108,7 @@ Password: {####}.
 
 O Cognito também tem a capacidade de customizar alguns dos cabeçalhos de e-mail para seus e-mails de verificação e convite. Vamos deixar essas configurações padrão para este workshop. Clique no botão **Next step**.
 
-**Etapa 10 * - Para este workshop, _pularemos_ as seções **Tags** e **Devices**. Basta clicar no botão **Next step** _ **duas vezes * _ para avançar para a tela de **App clients**.
+**Etapa 10** - Para este workshop, _pularemos_ as seções **Tags** e **Devices**. Basta clicar no botão **Next step** _ **duas vezes** _ para avançar para a tela de **App clients**.
 
 **Etapa 11** - Agora que criamos os fundamentos de nosso pool de usuários, precisamos criar um App client para esse pool. Este cliente é uma peça fundamental do Cognito. Ele fornece o contexto pelo qual podemos acessar os fluxos _unauthenticated_ que são necessários para se registrar e entrar no sistema. Você pode imaginar como isso é fundamental para nossa experiência de integração. Selecione o link **Add an app client** na tela a seguir:
 
@@ -155,7 +155,7 @@ Para configurar seu pool de identidade, navegue de volta à página principal do
 
 Embora tenhamos configurado a infraestrutura AWS para suportar o gerenciamento de nossas identidades de usuário com o Cognito, ainda precisamos de algum mecanismo que permita que nosso aplicativo acesse e configure esses elementos em tempo de execução. Para chegar lá, precisamos apresentar um microsserviço que ficará na frente das APIs do Cognito. Isso encapsula nossos recursos de gerenciamento de usuário e simplifica a experiência do desenvolvedor, ocultando os detalhes da API Cognito.
 
-Instead of building this microservice from scratch, we're going to simply review the sample code deployed as a Docker container image to **Amazon Elastic Container Service** (ECS).
+Em vez de construir este microsserviço do zero, vamos simplesmente revisar o código de exemplo implantado como uma imagem de contêiner Docker no **Amazon Elastic Container Service** (ECS).
 
 **Etapa 1** - Vamos abrir o código e dar uma olhada. Para simplificar essa experiência e garantir que todos tenham as ferramentas de linha de comando necessárias para acompanhar, provisionamos uma IDE (Integrated Development Environment) **AWS Cloud9** para você.
 
@@ -268,9 +268,7 @@ curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"
 
 <p align="center"><img src="./images/lab1/part3/dynamo_menu_tables.png" alt="Lab 1 Part 3 Step 2 DynamoDB Menu Tables"/></p>
 
-**Etapa 3** - Localize e selecione o hyperlink da tabela **TenantBootcamp** na lista de tabelas do DynamoDB e selecione a guia **Items** para visualizar os dados na tabela.
-
-<p align="center"><img src="./images/lab1/part3/dynamo_tenant_table.png" alt="Lab 1 Part 3 Step 3 DynamoDB Tenant Table"/></p>
+**Etapa 3** - Localize e selecione o hyperlink da tabela **TenantBootcamp** na lista de tabelas do DynamoDB e selecione o botão **View Items** para visualizar os dados na tabela.
 
 Você deve ver um item na tabela contendo todos os atributos enviados por meio do comando cURL.
 
@@ -355,8 +353,7 @@ Depois de preencher o formulário, selecione o botão **Register** e, após um o
 
 <p align="center"><img src="./images/lab1/part4/users.png" alt="Lab 1 Part 4 Step 8 Users"/></p>
 
-Agora selecione o botão **Add User** para adicionar um novo usuário ao seu sistema na função **Order Manager
-**. Crie o novo usuário (usando um endereço de e-mail / nome de usuário diferente) do que o seu tenant. Certifique-se de selecionar a função **Order Manager**. Depois de inserir todos os dados, selecione o botão **Save** na parte inferior do formulário.
+Agora selecione o botão **Add User** para adicionar um novo usuário ao seu sistema na função **Order Manager**. Crie o novo usuário (usando um endereço de e-mail / nome de usuário diferente) do que o seu tenant. Certifique-se de selecionar a função **Order Manager**. Depois de inserir todos os dados, selecione o botão **Save** na parte inferior do formulário.
 
 **Dica**: você pode usar o mesmo endereço de e-mail que usou para o administrador do tenant, mas adicione um símbolo de adição (**+**) e uma string após o nome de usuário, mas antes do símbolo de arroba (**@**) (por exemplo, test@test.com -> test+user1@test.com). O servidor de e-mail também deve entregar esta mensagem endereçada a **teste + usuário1** para a caixa de entrada do usuário **teste**. 
 
