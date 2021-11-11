@@ -12,8 +12,6 @@ Abaixo temos um diagrama em alto nível dos serviços utilizados:
 
 Este é um diagrama muito básico que destaca os serviços e suas interações com os outros aspectos da arquitetura do bootcamp. Observe que esses serviços estão conectados ao aplicativo por meio do **API Gateway**, expondo operações básicas de **CRUD** para criar, ler, atualizar e excluir produtos e pedidos.
 
-Of course as part of implementing these services, we have to think about what must be done to apply multi-tenancy to these services. These services will need to store data, log metrics, and acquire user identity all with multi-tenant awareness. So, we have to think about how this is achieved and applied within these services.
-
 Obviamente, como parte da implementação desses serviços, temos que pensar sobre o que deve ser feito para aplicar o conceito de multi-tenancy a esses serviços. Esses serviços precisarão armazenar dados, registrar métricas e obter a identidade do usuário tendo em mente o cenário de multi-tenant. Portanto, temos que pensar em como isso é alcançado e aplicado nesses serviços.
 
 Abaixo temos um diagrama que mostra uma visão conceitual do que significa construir um microserviço que leva em consideração o multi-tenancy *(multi-tenant aware)*:
@@ -39,8 +37,6 @@ Para demonstrar os conceitos multi-tenant, passaremos por um processo evolucion�
 * Introduzir um segundo tenant para demonstrar o particionamento - registrar um novo tenant e gerenciar produtos através do contexto desse tenant para ilustrar como o sistema particionou os dados na aplicação com sucesso.
 
 ## Parte 1 - Implantação de um Serviço Gerenciador de Produtos Single-Tenant
-
-Before we can see how multi-tenancy influences the business services of our application, we need to see a baseline single-tenant service in action. This will provide a foundation for our exploration of multi-tenancy, illustrating how multi-tenancy influences the implementation of our microservice.
 
 Antes de podermos ver como a estratégia multi-tenant influencia os serviços de negócio de nosso aplicativo, iremos ver um serviço single-tenant em ação, para termos uma base para a exploração dos conceitos de multi-tenancy e como isso influencia na implementação de nosso microsserviço. 
 
@@ -89,7 +85,7 @@ Vamos começar olhando a assinatura do método. Aqui temos um caminho tradiciona
 
 <p align="center"><img src="./images/lab2/part1/dynamo_menu_tables.png" alt="Lab 2 Part 1 Step 4 DynamoDB Menu Tables"/></p>
 
-**Passo 5** - Agora clique no botão **Create table** no topo da página. Como nome da tabela, utilize **ProductBootcamp**, e para a chave primária, utilize **product_id**. O DynamoDB diferencia maiúsculas e minúsculas nos nomes de tabela e chave, então verifique se os valores foram digitados corretamente. Assim que os campos do formulário estiverem preenchidos, clique no botão **Create** à direita, no final da página, para criar a nova tabela.
+**Passo 5** - Agora clique no botão **Create table** no topo da página. Como nome da tabela, utilize **ProductBootcamp**, e como partition key, utilize **product_id**. O DynamoDB diferencia maiúsculas e minúsculas nos nomes de tabela e chave, então verifique se os valores foram digitados corretamente. Assim que os campos do formulário estiverem preenchidos, clique no botão **Create** à direita, no final da página, para criar a nova tabela.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_create_table.png" alt="Lab 2 Part 1 Step 5 DynamoDB Create Table"/></p>
 
@@ -115,7 +111,7 @@ curl -w "\n" --header "Content-Type: application/json" INVOKE-URL/product/health
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-**Passo 10** - Vamos verificar se os dados enviados foram gravados com sucesso na tabela do DynamoDB que criamos. Vá até o serviço DynamoDB na console AWS e clique em **Tables** na lista de opções no canto superior esquerdo da página. Uma lista de tabelas deve ser exibida no centro da tela. Encontre a tabela **ProductBootcamp** e clique no link com o nome da tabela. Isso irá mostrar algumas informações básicas da tabela. Selecione a aba **Items** no topo da tela, e você verá a lista de itens na tabela produtos, que deverá incluir o item que você acabou de adicionar.
+**Passo 10** - Vamos verificar se os dados enviados foram gravados com sucesso na tabela do DynamoDB que criamos. Vá até o serviço DynamoDB na console AWS e clique em **Tables** na lista de opções no canto superior esquerdo da página. Uma lista de tabelas deve ser exibida no centro da tela. Encontre a tabela **ProductBootcamp** e clique no link com o nome da tabela. Isso irá mostrar algumas informações básicas da tabela. Selecione o botão **Show Items** no topo da tela, e você verá a lista de itens na tabela produtos, que deverá incluir o item que você acabou de adicionar.
 
 <p align="center"><img src="./images/lab2/part1/dynamo_table_items.png" alt="Lab 2 Part 1 Step 10 DynamoDB Table Items"/></p>
 
@@ -123,7 +119,7 @@ curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"
 
 ## Parte 2 - Adicionando Particionamento de Dados Multi-Tenant
 
-O primeiro passo para tornar nosso serviço _multi-tenant aware_ é implementar um modelo der particionamento onde podemos persistir dados de múltiplos tentants em um único banco de dados DynamoDB. Também precisaremos injetar um contexto de tenant nas requisições REST e utilizar esse contexto para cada uma das operações CRUD.
+O primeiro passo para tornar nosso serviço _multi-tenant aware_ é implementar um modelo de particionamento onde podemos persistir dados de múltiplos tentants em um único banco de dados DynamoDB. Também precisaremos injetar um contexto de tenant nas requisições REST e utilizar esse contexto para cada uma das operações CRUD.
 
 Para fazer isso, precisaremos de uma configuração diferente para o banco de dados DynamoDB, introduzindo um identificador de tenant como partition key. Também precisaremos de uma nova versão do serviço que aceite um identificador de tentant em cada método REST e aplique esse identificador conforme o acesso às tabelas.
 
@@ -192,13 +188,13 @@ Você pode perceber que estamos passando todos os parâmetros que construímos n
 
 <p align="center"><img src="./images/lab2/part2/cloud9_run_script_complete.png" alt="Lab 2 Part 2 Step 4 Cloud9 Script Finished"/></p>
 
-**Passo 5** - Com esse novo esquema de particionamento, nós também devemos modificar a configuração da tabela do DynamoDB. Se você se lembra, a tabela atual usava **product_id** como partition key. Agora precisamos ter **tenant_id** como partition key e utilizar **product_id** como um índice secundário, já que nós podemos fazer uma ordenação nesse valor. A forma mais fácil de fazer essa mudança é simplesmente **_apagar_** a tabela **ProductBootcamp** existente e criar uma nova com a configuração correta.
+**Passo 5** - Com esse novo esquema de particionamento, nós também devemos modificar a configuração da tabela do DynamoDB. Se você se lembra, a tabela atual usava **product_id** como partition key. Agora precisamos ter **tenant_id** como partition key e utilizar **product_id** como sort key, já que nós podemos fazer uma ordenação nesse valor. A forma mais fácil de fazer essa mudança é simplesmente **_apagar_** a tabela **ProductBootcamp** existente e criar uma nova com a configuração correta.
 
 Vá até o serviço DynamoDB no console da AWS e selecione a opção **Tables** do menu do lado superior esquerdo da página. Selecione o botão para a tabela **ProductBootcamp**. Após selecionar a tabela de produtos, clique no botão **Delete table**. Você será solicitado a confirmar a remoção dos alarmes do CloudWatch para completar o processo.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_delete_table.png" alt="Lab 2 Part 2 Step 5 DynamoDB Delete Table"/></p>
 
-**Passo 6** - Agora podemos começar o processo de criação da tabela do zero. Clique no botão **Create table** no topo da página. Como anteriormente, utilize **ProductBootcamp** como nome da tabela, mas dessa vez, coloque **tenant_id** como partition key. Agora clique na checkbox **Add sort key** e coloque **product_id** como sort key. Clique no botão **Create** para finalizar o processo.
+**Passo 6** - Agora podemos começar o processo de criação da tabela do zero. Clique no botão **Create table** no topo da página. Como anteriormente, utilize **ProductBootcamp** como nome da tabela, mas dessa vez, coloque **tenant_id** como partition key. Agora coloque **product_id** como sort key. Clique no botão **Create** para finalizar o processo.
 
 <p align="center"><img src="./images/lab2/part2/dynamo_create_table.png" alt="Lab 2 Part 2 Step 6 DynamoDB Create Table"/></p>
 
@@ -223,7 +219,7 @@ Esse comando parece muito com o exemplo anterior. No entanto, note que estamos p
 curl -w "\n" --header "Content-Type: application/json" --request POST --data '{"tenant_id": "456", "sku": "1234", "title": "My Product", "description": "A Great Product", "condition": "Brand New", "conditionDescription": "New", "numberInStock": "1"}' INVOKE-URL/product
 ```
 
-**Passo 10** - Vamos verificar que os dados que enviamos foram gravados com sucesso na tabela DynamoDB que criamos. Vá até o serviço DynamoDB na console da AWS e selecione **Tables** da lista de opções no lado superior esquerdo da página. O centro da página deve mostar uma lista de tabelas. Encontre a tabela **ProductBootcamp** e selecione o link com o nome da tabela. Isso irá mostar informações básicas sobre a tabela. Agora selecione a aba **Items** no topo da tela e você verá a lista de itens na sua tabela, que deverão incluir os dois itens que você acabou de adicionar. Verifique que esses dois itens existem e são particionados com base nos dois identificadores de tenant fornecidos ("123" e "456"). 
+**Passo 10** - Vamos verificar que os dados que enviamos foram gravados com sucesso na tabela DynamoDB que criamos. Vá até o serviço DynamoDB na console da AWS e selecione **Tables** da lista de opções no lado superior esquerdo da página. O centro da página deve mostar uma lista de tabelas. Encontre a tabela **ProductBootcamp** e selecione o link com o nome da tabela. Isso irá mostar informações básicas sobre a tabela. Agora selecione o botão **View Items** no topo da tela e você verá a lista de itens na sua tabela, que deverão incluir os dois itens que você acabou de adicionar. Verifique que esses dois itens existem e são particionados com base nos dois identificadores de tenant fornecidos ("123" e "456"). 
 
 <p align="center"><img src="./images/lab2/part2/dynamo_scan_table.png" alt="Lab 2 Part 2 Step 10 DynamoDB Scan Table"/></p>
 
