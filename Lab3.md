@@ -281,7 +281,7 @@ Vamos destacar algums elementos chaves desta função.
 
 Embora seja ótimo ver esse trabalho, é difícil saber se esse novo código está realmente aplicando nosso isolamento de tenant. Esse é sempre um caso difícil de testar. Vamos tentar um pouco do método de força bruta na Parte 5.
 
-**Recapitulando**: Nós olhamos o código fonte para ver como combinamos junto o JWT **token de segurança bearer** dos cabeçalhos HTTP, nossos **claims customizados**, e o **mapeamento de role para política** do Cognito, retornando o as **credenciais temporárias do STS** para aplicar no isolamento de tenant no nosso sistemas. Nós então implantamos uma versão atualizada do serviço de gerenciamento do produto para remover nosso "hack de segurança" manual dos passos anteriores.
+**Recapitulando**: Nós olhamos o código fonte para ver como combinamos junto o JWT **token de segurança bearer** dos cabeçalhos HTTP, nossos **claims customizados**, o **mapeamento de role para política** do Cognito, e o retorno das **credenciais temporárias do STS** para aplicar no isolamento de tenant no nosso sistemas. Nós então implantamos uma versão atualizada do serviço de gerenciamento do produto para remover nosso "hack de segurança" manual dos passos anteriores.
 
 ## Parte 5 - Verificando credenciais com escopo do tenant
 
