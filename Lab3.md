@@ -193,9 +193,9 @@ The claim column has a value (URL encoded) that matches the custom **role** attr
 
 **Recap**: You've now completed building out the second phase of our tenant isolation. With this exercise, we saw the role-mapping rules in our Cognito identity pool. These mappings directly associate roles for tenants (TenantAdmin and TenantUser) to the policies that we configured in first part of this lab.
 
-## Part 4 - Acquiring Tenant-Scoped Credentials
+## Parte 4 - Obtendo credenciais baseado no escopo do tenant
 
-At this point, all the elements of our isolation scheme are in place. We have authentication with Cognito, roles provisioned for each tenant that scope access to our DynamoDB tables, and we have role-mapping conditions configured in Cognito that will connect our authenticated users with their corresponding policies. All that remains now is to introduce the code into our application services that exercises these elements and acquires credentials that will properly scope our access to the tenant resources.
+Nesse ponto, todos os elementos do nosso esquema de isolamento estão locais. Nós temos autenticação com o Cognito, roles provisionadas para cada tenant com escopo para acessar as tabelas do DynamoDB, e nós temos condições de mapeamento de roles configuradas no Cognito que irá conectar todos os usuários autenticados com a políticas correspondentes. All that remains now is to introduce the code into our application services that exercises these elements and acquires credentials that will properly scope our access to the tenant resources.
 
 The steps that follow will guide you through the process of configuring and deploying a new version of the product manager service that successfully acquires these tenant-scoped credentials.
 
@@ -283,16 +283,16 @@ While seeing this work is great, it's hard to know that this new code is truly e
 
 **Recap**: We looked at the source code to see how we tie together the JWT **security bearer token** from the HTTP headers, our defined **custom claims**, and Cognito's **role-to-policy mapping** and return of **temporary STS credentials** to enforce tenant isolation in our system. We then deployed a fresh version of the product manager service to remove our manual "security hack" from before.
 
-## Part 5 - Verifying Tenant-Scoped Credentials
+## Parte 5 - Verificando credenciais com escopo do tenant
 
-At this point, we have incorporated security at the IAM level by leveraging Cognito's
-`getCredentialsForIdentity()`, but we have not evaluated if we can circumvent our security measures. As we did before, we will **manually override the tenant identifier** to see if we can break tenant isolation. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
+Nesse momento, nós incorporamos segurança a nível de IAM utilizando a função do Cognito
+`getCredentialsForIdentity()`, mas não avaliamos se podemos contornar/burlar nossas medidas de segurança. Como fizemos antes, vamos **manualmente sobreescrever o identificador do tenant** para verificar se conseguimos quebrar o isolamento de tenants. Isso irá demonstrar se, contanto que as políticas de acesso e roles definidas anteriormente sejam configuradas corretamente, **nossas medidas de isolamento de tenant não podem ser derrotadas** introduzindo um tenant diferente da identidade SaaS autenticada.
 
-**Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/product-manager/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
+**Passo 1** - Como antes, modificaremos o código-fonte de nosso serviço de gerenciamento de produto mais recente e injetaremos manualmente um identificador de tenant. No Cloud9 navegue até a pasta `Lab3/Part5/product-manager/` e abra o arquivo `server.js` no editor dando um duplo clique ou clicando com o botão direito do mouse e selecionando **Open**.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_open_server.js.png" alt="Lab 3 Part 5 Step 1 Cloud9 Open server.js"/></p>
 
-**Step 2** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
+**Passo 2** - Localize a função `GET` que busca todos os produtos por tenant. O código parecerá como:
 
 ```javascript
 app.get('/products', function(req, res) {
@@ -321,7 +321,7 @@ app.get('/products', function(req, res) {
 });
 ```
 
-We will once again **manually inject** the `tenant_id` for **TenantTwo** to see if our new code will prevent cross tenant access. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
+Iremos mais uma vez **injetar manualmente** o `tenant_id` para o **TenantTwo** para verificar se nosso novo código evitará acesso cruzado de tenant. Localize o `tenant_id` que você salvou previamente do DynamoDB para o **TenantTwo** e _**substitua**_ o `tenant_id` com esse valor. Então, quando finalizar, o código parecerá como:
 
 ```javascript
 app.get('/products', function (req, res) {
@@ -349,20 +349,20 @@ app.get('/products', function (req, res) {
 });
 ```
 
-**Step 3** - Now we need to deploy our updated product manager microservice with our cross tenant access violation in-place. First, save your edited `server.js` file in Cloud9 by clicking **File** on the toolbar followed by **Save**.
+**Passo 3** - Agora nós precisamos implantar nosso microsserviço de gerenciamento de produtos atualizado com nossa violação de acesso cruzada entre tenats. Primero, salve o arquivo`server.js` editado no Cloud9 clicando em **File** na barra de tarefas, e depois clique em **Save**.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_save.png" alt="Lab 3 Part 5 Step 3 Save server.js"/></p>
 
-**Step 4** - To deploy our modified service, navigate to the `Lab3/Part5/product-manager/` directory and right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Passo 4** - Para implantar nosso serviço modificado, navegue até o diretório `Lab3/Part5/product-manager/` e clique com o botão direito do mouse no arquivo `deploy.sh`, e depois clique em **Run** para executar um script shell.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_run.png" alt="Lab 3 Part 5 Step 4 Cloud9 Run"/></p>
 
-**Step 5** - Wait for the `deploy.sh` shell script to execute successfully.
+**Passo 5** - Aguarde até que o script do `deploy.sh` execute com sucesso.
 
 <p align="center"><img src="./images/lab3/part5/cloud9_run_script_complete.png" alt="Lab 3 Part 5 Step 5 Cloud9 Script Finished"/></p>
 
-**Step 6** - With our new version of the service deployed, we can now see how this impacted the application. Let's log back into the system with the credentials for **TenantOne** that you created above (if **TenantTwo** is still logged in, log out using the dropdown at the top right of the page).
+**Passo 6** - Com nossa nova versão do serviço implantada, podemos observar como isso impactou a aplicação. Vamos logar de volta no sistema com as credenciais do **TenantOne** que criamos acima (se **TenantTwo** ainda estiver logado, faça deslogue usando o dropdown no topo direito da página).
 
-**Step 7** - Select the **Catalog** menu option at the top of the page. This should display the catalog for your **TenantOne** user you just authenticated as. You'll see that **no products are displayed**. In fact, if you look at the JavaScript console logs (use your browser's developer tools), you'll see that this threw an error. This is because we're logged in as **TenantOne** and our service has hard-coded **TenantTwo**. This makes it clear that our isolation policies are being enforced since the **credentials we acquired prohibited us from accessing data for TenantTwo**.
+**Passo 7** - Selecione **Catalog** na opção do menu no topo da página. Isso deve exibir o catálogo de seu usuário **TenantOne** que você acabou de autenticar Você verá que **nenhum produto é mostrado**. De fato, se você olhar o console de logs do Javascript (use as ferramentas de desenvolvedor do seu navegador), você verá que foi gerado um erro. Isso acontece porque estamos logados como **TenantOne** e nosso serviço tem fixado no código o **TenantTwo**. Isso deixa claro que nossas políticas de isolamento estão sendo aplicadas já que as **credenciais que adquirimos nos proibiram de acessar os dados do TenantTwo**.
 
-**Recap**: With this last step, we connected all the concepts of **tenant isolation** in the code of the product manager service. We added specific calls to exchange our authenticated token for a **tenant-scope set of credentials** which we then used to access our DynamoDB data store. With this **new level of isolation enforcement** in place, we attempted to hard-code something that crossed a tenant boundary and confirmed that our policies **prohibited cross-tenant access**.
+**Recapitulando**: Com este último passo, nós conectamos todos os conceitos de **isolamento de tenants** no código do serviço de gerenciamento de produto. Nós adicionamos chamadas específicas que fazem a troca do nosso token autenticado por **credenciais com escopo do tenant** que nós utilizamos para acesso o DynamoDB. Com esse **novo nível de aplicação do isolamento**, tentamos fixar algo no código que tentou ultrapassar os limites do tenant o que confirmou que nossas políticas **proibiram o acesso cruzado de tenants**.
