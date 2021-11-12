@@ -133,65 +133,68 @@ app.get('/products', function (req, res) {
 
 **Recap**: The key takeaway here is that authentication alone is not enough to protect your SaaS system. Without additional policies and authorization in place, the code of your system could un-intentionally access data for another tenant. Here we forced this condition more explicitly, but you can imagine how more subtle changes by a developer could have an un-intended side effect.
 
-## Part 2 - Configuring Provisioned IAM Policies
+## Parte 2 - Configurando políticas do IAM
 
-It's clear now that we need policies to better protect our system from cross-tenant access. The question is: what can we do to better isolate and protect tenant data? The first piece of the puzzle is **IAM policies**. With IAM policies, we can create rules that control the level of access a user has to tenant resources.
 
-Instead of creating new policies from scratch, let's edit policies that were provisioned during the start of our process. The following steps will guide through the policy editing process:
+É claro que agora nós precisamos de políticas para melhor proteger nosso sistema crontra acesso cruzado. A questão é: o que podemos fazer para isolar e proteger melhor os dados do tenant? A primeira parte do quebra-cabeça é **políticas do IAM**. Com as políticas do IAM, nós podemos criar regras que controlam o nível de acesso que cada usuário tem aos recursos do tenant.
 
-**Step 1** - To locate to the policies we want to edit, navigate to the IAM service in the AWS console and select **Policies** from the list of options on the upper left-hand side of the page. This will give you a list of all the polices that are available in IAM.
+Ao invés de criar novas políticas do zero, vamos editar políticas já criadas durante o começo do nosso processo. 
 
-**Step 2** - Now, we want to find the policies associated with the two tenants that we created (**TenantOne** and **TenantTwo**). Let's start with TenantOne. We need to enter the policy name in the search box near the top of the screen. Enter the GUID of the tenant for TenantOne. You captured this value earlier from DynamoDB.
+Os seguitnes passos irão guiá-lo através do processo de edição das políticas:
+
+**Passo 1** - Para localizar as políticas que queremos editar, navegue até o serviço do IAM na console da AWS, e selecione **Policies** da lista de opções na superior esquerda da página. Isso dará a você uma lista de todas as políticas disponíveis no IAM.
+
+**Passo 2** - Agora, nós queremos encontrar as políticas associadas aos dois tenant que criamos (**TenantOne** e **TenantTwo**). Vamos começar com o TenantOne. Precisamos digitar o nome da política na caixa de pesquisa no topo da tela. Digite o GUID do tenant TenantOne. Você obteve essa informação previamente no DynamoDB.
 
 <p align="center"><img src="./images/lab3/part2/iam_search_policies.png" alt="Lab 3 Part 2 Step 2 IAM Search Policies"/></p>
 
-**Step 3** - The list should now be narrowed to just the 2 policies for tenant one. There will be a policy for tenant **admin** and a second one for tenant **user**. **Select the triangle/arrow** in the column preceding the **TenantAdmin** policy name to drill into the policy. Then, select the **Edit policy** button that's near the center of the page.
+**Passo 3** - A lista agora deve ser reduzida a apenas 2 políticas para o tenant one. Haverão a política para o tenant **administrador** e uma segunda para o tenant **usuário**. **Selecione o triângulo/seta** na coluna que precede o nome da política **TenantAdmin** para examinar em detalhes a política. Então, selecione o botão **Edit policy** que está próximo ao centro da página.
 
 <p align="center"><img src="./images/lab3/part2/iam_edit_policy.png" alt="Lab 3 Part 2 Step 3 IAM Edit Policy"/></p>
 
-**Step 4** - The console will now display a list of DynamoDB polices and a Cognito User Pool policy. We're interested in editing the policy for the **ProductBootcamp** table. However, _it's location in this list of DynamoDB tables can vary_. Open each of the collapsed DynamoDB entries in this list by **selecting the arrow** at the left edge of the list. Near the bottom of each expanded set of polices, you should find a **Resources** section. Locate the set of policies that reference the **ProductBootcamp** table. The ARN will be similar to the following:
+**Passo 4** - A console agora mostrará uma lista de políticas do DynamoDB e do Cognigno User Pool. Nós estamos interessados em editar a política para a tabela **ProductBootcamp**. Entretanto, _sua localização nessa lista de tabelas do Dynamo pode variar_. Abra cada uma das entradas colapsadas do Dynamo na lista **selecionando a seta** do lado esquerdo da borda da lista. Perto da parte inferior de cada conjunto expandido de políticas, você deverá encontrar um seção **Resources**. Localize o conjunto de políticas que fazem referência a tabela **ProductBootcamp**. O ARN será similar ao seguinte:
 
 <p align="center"><img src="./images/lab3/part2/iam_dynamo_arn.png" alt="Lab 3 Part 2 Step 4 IAM Dynamo ARN"/></p>
 
-**Step 5** - Our interest is in the **Request conditions** associated with this policy. These conditions are at the heart of our ability to control which items a user can access within a DynamoDB table. We want our policy to indicate that only users with partition key value that matches **TenantOne**'s tenant identifier will be allowed to access those items in the table. Hover over the **Request conditions** value and **select the text for the conditions** this will put you into edit mode for the conditions.
+**Passo 5** - Nosso interesse é no **Request conditions** associado a essa política. Essas condições são o coração da nossa habilitade de controlar que itens um usuário pode acessar na tabela do Dynamo. Queremos que nossa política indique que apenas usuários com valor de chave de partição que corresponda ao identificador do tenant de **TenantOne** terão permissão para acessar esses itens na tabela. Expanda a seção de **Request conditions** e **selecione o texto da condição** isso colocará em modo de edição para as condições.
 
 <p align="center"><img src="./images/lab3/part2/iam_request_conditions.png" alt="Lab 3 Part 2 Step 5 IAM Policy Request Conditions"/></p>
 
-**Step 6** - Select the **Add condition** option at the bottom of the list. Select **dynamodb:LeadingKeys** for the **Condition key**. Select **For all values in request** for the **Qualifier**. Select **StringEquals** for the **Operator**. Finally, in the **Value** text box, enter the GUID of **TenantOne**. Click the **Add** button. Select the  **Review policy** button and then select the **Save Changes** button to save this change to the policy.
+**Passo 6** - Selecione opção **Add condition** na parte de baixo da lista. Selecione **dynamodb:LeadingKeys** para o **Condition key**. Selecione **For all values in request** para o campo **Qualifier**. Selecione **StringEquals** para o campo **Operator**. Finalmente, no campo de texto **Value**, digite o GUID do **TenantOne**. Clique no botão **Add**. Selecione o botão **Review policy** e então selecione o botão **Save Changes** para salvar as mudanças na política.
 
 <p align="center"><img src="./images/lab3/part2/iam_add_request_condition.png" alt="Lab 3 Part 2 Step 6 IAM Policy Add Request Condition"/></p>
 
-This process created a new **request condition** for our policy that now indicates that the value of our partition key in our DynamoDB table must match the tenant identifier when you user attempts to access items in the table.
+Este processo criou uma nova **request condition** para nossa política que agora indica a qual o valor da chave de partição do DynamoDB deve corresponder ao identificador do tenant quando o usuário tentar acessar os itens da tabela.
 
-**Step 7** - We now want to repeat this same process for **TenantTwo**. Complete steps 2-6 again replacing all references to TenantOne with **TenantTwo**. This will ensure that TenantTwo is also protected.
+**Passo 7** - Agora queremos repetir esse mesmo processo para o **TenantTwo**. Complete os passos de 2-6 substituindo todas as referências ao TenantOne com **TenantTwo**. Isso garantirá que o TenantTwo também estará protegido.
 
-**Recap**: The exercises in this part of the lab showed how to put in place the elements needed to support our tenant isolation goals. We amended our existing tenant **policies** introducing changes that allow us to scope access to DynamoDB tables. This was achieved by adding a new condition to our ProductBootcamp table policies. These policies, which are tenant-specific, limit a user's view of the table to only those items that contain our tenant identifier in the table's partition key.
+**Recapitulando**: Os exercícos desta parte do laboratório mostraram como implementar os elementos necessários para apoiar nossos objetivos de isolamento de tenant. Alteramos nossas **políticas** de tenant introduzindo mudanças que nos permitem definir o escopo do acesso às tabelas do DynamoDB. Isso foi possível adicionando uma nova condição às nossas políticas de tabela ProductBootcamp. Essas políticas, que são específicas do tenant, limitam a visão do usuário da tabela apenas aos itens que contêm nosso identificador de tenant na chave de partição da tabela.
 
-## Part 3 - Mapping User Roles to Policies
+## Parte 3 - Mapeando roles de usuários para políticas
 
-Now that we have policies defined, we need some way to connect these policies with specific user roles. Ultimately, we need a way to match both the role of the user and the tenant scope to a _specific_ set of policies. For this scenario, we're going to lean on the **role matching capabilities of Cognito**. Cognito will allow us to define a set of conditions that will be used to create this match and, in the process, emit a **set of credentials** that will be scope based on the matching policies —- which is exactly what we need to implement our tenant isolation model.
+Agora que definimos as políticas, precisamos de algum jeito de conectar essas políticas com as roles de usuários específicas. Nós precisamos de uma maneira de criar uma correspondência entre a role do usuário e o escopo do tenant para um conjunto _específico_ de políticas. Para este cenário, vamos ter o apoio das **capacidade do mapeamento de roles do Cognito**. O Cognito nos permitirá definir um conjunto de condições que serão usadas para criar essa correspondência e, no processo, emitir um **conjunto de credenciais** que será escopo com base nas políticas correspondente - que é exatamente o que precisamos para implementar nosso modelo de isolamento de tenant. 
 
-In this bootcamp these policy mappings have already been created. Let's take a look at them in the **Cognito console**.
+Neste bootcamp, esses mapeamentos de política já foram criados. Vamos dar uma olhada nelas na **console do Cognito**.
 
-**Step 1** - Navigate to the Cognito service in the AWS console. From the landing page, select the **Manage Identity Pools** button to see a list of identity pools. It will include **separate pools** for each of the tenants that you have onboarded.
+**Passo 1** - Navegue até o Cognito na console da AWS. Na página inicial, selecione o botão **Manage Identity Pools**  para ver a lista de identity pools. A lista incluirá **pool separados** para cada tenant que você realizou o onboarding.
 
-Locate the identity pools for **TenantOne** and **TenantTwo**. They will be named with the GUID of the tenant. Click on the identity pool that is associated with **TenantOne**.
+Localize os identity pools para o **TenantOne** e **TenantTwo**. Eles estarão nomeados com o GUID do tenant. Clique no identity pool que é associado com o **TenantOne**.
 
 <p align="center"><img src="./images/lab3/part3/cognito_identity_pools.png" alt="Lab 3 Part 3 Step 1 Cognito Identity Pools"/></p>
 
-**Step 2** - Once you select the identity pool, you see a page that provides and overview of the identity pool activity. Now select the **Edit identity pool** link at the top right of the page.
+**Passo 2** - Uma vez selecionado o identity pool, você vê a página que fornece um resumo da atividade do identity pool. Agora selecione o link **Edit identity pool** no topo direito da página.
 
 <p align="center"><img src="./images/lab3/part3/cognito_identity_pool_details.png" alt="Lab 3 Part 3 Step 2 Cognito Identity Pool Details"/></p>
 
-**Step 3** - If you scroll down the edit identity pool page, you'll see a heading for **Authentication Providers**. Expand this section and you'll see a page with authorization provider configurations.
+**Passo 3** - Se você rolar para baixo a página de edição do identity pool, você verá uma seção para **Authentication Providers**. Expanda essa seção, e você verá uma página com configurações do provedor de autorização. 
 
-We can now see the role mappings in place for our two roles. There is a **TenantAdmin** role that represents the administrator and there's a **TenantUser** role that maps to individual non-admin users of your SaaS system. Naturally, these have different levels of access to the system and its resources.
+Você pode ver os mapeamentos de roles em funcionamento para nossas duas roles. Há uma role **TenantAdmin** que representa o administrador e uma role **TenantUser** que mapeia usuários não administradores para cada um do seus sistemas SaaS. Naturalmente, esses tem diferentes níveis de acesso ao sistema e dos recursos.
 
-The claim column has a value (URL encoded) that matches the custom **role** attribute you configured in Cognito back in Lab 1. When that **custom claim matches** the name of the role, the IAM policy (with the DynamoDB restrictions) is enforced on the **temporary security tokens returned from STS**.
+A coluna de claim tem um valor (URL codificado) que corresponde ao atributo customizado **role** que configuramos no Cognito no Lab 1. Quando esse **claim customizado corresponde** ao nome da role, a política do IAM (com as restrições para o DynamoDB) é aplicada nos **tokens de segurança temporários retornados pelo STS**.
 
 <p align="center"><img src="./images/lab3/part3/cognito_role_matching.png" alt="Lab 3 Part 3 Step 3 Cognito Role Matching"/></p>
 
-**Recap**: You've now completed building out the second phase of our tenant isolation. With this exercise, we saw the role-mapping rules in our Cognito identity pool. These mappings directly associate roles for tenants (TenantAdmin and TenantUser) to the policies that we configured in first part of this lab.
+**Recapitulando**: Agora você completou a segunda fase do nosso isolamento de tenant. Com esse exercício, observamos as regras de mapeamento de roles no identity pool do Cognito. Esses mapeamentos associam diretamente as roles de tenant (TenantAdmin e TenantUser) às políticas que configuramos na primeira parte deste laboratório.
 
 ## Parte 4 - Obtendo credenciais baseado no escopo do tenant
 
@@ -265,7 +268,7 @@ module.exports.getCredentialsFromToken = function (req, updateCredentials) {
 Vamos destacar algums elementos chaves desta função.
 * A priemira ação é extrair o `bearerToken` da requisição HTTP. Este é o token que você recebeu do Cognito depois de ter autenticado com seu usuário.
 * Nós então decodificamos esse token e extraimos o atributo `userName`.
-* Depois, uma série de chamadas são executadas em sequência. Começa pela busca do `userPool` do usuário, depois é chamada o `authenticateUserInPool()`. Essa função, que faz parte da classe auxiliar `TokenManager`, em última análise, chama o método do Cognito `getCredentialsForIdentity()` passando o token do usuário.
+* Depois, uma série de chamadas são executadas em sequência. Começa pela busca do `userPool` do usuário, depois é chamada o `authenticateUserInPool()`. Essa função, que faz parte da classe auxiliar `TokenManager`, enfim, chama o método do Cognito `getCredentialsForIdentity()` passando o token do usuário.
 
 É essa chamada para o Cognito que **ativa o mapeamento de roles** que configuramos previamente. O Cognito irá extrair a role do token fornecido and relacionar com a política correspondente, então construir um **conjunto temporário de credenciais com escopo** que são retornadas para a função que chamou.
 
