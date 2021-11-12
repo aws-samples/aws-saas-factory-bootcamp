@@ -134,7 +134,7 @@ app.get('/products', function (req, res) {
 ## Parte 2 - Configurando políticas do IAM
 
 
-É claro que agora nós precisamos de políticas para melhor proteger nosso sistema crontra acesso cruzado. A questão é: o que podemos fazer para isolar e proteger melhor os dados do tenant? A primeira parte do quebra-cabeça é **políticas do IAM**. Com as políticas do IAM, nós podemos criar regras que controlam o nível de acesso que cada usuário tem aos recursos do tenant.
+Agora nós precisamos de políticas para melhor proteger nosso sistema crontra acesso cruzado. A questão é: o que podemos fazer para isolar e proteger melhor os dados do tenant? A primeira parte do quebra-cabeça é **políticas do IAM**. Com as políticas do IAM, nós podemos criar regras que controlam o nível de acesso que cada usuário tem aos recursos do tenant.
 
 Ao invés de criar novas políticas do zero, vamos editar políticas já criadas durante o começo do nosso processo. 
 
@@ -286,12 +286,8 @@ Embora seja ótimo ver esse trabalho, é difícil saber se esse novo código est
 
 ## Parte 5 - Verificando credenciais com escopo do tenant
 
-<<<<<<< HEAD
 Nesse momento, nós incorporamos segurança a nível de IAM utilizando a função do Cognito
 `getCredentialsForIdentity()`, mas não avaliamos se podemos contornar/burlar nossas medidas de segurança. Como fizemos antes, vamos **manualmente sobreescrever o identificador do tenant** para verificar se conseguimos quebrar o isolamento de tenants. Isso irá demonstrar se, contanto que as políticas de acesso e roles definidas anteriormente sejam configuradas corretamente, **nossas medidas de isolamento de tenant não podem ser derrotadas** introduzindo um tenant diferente da identidade SaaS autenticada.
-=======
-Nesse momento, nós incorporamos segurança a nível de IAM utilizando o Cognito `getCredentialsForIdentity()`, mas não avaliamos se podemos contornar/burlar nossas medidas de segurança. Como fizemos antes, nós vamos **manualmente sobreescrever o identificador do tenant** para ver se conseguimos quebrar o isolamento do tenant. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
->>>>>>> 21f9039f0fa12bdeeb0d7ebbb6c59e0230724c38
 
 **Passo 1** - Como antes, modificaremos o código-fonte de nosso serviço de gerenciamento de produto mais recente e injetaremos manualmente um identificador de tenant. No Cloud9 navegue até a pasta `Lab3/Part5/product-manager/` e abra o arquivo `server.js` no editor dando um duplo clique ou clicando com o botão direito do mouse e selecionando **Open**.
 
