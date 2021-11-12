@@ -1,64 +1,63 @@
-# Lab 3 – Isolating Tenant Data
+# Lab 3 – Isolamento dos dados dos tenants
 
-### Overview
+### Visão Geral
 
-At this stage, we have addressed many of the core elements of SaaS architecture. What we really haven't touched on, though, is tenant isolation. As a SaaS provider, you must make every attempt to ensure that each tenant's resources are protected from any kind of cross-tenant access. This is especially challenging when these tenants are sharing elements of their infrastructure. If, for some reason, one tenant was able to access another tenant's environment, that could represent a huge setback for a SaaS business.
+Até aqui, nós abordamos muitos dos elementos centrais do modelo de arquietura SaaS. Mas um ponto que ainda não entramos foi o isolamento entre tenants. No papel de um provedor de SaaS, você deve fazer todo o possível para garantir que os recursos e dados de cada tenant estão protegidos de qualquer tipo de acesso entre tenants. Isso é um desafio quando esses tenants estão compartilhando elementos de infraestrutura. Se, por algum motivo, um tenant conseguir acessar o ambiente de outro tenant, isso pode causar problemas para um negócio baseado em SaaS.
 
-To address this, we must move beyond basic authentication. We must introduce policies and access controls that ensure that we are doing everything we can to isolate and protect tenant environments. Even in SaaS environments where resources are not shared, we must take extra measures to be sure that we've minimized our exposure to cross-tenant access.
+Para lidar com esse caso, nós devemos ir além da autenticação básica. Devemos introduzir políticas e controles de acesso que garantem que estamos fazendo todo o possível para isolar e proteger os ambientes dos tenants. Até mesmo em ambientes SaaS onde os recursos não são compartilhados, temos que tomar medidas adicionais para garantir que minimizamos a exposição à acessos entre tenants.
 
-For this bootcamp, we'll focus squarely on how to isolate the data that resides in our DynamoDB tables. Specifically, we want to look at how can we can successfully isolate the tenant data that resides in the product and order tables that hold application data. To achieve this, we need to consider how we've partitioned the data. Below is a diagram that highlights the partitioning scheme of the product and order tables.
+Para este bootcamp, vamos focar em como isolar os dados residentes nas tabelas do DynamoDB. Especificamente, queremos ver como podemos isolar os dados do tenant que residem nas tabelas de produto e pedido, que armazenam dados da aplicação. Para conseguirmos, precisamos considerar como foi feito o particionamento dos dados. Abaixo temos um diagrama que mostra o esquema de particionamento das tabelas de produto e pedido.
 
 <p align="center"><img src="./images/lab3/table_partitioning.png" alt="Lab 3 Isolating Tenant Data Overview Table Partitioning"/></p>
 
-In this example graphic, you'll see that we have data from multiple tenants living side-by-side as items in these tables. So, if I get access to one of these tables, I could presumably get access to any tenant's data.
+Nessa imagem de exemplo, você pode ver que temos dados de múltiplos tenants em uma mesma tabela. Então, se alguém tiver acesso a uma dessas tabelas, teremos acesso aos dados de qualquer um dos tenants.
 
-Our goal then is to implement a security model that can scope access to these tables down to the item level. Essentially, I want to build a view of the table that constrains access to just those items that are valid for a given tenant.
+Nosso objetivo é implementar um modelo de segurança que pode limitar o acesso a essas tabelas de forma granular no nível do item armazenado. Ou seja, queremos montar uma visão da tabela que restringe o acesso à apenas os itens que são válidos para um tenant em específico.
 
-For this bootcamp, we're going to leverage a combination of Amazon Cognito, Amazon Identity and Access Management (IAM), and AWS Security Token Service
-(STS) to limit access to these tables. This will connect directly to the notion of SaaS identity we discussed earlier, leveraging the tokens from the experience to bind a user to a scoped set of policies.
+Para esse bootcamp, vamos utilizar uma combinação de Amazon Cognito, Amazon Identity and Access Management (IAM) e AWS Security Token Service (STS) para limitar o acesso à essas tabelas. Isso irá conectar diretamente com a noção de identidade SaaS que discutimos anteriormente, através dos tokens que utilizamos para linkar um usuário à um conjunto de políticas.
 
-There are two key phases to implementing this isolation model. First, when tenants are initially provisioned, we need to create a set of IAM roles for each tenant. For every role that exists in the tenant's environment, we must create policies that scope access to the system's resource for that tenant. Below you'll see a conceptual representation of this the onboarding process and how it creates these roles for each tenant.
+Existem duas fases importantes para implementar esse modelo de isolamento. Primeiro, quando os tenants são provisionados incialmente, precisamos criar um conjunto de IAM roles para cada tenant. Para cada role que existe no ambiente do tenant, precisamos criar políticas que restringem o acesso ao recurso do sistema específico daquele tenant. Abaixo temos uma representação conceitual desse processo de onboarding e como são criadas as roles para cada tenant.
 
 <p align="center"><img src="./images/lab3/onboarding.png" alt="Lab 3 Isolating Tenant Data Overview Onboarding"/></p>
 
-On the left is the registration process we built in Lab 1. On the right are collections of policies that are emitted (behind the scenes) for each role. It's important to note that you are not required to have separate roles for each user. Instead, these roles apply to all users for that tenant.
+Na esquera, temos o processo de registro que criamos no Lab 1. Na direita, temos conjuntos de políticas que são geradas (por trás dos panos) para cada role. É importante notar que não é necessário ter roles separadas para cada usuário. Ao invés disso, as roles serão aplicadas para todos os usuários daquele tenant.
 
-The second phase of isolation comes into play when you are accessing resources from your code. The diagram below illustrates the fundamental moving parts of this process.
+A segunda fase do isolamento acontece quando estamos acessando recursos através do nosso código. O diagrama abaixo ilustra as peças desse processo.
 
 <p align="center"><img src="./images/lab3/authentication.png" alt="Lab 3 Isolating Tenant Data Overview Authentication"/></p>
 
-In this example, you'll see that our product manager service is invoked from the UI with a request to get a list of products. The JWT token (acquired during authentication) is passed along here in the Authorization header of our HTTP request. This token includes data about the user identity, role, and tenant identity. While this token is valuable for conveying user and tenant attributes, it does nothing to control a tenant's access to resources. **Instead, we must use the data in this token to acquire the scoped credentials we need to access our DynamoDB tables**.
+Nesse exemplo, podemos ver que o serviço gerenciador de produtos é chamado pela interface com uma requisição para obter uma lista de produtos. O token JWT obtido durante a autenticação é passado no header Authorization da requisição HTTP. Esse token contém informações sobre a identidade do usuário, role e identidade do tenant. Embora esse token é valioso para passar atributos do usuário e do tenant, ele não faz nada para controlar o acesso do tenant aos recursos. **Assim, precisamos usar os _dados_ contidos nesse token para obter as credenciais com escopo de acesso às tabelas do DynamoDB.**
 
-The remaining bits of the diagram illustrate how these scoped credentials are acquired. Once our `GET` request comes into our product manager service, we'll make a `getCredentialsForIdentity()` call to Cognito, passing in our token. Cognito will then crack that token open, examine the tenant identifier and user role and match it to one of the policies that were created during provisioning. It will then create a **temporary** set of credentials (shown at the bottom) via STS and return those to our product manager service. Our service will use these temporary credentials to access DynamoDB tables with confidence that these credentials will scope access _by tenant id_.
+O restante do diagrama ilustra como essas credenciais restritas são obtidas. Uma vez que a requisição `GET` chega no nosso sistema de gerenciamento de produtos, ele faz uma chamada `getCredentialsForIdentity()` para o Cognito, passando o token. O Cognito irá abrir o token e comparar o identificador do tenant e role do usuário e corresponder com uma das políticas que foram criadas durante o provisionamento. O Cognito irá criar um conjunto de credenciais **temporárias** (mostradas em baixo) através do STS e as retornará para o serviço gerenciador de produtos. O serviço vai usar essas credenciais temporárias para acessar as tabelas do DynamoDB com a certeza de que essas credenciais irão restringir o acesso _pelo tenant id_.
 
-### What You'll Be Building
-Our goal in this exercise is to walk you through the configuration and creation of some of the elements that are part of this process. While the concepts are helpful above, we want to expose you to some of the specifics of how they are used in our reference solution. We'll start by introducing the policies during provisioning and how to configure Cognito to connect our policies to user roles. Lastly, we'll look at how this lands in the code of our application services. The basic steps in this process include:
+### O que você irá construir
+O objetivo desse exercício é passar pela configuração e criação de alguns elementos que são parte desse processo. Embora os conceitos acima nos ajudam a entender o cenário, vamos ver alguns detalhes de como esses conceitos são aplicados na solução de referência. Vamos começar ao introduzir as políticas durante o provisionamento e como configurar o Cognito para conectar essas políticas às roles de usuário. Por fim, vamos ver como isso é implementado no código da aplicação. Os passos básicos desse processo incluem:
 
-* **Example of Cross Tenant Access** – first you'll look at how, without policies and scoping, a developer can create a situation that violates the cross-tenant boundaries of the system.
-* **Configure the Provisioned IAM Policies** – now that you've seen an example of cross tenant access, let's start to introduce policies that can be used to prevent cross-tenant access (intended or un-intended). You'll create a policy for different role/resource combinations to get a sense of how these policies are used to scope access to DynamoDB tables. You'll then provision a new tenant and see how these policies are represented in IAM.
-* **Mapping User Roles to Policies** – with Cognito, we can create rules that determine how a user's role will map to the policies that we've created. In this part you'll see how these policies have been configured for our tenant and user roles.
-* **Acquiring Tenant-Scoped Credentials** – finally you'll see how to orchestrate the acquisition of credentials that are scoped by the policies outlined above. The credentials will control our access to data. You'll see how this explicitly enforces cross-tenant scoping.
+* **Exemplo de acesso entre tenants** - primeiro você verá como, sem políticas e restrições, um desenvolvedor pode criar uma situação que viola os limites entre tenants do sistema.
+* **Configurar as políticas do IAM provisionadas** - agora que você viu um exemplo de acesso entre tenants, vamos começar a introduzir políticas para prevenir acessos entre tenants (devidos ou indevidos). Você criará uma política para diferentes combinações entre role/recurso para ver como essas políticas são usadas para limitar o acesso às tabelas do DynamoDB. Você então provisionará um novo tenant e verá como essas políticas são representadas no IAM.
+* **Mapear roles de usuário para políticas** - com o Cognito, podemos criar regras que determinam como a role de um usuário será mapeada para as políticas que criamos. Nessa perte, você verá como essas políticas foram configuradas para nosso tenant e roles dos usuários.
+* **Adquirir credenciais limitadas a um tenant** - por fim, você verá como orquestrar a aquisição das credenciais que são limitadas pelas poíticas descritas acima. As credenciais vão controlar o acesso aos dados. Você verá como isso explicitamente impõe limites ao acesso entre tenants.
 
-With this piece in place, you'll have added a robust mechanism to your solution that much more tightly controls and scopes access to tenant resources. This solution highlights one of many strategies that could be applied to enforce tenant isolation.
+Com esse componente instalado, você terá adicionado um mecanismo robusto à solução que limita e controla o acesso aos recursos dos tenants. Essa solução ilustra uma de várias estratégias que podem ser aplicadas para garantir o isolamento entre tenants.
 
-## Part 1 - Example of Cross-Tenant Access
-Before we introduce **policies**, it would help to examine a scenario where the absence of richer security policies can open the door to cross-tenant access. We will look at an (admittedly contrived) example where a developer could introduce code that might enable cross-tenant access.
+## Parte 1 - Exemplo de acesso entre tenants
+Antes de introduzirmos as **políticas**, é interessante examinar um cenário onde a ausência de controles de segurança adequados podem introduzir acessos a dados de tenants diferentes. Vamos ver um exemplo (de certa forma complicado) onde um desenvolvedor pode adicionar um código que possivelmente permita um acesso entre tenants.
 
-To do this, we'll return to the product manager service and look at how manually injected tenant context could surface data in your application that should not be surfaced. This will set the stage for understanding how the introduction of **policies** can prevent this from happening.
+Para fazer isso, vamos voltar ao serviço de gerenciamento de produtos e ver como o contexto de tenant injetado manualmente pode trazer dados da sua aplicação que não deveriam ser obtidos. Esse será o pano de fundo para entender como a introdução de **políticas** podem prevenir isso de acontecer.
 
-**Step 1** - In [Lab 2](Lab2.md) we added products to the catalogs for each of our two tenants. If you do not have two tenants registered at this point with at least 1 product each, please follow the steps in Lab 2 to complete that now.
+**Passo 1** - No [Lab 2](Lab2.md), nós adicionamos produtos aos catálogos para cada um dos tenants. Se você não possui dois tenants registrados até aqui, com pelo menos um produto cada, por favor, siga os passos descritos no Lab 2 para ter esse pré-requisito completo.
 
-To artificially create cross tenant access, we need the unique tenant identifiers. Let's go find the tenant id's for our two different tenants. Navigate to the **DynamoDB** service in the **AWS console** and select the **Tables** option located on the upper left-hand side of the page. Select the **TenantBootcamp** table and then the **Items** tab.
+Para criar um acesso entre tenants, mesmo que artificial, precisamos dos identificadores únicos para os tenants. Vamos encontrar os identificadores para cada um dos tenants. Vá até o **DynamoDB**, na console da AWS, e clique na opção **Tables** localizado no canto superior esquerdo da página. Selecione a tabela **TenantBootcamp** e então clique na aba **Items**.
 
 <p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 Dynamo TenantBootcamp Table"/></p>
 
-**Step 2** - Locate the two tenants you created within the list by matching the tenant with the username/email that you used. **Capture the tenant_id value for both of these tenants**. You'll need these values in subsequent steps.
+**Passo 2** - Localize na lista os dois tenants que você criou que você criou comparando com o nome de usuário/email que você utilizou para criá-los. **Copie o valor do tenant_id para esses dois tenants.** Você irá precisar desses valores nos passos a seguir.
  
-**Step 3** - Now let's go back to the code of our product manager service and make a modification. Open our product manager `server.js` file in our Cloud9 IDE. In Cloud9, navigate to `Lab3/Part1/product-manager/`. Open the file in the editor by either double-clicking or right-click `server.js` and click **Open**.
+**Passo 3** - Agora vamos voltar ao código do serviço gerenciador de produtos e fazer uma modificação. Abra o arquivo `server.js` na IDE Cloud9. No Cloud9, vá até `Lab3/Part1/product-manager/`. Abra o arquivo no editor, clicando duas vezes no arquivo `server.js` ou então clicando com o botão direito no arquivo e clicando em **Open**.
 
 <p align="center"><img src="./images/lab3/part1/open_server.js.png" alt="Lab 3 Part 1 Step 16 Open server.js"/></p>
 
-**Step 4** - Locate the `GET` function that fetches all products for a tenant. The code function will appear as follows:
+**Passo 4** - Localize a função `GET` responsável por pegar todos os produtos de um tenant. O código será o seguinte:
 
 ```javascript
 app.get('/products', function(req, res) {
@@ -67,7 +66,7 @@ app.get('/products', function(req, res) {
 		KeyConditionExpression: "tenant_id = :tenant_id",
 		ExpressionAttributeValues: {
 			":tenant_id": tenantId
-			//":tenant_id": "<INSERT TENANT TW0 GUID HERE>"
+			//":tenant_id": "<INSERT TENANT TWO GUID HERE>"
 		}
 	};
 	// construct the helper object
@@ -85,8 +84,7 @@ app.get('/products', function(req, res) {
 	});
 });
 ```
-
-This function is invoked by the application to acquire a list of products that populate the catalog page of system. You can see that it references the `tenant_id` that was extracted from the security token passed into our application. Let's consider what might happen if were **manually replace** this `tenant_id` with another value. Locate the `tenant_id` that you recorded earlier from DynamoDB for **TenantTwo** and _**replace**_ the `tenant_id` with this value. So, when you're done, it should appear similar to the following:
+Essa função é chamada pela aplicação para obter uma lista de produtos que populam a página de catálogo do sistema. Você pode ver que ela faz referência ao `tenant_id` que foi extraído do token de segurança passado para nossa aplicação. Agora, vamos considerar o que aconteceria se nós **manualmente trocássemos** esse `tenant_id` com outro valor. Localize o `tenant_id` que você anotou para o **TenantTwo** e **_substitua_** o `tenant_id` por esse valor. Então, quando você tiver concluído, o código deve ser semelhante ao seguinte:
 
 ```javascript
 app.get('/products', function (req, res) {
@@ -115,23 +113,23 @@ app.get('/products', function (req, res) {
 });
 ```
 
-**Step 5** - Now we need to deploy our updated product manager microservice with our cross tenant access violation in-place. First, save your edited `server.js` file in Cloud9 by clicking **File** on the toolbar followed by **Save**.
+**Passo 5** - Agora precisamos implantar o microsserviço gerenciador de produtos com o código que realiza acessos indevidos entre tenants. Primeiramente, salve o arquivo `server.js` modificado no Cloud9: clique em **File** na barra de ferramentas, seguido de **Save**.
 
 <p align="center"><img src="./images/lab3/part1/cloud9_save.png" alt="Lab 3 Part 1 Step 18 Save server.js"/></p>
 
-**Step 6** - To deploy our modified service, navigate to the `Lab3/Part1/product-manager/` directory and right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Passo 6** - Para implantar o serviço, vá até o diretório `Lab3/Part1/product-manager/` e clique com o botão direito em `deploy.sh`, em seguida clique em **Run** para executar o shell script.
 
 <p align="center"><img src="./images/lab3/part1/cloud9_run.png" alt="Lab 3 Part 1 Step 19 Cloud9 Run"/></p>
 
-**Step 7** - Wait for the `deploy.sh` shell script to execute successfully.
+**Passo 7** - Aguarde a execução com sucesso do shell script `deploy.sh`.
 
 <p align="center"><img src="./images/lab3/part1/cloud9_run_script_complete.png" alt="Lab 3 Part 1 Step 20 Cloud9 Script Finished"/></p>
 
-**Step 8** - With our new version of the service deployed, we can now see how this impacted the application. Let's log back into the system with the credentials for **TenantOne** that you created above (if **TenantTwo** is still logged in, log out using the dropdown at the top right of the page).
+**Passo 8** - Com a nova versão do serviço implantada, agora podemos ver como isso impactou a aplicação. Vamos acessar o sistema usando as credenciais do **TenantOne** que você criou anteriormente. (se o **TenantTwo** ainda estiver logado, saia usando o menu do lado superior direito da página).
 
-**Step 9** - Select the **Catalog** menu option at the top of the page. This _should_ display the catalog for your **TenantOne** user you just authenticated as. However, the _**list actually contains products that are from TenantTwo**_. We've now officially crossed the tenant boundary.
+**Passo 9** - Selecione a opção **Catalog** no menu do topo da página. Ela _deveria_ mostrar o catálogo do **TenantOne** para o usuário que você acabou de se autenticar. No entanto, a **_lista contém os produtos que são do TenantTwo_**. Nós oficialmente cruzamos os limites entre tenants.
 
-**Recap**: The key takeaway here is that authentication alone is not enough to protect your SaaS system. Without additional policies and authorization in place, the code of your system could un-intentionally access data for another tenant. Here we forced this condition more explicitly, but you can imagine how more subtle changes by a developer could have an un-intended side effect.
+**Recap**: O que podemos concluir dessa parte do laboratório é que apenas a autenticação não é suficiente para proteger seu sistema SaaS. Sem políticas adicionais e um mecanismo de autorização, o código do seu sistema poderia acessar dados de outros tenants de forma não intencional. Aqui nós forçamos essa condição explicitamente, mas você pode imaginar que outras mudanças mais sutis feitas por um desenvolvedor podem ter um efeito colateral indesejado.
 
 ## Part 2 - Configuring Provisioned IAM Policies
 
