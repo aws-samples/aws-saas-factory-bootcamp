@@ -195,15 +195,15 @@ The claim column has a value (URL encoded) that matches the custom **role** attr
 
 ## Parte 4 - Obtendo credenciais baseado no escopo do tenant
 
-Nesse ponto, todos os elementos do nosso esquema de isolamento estão locais. Nós temos autenticação com o Cognito, roles provisionadas para cada tenant com escopo para acessar as tabelas do DynamoDB, e nós temos condições de mapeamento de roles configuradas no Cognito que irá conectar todos os usuários autenticados com a políticas correspondentes. All that remains now is to introduce the code into our application services that exercises these elements and acquires credentials that will properly scope our access to the tenant resources.
+Nesse ponto, todos os elementos do nosso esquema de isolamento estão prontos. Nós temos autenticação com o Cognito, roles provisionadas para cada tenant com escopo para acessar as tabelas do DynamoDB, e nós temos condições de mapeamento de roles configuradas no Cognito que irá conectar todos os usuários autenticados com a políticas correspondentes. Tudo o que resta agora é inserir o código em nossos serviços da aplicação que rodarão esses elementos e obterão credenciais que estabelecerão o escopo adequado de acesso de cada tenant.
 
-The steps that follow will guide you through the process of configuring and deploying a new version of the product manager service that successfully acquires these tenant-scoped credentials.
+Os passos a seguir guiarão você no processo de configuração e implantação da nova versão do serviço de gerenciamento de produtos que obtém essas credenciais baseadas no escopo do tenant.
 
-**Step 1** - Let's start by looking at how the product manager service is modified to support tenant isolation. In Cloud9, navigate to `Lab3/Part4/product-manager/` and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
+**Passo 1** - Vamos começar olhando como o serviço de gerenciamento de produtos é modificado para suportar o isolamento de tenant. No Cloud9, navegue ao diretório `Lab3/Part4/product-manager/` e abra o arquivo `server.js` no editor dando um duplo clique ou clicando com o botão direito e selecionando **Open**.
 
 <p align="center"><img src="./images/lab3/part4/cloud9_open_server.js.png" alt="Lab 3 Part 4 Step 1 Cloud9 Open server.js"/></p>
 
-The code shown below highlights the last key piece of the tenant isolation puzzle. You'll notice that we have added a call to our `tokenManager` that acquires credentials from the authenticated user's security token. The `getCredentialsFromToken()` method takes the HTTP request and returns the `credentials` that are **scoped by tenant**. These credentials are  used in our calls to the `dynamoHelper` to ensure that we **cannot cross tenant boundaries**.
+O código abaixo destaca a última parte do quebra-cabeça do isolamento de tenant. Você irá notar que adicionamos uma chamada para nosso `tokenManager` que obtém as credenciais a partir do token de segurança do usuário autenticado. O método `getCredentialsFromToken()` recebe a requisição HTTP request e retorna as credenciais (`credentials`) que são com o **escopo do tenant**. Essas credenciais são utilizadas nas nossas chamadas para o `dynamoHelper` para assegurar que nós **não podemos cruzar os limites do tenant**.
 
 ```javascript
 app.get('/product/:id', function (req, res) {
@@ -228,7 +228,7 @@ app.get('/product/:id', function (req, res) {
     });
 });
 ```
-**Step 2** - The call to `getCredentialsFromToken()` described above is where all the magic happens in terms of mapping our token/identity to the appropriate policies and returning that in the form of credentials. Given the importance of this function, let's dig in and look more closely at what it is doing. Below is a snippet of code from the `TokenManager` that implements the `getCredentialsFromToken()` function:
+**Passo 2** - Para chamar o `getCredentialsFromToken()` descrito acima é onde toda mágica acontece em termos de mapear nosso token/identidade para as políticas apropriadas, e retornar isso em forma de credencial. Dado a importãncia dessa função, vamos olhar mais de perto o que está acontecendo. Abaixo está um pedaço de código do `TokenManager` que implementa a função `getCredentialsFromToken()`:
 
 ```javascript
 module.exports.getCredentialsFromToken = function (req, updateCredentials) {
@@ -262,26 +262,26 @@ module.exports.getCredentialsFromToken = function (req, updateCredentials) {
 };
 ```
 
-Let's highlight the key elements of this function.
-* The very first action is to extract the security `bearerToken` from the HTTP request. This is the token that you received from Cognito after you authenticated your user.
-* We then decode the token and extract the `userName` attribute.
-* Next, a series of calls are executed in sequence. It starts by looking up the `userPool` for the current user. It then calls `authenticateUserInPool()`. This function, which is part of the `TokenManager` helper class ultimately calls the Cognito `getCredentialsForIdentity()` method, passing in the token from the user.
+Vamos destacar algums elementos chaves desta função.
+* A priemira ação é extrair o `bearerToken` da requisição HTTP. Este é o token que você recebeu do Cognito depois de ter autenticado com seu usuário.
+* Nós então decodificamos esse token e extraimos o atributo `userName`.
+* Depois, uma série de chamadas são executadas em sequência. Começa pela busca do `userPool` do usuário, depois é chamada o `authenticateUserInPool()`. Essa função, que faz parte da classe auxiliar `TokenManager`, em última análise, chama o método do Cognito `getCredentialsForIdentity()` passando o token do usuário.
 
-It's this call to Cognito that **triggers the role mapping** we configured earlier. Cognito will extract the role from the supplied token and match it to the policy, then construct a **temporary set of scoped credentials** that are returned to the calling function.
+É essa chamada para o Cognito que **ativa o mapeamento de roles** que configuramos previamente. O Cognito irá extrair a role do token fornecido and relacionar com a política correspondente, então construir um **conjunto temporário de credenciais com escopo** que são retornadas para a função que chamou.
 
-**Step 2** - So that's what the code is doing behind the scenes. Now, let's deploy this new version of the product manager service to see it in action. In Cloud9, navigate to the  `Lab3/Part4/product-manager` directory, right-click `deploy.sh`, and click **Run** to execute the shell script.
+**Passo 3** - Então é isso que o código faz por trás das câmeras. Agora, vamos implantar a nova versão do serviços de gerenciamento de produto para vê-lo em ação. No Cloud9, navegue até o diretório `Lab3/Part4/product-manager`, clique com o botão direto no arquivo `deploy.sh`, e depois clique em **Run** para executar o script shell.
 
 <p align="center"><img src="./images/lab3/part4/cloud9_run.png" alt="Lab 3 Part 4 Step 2 Cloud9 Run"/></p>
 
-**Step 3** - Wait for the `deploy.sh` shell script to execute successfully.
+**Passo 4** - Aguarde até o script `deploy.sh` executar com sucesso.
 
 <p align="center"><img src="./images/lab3/part4/cloud9_run_script_complete.png" alt="Lab 3 Part 4 Step 3 Cloud9 Script Finished"/></p>
 
-**Step 4** - Let's verify that all of the moving parts of this process are working. Use the same web application URL you've used throughout. If **TenantTwo** is stilled logged in, log out using the dropdown at the top left of the application navigation bar. Now, login as **TenantOne** and access your data by selecting the **Catalog** menu item and viewing **TenantOne's** products. **Everything should work**.
+**Passo 5** - Vamos verificar se todas as partes desse processo estão funcionando. Use a mesma URL da aplicação web que utilizamos até agora. Se o **TenantTwo** ainda está logado, deslogue usando o dropdown no topo esquerdo da barra de navegação da aplicação. Agora, logue como o **TenantOne** e acesse seus dados selecionando **Catalog** no menu e vendo os produtos do **TenantOne** aparecendo na tela. **Tudo deveria funcionar**.
 
-While seeing this work is great, it's hard to know that this new code is truly enforcing our tenant isolation. This always of tough case to test. Let's try a bit of a brute force method in Part 5.
+Embora seja ótimo ver esse trabalho, é difícil saber se esse novo código está realmente aplicando nosso isolamento de tenant. Esse é sempre um caso difícil de testar. Vamos tentar um pouco do método de força bruta na Parte 5.
 
-**Recap**: We looked at the source code to see how we tie together the JWT **security bearer token** from the HTTP headers, our defined **custom claims**, and Cognito's **role-to-policy mapping** and return of **temporary STS credentials** to enforce tenant isolation in our system. We then deployed a fresh version of the product manager service to remove our manual "security hack" from before.
+**Recapitulando**: Nós olhamos o código fonte para ver como combinamos junto o JWT **token de segurança bearer** dos cabeçalhos HTTP, nossos **claims customizados**, e o **mapeamento de role para política** do Cognito, retornando o as **credenciais temporárias do STS** para aplicar no isolamento de tenant no nosso sistemas. Nós então implantamos uma versão atualizada do serviço de gerenciamento do produto para remover nosso "hack de segurança" manual dos passos anteriores.
 
 ## Parte 5 - Verificando credenciais com escopo do tenant
 
