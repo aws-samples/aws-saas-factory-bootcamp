@@ -285,8 +285,7 @@ While seeing this work is great, it's hard to know that this new code is truly e
 
 ## Part 5 - Verifying Tenant-Scoped Credentials
 
-At this point, we have incorporated security at the IAM level by leveraging Cognito's
-`getCredentialsForIdentity()`, but we have not evaluated if we can circumvent our security measures. As we did before, we will **manually override the tenant identifier** to see if we can break tenant isolation. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
+Nesse momento, nós incorporamos segurança a nível de IAM utilizando o Cognito `getCredentialsForIdentity()`, mas não avaliamos se podemos contornar/burlar nossas medidas de segurança. Como fizemos antes, nós vamos **manualmente sobreescrever o identificador do tenant** para ver se conseguimos quebrar o isolamento do tenant. This will demonstrate that, so long as the access policies and roles defined previously are properly configured, our **tenant isolation measures can't be defeated** by introducing a tenant different from the authenticated SaaS Identity.
 
 **Step 1** - As before, we will modify the source code for our latest product manager service and manually inject a tenant identifier. In Cloud9 navigate to the `Lab3/Part5/product-manager/` folder and open `server.js` in the editor by double-clicking or right-clicking and selecting **Open**.
 
