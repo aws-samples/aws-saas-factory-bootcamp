@@ -49,7 +49,7 @@ Para fazer isso, vamos voltar ao serviço de gerenciamento de produtos e ver com
 
 Para criar um acesso entre tenants, mesmo que artificial, precisamos dos identificadores únicos para os tenants. Vamos encontrar os identificadores para cada um dos tenants. Vá até o **DynamoDB**, na console da AWS, e clique na opção **Tables** localizado no canto superior esquerdo da página. Selecione a tabela **TenantBootcamp** e então clique na aba **Items**.
 
-<p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 Dynamo TenantBootcamp Table"/></p>
+<p align="center"><img src="./images/lab3/part1/dynamo_tenant.png" alt="Lab 3 Part 1 Step 14 DynamoDB TenantBootcamp Table"/></p>
 
 **Passo 2** - Localize na lista os dois tenants que você criou que você criou comparando com o nome de usuário/email que você utilizou para criá-los. **Copie o valor do tenant_id para esses dois tenants.** Você irá precisar desses valores nos passos a seguir.
  
@@ -150,9 +150,9 @@ Os seguitnes passos irão guiá-lo através do processo de edição das polític
 
 <p align="center"><img src="./images/lab3/part2/iam_edit_policy.png" alt="Lab 3 Part 2 Step 3 IAM Edit Policy"/></p>
 
-**Passo 4** - A console agora mostrará uma lista de políticas do DynamoDB e do Cognigno User Pool. Nós estamos interessados em editar a política para a tabela **ProductBootcamp**. Entretanto, _sua localização nessa lista de tabelas do Dynamo pode variar_. Abra cada uma das entradas colapsadas do Dynamo na lista **selecionando a seta** do lado esquerdo da borda da lista. Perto da parte inferior de cada conjunto expandido de políticas, você deverá encontrar um seção **Resources**. Localize o conjunto de políticas que fazem referência a tabela **ProductBootcamp**. O ARN será similar ao seguinte:
+**Passo 4** - A console agora mostrará uma lista de políticas do DynamoDB e do Cognigno User Pool. Nós estamos interessados em editar a política para a tabela **ProductBootcamp**. Entretanto, _sua localização nessa lista de tabelas do DynamoDB pode variar_. Abra cada uma das entradas colapsadas do DynamoDB na lista **selecionando a seta** do lado esquerdo da borda da lista. Perto da parte inferior de cada conjunto expandido de políticas, você deverá encontrar um seção **Resources**. Localize o conjunto de políticas que fazem referência a tabela **ProductBootcamp**. O ARN será similar ao seguinte:
 
-<p align="center"><img src="./images/lab3/part2/iam_dynamo_arn.png" alt="Lab 3 Part 2 Step 4 IAM Dynamo ARN"/></p>
+<p align="center"><img src="./images/lab3/part2/iam_dynamo_arn.png" alt="Lab 3 Part 2 Step 4 IAM DynamoDB ARN"/></p>
 
 **Passo 5** - Nosso interesse é no **Request conditions** associado a essa política. Essas condições são o coração da nossa habilitade de controlar que itens um usuário pode acessar na tabela do Dynamo. Queremos que nossa política indique que apenas usuários com valor de chave de partição que corresponda ao identificador do tenant de **TenantOne** terão permissão para acessar esses itens na tabela. Expanda a seção de **Request conditions** e **selecione o texto da condição** isso colocará em modo de edição para as condições.
 
@@ -229,7 +229,7 @@ app.get('/product/:id', function (req, res) {
     });
 });
 ```
-**Passo 2** - Para chamar o `getCredentialsFromToken()` descrito acima é onde toda mágica acontece em termos de mapear nosso token/identidade para as políticas apropriadas, e retornar isso em forma de credencial. Dado a importãncia dessa função, vamos olhar mais de perto o que está acontecendo. Abaixo está um pedaço de código do `TokenManager` que implementa a função `getCredentialsFromToken()`:
+**Passo 2** - Para chamar o `getCredentialsFromToken()` descrito acima é onde toda mágica acontece em termos de mapear nosso token/identidade para as políticas apropriadas, e retornar isso em forma de credencial. Dado a importância dessa função, vamos olhar mais de perto o que está acontecendo. Abaixo está um pedaço de código do `TokenManager` que implementa a função `getCredentialsFromToken()`:
 
 ```javascript
 module.exports.getCredentialsFromToken = function (req, updateCredentials) {
