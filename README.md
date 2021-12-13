@@ -23,7 +23,7 @@ Note that this workshop deploys infrastructure into your AWS account that is out
 ### Lab 1 - Identity and Onboarding
 [![Lab1](images/lab1.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
 
-### Lab 2 - Multi-Tenant Security & User Roles
+### Lab 2 - Multi-Tenant Microservices
 [![Lab2](images/lab2.png)](https://github.com/aws-samples/aws-saas-factory-bootcamp/blob/master/Lab2.md "Lab 2")
 
 ### Lab 3 - Data Isolation
