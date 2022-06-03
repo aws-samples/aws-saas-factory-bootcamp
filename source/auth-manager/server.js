@@ -44,7 +44,6 @@ app.get('/auth/health', function(req, res) {
 // process login request
 app.post('/auth', function (req, res) {
     var user = req.body;
-
     tokenManager.getUserPool(user.userName, function (error, userPoolLookup) {
         if (!error) {
             // get the pool data from the response
@@ -65,11 +64,9 @@ app.post('/auth', function (req, res) {
                 Pool: userPool
             };
             // init Cognito auth details with auth data
-            //var authenticationDetails = new AWS.CognitoIdentityServiceProvider.AuthenticationDetails(authenticationData);
             var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
 
             // authenticate user to in Cognito user pool
-            //var cognitoUser = new AWS.CognitoIdentityServiceProvider.CognitoUser(userData);
             var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
             cognitoUser.authenticateUser(authenticationDetails, {
@@ -109,22 +106,26 @@ app.post('/auth', function (req, res) {
                         res.json({newPasswordRequired: true});
                         return;
                     }
-                    // These attributes are not mutable and should be removed from map.
+
+                    // Cognito doesn't allow updating email or phone on NEW_PASSWORD_REQUIRED challenge
                     delete userAttributes.email_verified;
+                    delete userAttributes.email;
+                    delete userAttributes.phone_number_verified;
+                    delete userAttributes.phone_number;
+
+                    // These attributes are not mutable and should be removed from map.
                     delete userAttributes['custom:tenant_id'];
+                    
                     cognitoUser.completeNewPasswordChallenge(user.newPassword, userAttributes, this);
                 }
             });
-        }
-        else {
+        } else {
             winston.error("Error Authenticating User: ", error);
             res.status(404);
             res.json(error);
         }
     });
 });
-
-
 
 // Start the servers
 app.listen(configuration.port.auth);

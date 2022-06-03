@@ -23,7 +23,7 @@ Observe que este workshop cria infraestrutura em sua conta da AWS que está fora
 ### Lab 1 - Identidade e Onboarding/Integração
 [![Lab1](images/lab1.png)](https://github.com/tiagoReichert/aws-saas-factory-bootcamp/blob/master/Lab1.md "Lab 1")
 
-### Lab 2 - Segurança Multi-Tenant & Roles/Funções de usuários
+### Lab 2 - Microsserviços Multi-Tenant
 [![Lab2](images/lab2.png)](https://github.com/tiagoReichert/aws-saas-factory-bootcamp/blob/master/Lab2.md "Lab 2")
 
 ### Lab 3 - Isolamento de Dados
