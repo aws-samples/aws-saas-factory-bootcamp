@@ -396,4 +396,4 @@ Agora vimos como nossas opções de sistema e arquitetura criam um processo de i
 
 **Recapitulando**: Esta parte mostrou como podemos utilizar "declarações/claims" customizadas em nosso token de segurança para passar o contexto do tenant para cada chamada de API REST em nosso sistema. Estamos utilizando um mecanismo padrão do OpenID Connect que o Cognito (e muitos outros provedores de identidade) suporta para aumentar as informações do perfil do usuário com atributos personalizados. No próximo laboratório do nosso bootcamp, aprenderemos como nossos microsserviços decodificam esse token de segurança JWT e aplicam o contexto do tenant à nossa lógica de negócios.
 
-[Continue to Lab 2](Lab2.md)
+[Continue to Lab 2](Lab2-pt-br.md)

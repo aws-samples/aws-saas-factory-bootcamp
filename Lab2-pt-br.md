@@ -360,4 +360,4 @@ Vá até o serviço **DynamoDB** na console da AWS, clique em **Tables**, na lis
 
 **Recap**: Nesse exercício, você melhorou o mecanismo de obtenção do contexto do tenant nos microsserviços ao extrair os "claims" customizados do token de segurança passado no header HTTP Authorization. Nós reduzimos a complexidade para os desenvolvedores utilizarem o contexto do tenant ao criar uma classe auxiliar TokenManager, que utiliza o mecanismo de "middleware" do framework Express para interceptar todas as requisições antes de executar a função que corresponde à chamada REST.
 
-[Continue para o Lab 3](Lab3.md)
+[Continue para o Lab 3](Lab3-pt-br.md)
