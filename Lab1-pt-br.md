@@ -373,31 +373,31 @@ Recupere o email com as credenciais temporárias para o usuário gerente de pedi
 **Recap**: Este foi o ultimo passo para verificar que todos os elementos do ciclo de vida de onboarding e autenticação estão em vigor. Nós logamos de volta no sistema como nosso usuário tenant administrador e verificamos que a senha recém definida nos permite entrar na aplicação sem problemas. Nós também criamos um usuário descendente do nosso tenant e vimos que o fluxo de onboard era o mesmo e que a aplicação restringe acesso a determinadas funcionalidades de acordo com os atributos customizados que definimos no Cognito, como papel e camada.
 
 
-## Part 5 - Acquiring Tenant Context
+## Parte 5 – Adquirindo Contexto de Tenant
 
-We have now seen how our system and architecture choices create a scalable, flexible, and user-friendly tenant onboarding process for our SaaS application. Now we will look at the nuts and bolts of how exactly our SaaS Identity of combined authenticated user and tenant context is brokered through the application using a feature of the OpenID Connect standard called custom claims.
+Vimos como as nossas escolhas de sistema e arquitetura criam um processo de onboarding de tenant escalável, flexível, amigável para sua aplicação de SaaS. Agora, nós vamos ver em detalhes como exatamente nossa identidade SaaS do contexto de usuário e tenant autenticado combinado é intermediado por meio da aplicação utilizando um recurso do padrão OpenID Connect chamado declarações personalizadas. 
 
-**Step 1** – Return to the web application and login if you aren't already. We will use the **Network** tab of the **Developer Tools** from your web browser to investigate the HTTP headers as our application invokes the REST APIs of our system.
+**Passo 1** – Retorne para a aplicação web e faça o login caso você não esteja conectado. Nós iremos usar a **Rede** da guia de **Ferramentas de Desenvolvedor** do seu navegador web para investigar os cabeçalhos de HTTP conforma a nossa aplicação invoca as REST APIs do nosso sistema. 
 
 * Google Chrome
-  * Click the 3 vertical dots at the end of the address bar -> More Tools -> Developer Tools -> Network
+  * Clique nos 3 pontos verticais no final da barra de endereço -> Mais Ferramentas -> Ferramentas de Desenvolvedor -> Rede
 * Mozilla Firefox
-  * Click Tools -> Web Developer -> Network
+  * Clique em Ferramentas -> Desenvolvedor Web -> Rede
 * Apple Safari
-  * Safari Menu -> Preferences -> Advanced -> Show Develop menu in menu bar -> Develop -> Show Web Inspector -> Network
+  * Safari Menu -> Preferências -> Avançado -> Mostrar Menu Desenvolver na barra de menus  -> Desenvolver -> Mostrar Inspetor Web -> Rede 
 
-**Step 2** – While looking at the **Network** tab of your browser's **Developer Tools**, select the **Users** menu option in the web application. Select the 2nd request for `users` in the list of resources and then expand the **Request Headers** section in the **Headers** tab. One of the request headers is the **Authorization** header. It's the value in this HTTP header that our microservices leverage to integrate multi-tenant identity.
+**Passo 2** – Enquanto olhamos para a **Rede** na guia de **Ferramentas de Desenvolvedor** do seu navegador, selecione a opção de menu **Usuários** na aplicação web. Selecione a segunda solicitação para `usuários` na lista de recursos e então expanda a seção **Cabeçalhos de Solicitações** na guia **Cabeçalho*. Um dos cabeçalhos de solicitações é o cabeçalho **Autorização**. É o valor nesse cabeçalho HTTP que nossos microsserviços aproveitam para integrar a identidade multi-tenant.
 
 <p align="center"><img src="./images/lab1/part5/developer_tools.png" alt="Lab 1 Part 5 Step 2 Developer Tools"/></p>
 
-**Step 3** – Notice, that the **Authorization** header consists of the term **Bearer** followed by an encoded string. This is the authorization token, better known as a **JSON Web Token** (JWT). Copy the encoded token into a text editor, and open a new tab to the website https://jwt.io/. This website will allow us to decode our token to investigate the corresponding metadata within the JWT.
+**Passo 3** – Perceba que o cabeçalho **Autorização** consiste no termo **Portador** seguido de uma string codificada. Esse é o token de autorização, mais conhecido como **JSON Web Token** (JWT). Copie o token codificado em um editor de texto, e abra uma nova guia no website https://jwt.io/. Este website nos permitirá descodificar nosso token para investigar os metadados correspondentes no JWT.
 
 <p align="center"><img src="./images/lab1/part5/jwtio.png" alt="Lab 1 Part 5 Step 3 JWT.io"/></p>
 
-**Step 4** – Scroll down the page and paste the encoded token into the **Encoded** text box in the middle of the website. This paste should have triggered a decoding of the token. Notice in the **Decoded** section of the website, the **PAYLOAD** section contains decoded key value pairs including the **email** address of the user, as well as the custom **Claims** such as **custom:tenant_id** which we configured as _immutable_ within our Cognito User Pool in the first part of this Lab.
+**Passo 4** – Role a página para baixo e cole o token codificado na caixa de texto **Codificado** no meio do website. Esta pasta deve ter provocado uma decodificação do token. Perceba que na seção **Descodificado** do website, a seção **Carga Útil** contém pares de valores-chave descodificados, incluindo o endereço de **email** do usuário, bem como as **Reivindicações** personalizadas, como **custom:tenant_id** que nós configuramos como _imutável_ em nosso pool de usuários do Cognito na primeira parte desse Lab.
 
 <p align="center"><img src="./images/lab1/part5/jwt_payload.png" alt="Lab 1 Part 5 Step 4 JWT Payload"/></p>
 
-**Recap**: This part showed how we can leverage custom "claims" within our security token to pass along tenant-context to each REST API invocation in our system. We are utilizing a standard mechanism from OpenID Connect which Cognito (and many other identity providers) support to augment user profile information with custom attributes. In the next lab of our bootcamp, we will learn how our microservices decode this JWT security token and apply the tenant context to our business logic.
+**Recapitulando**: Essa parte mostrou como nós podemos aproveitar “declarações” personalizadas em nosso token de segurança para passar o contexto de tenant para cada invocação de API REST em nosso sistema. Nós estamos utilizando um mecanismo padrão do OpenID Connect que o Cognito (e muitos outros provedores de identidade) suporta para aumentar as informações do perfil do usuário com atributos personalizados. No próximo Lab do nosso bootcamp, nós vamos aprender como nossos microsserviços decodificam esse token de segurança WT e aplicam o contexto de tenant para nossa lógica de negócios.  
 
 [Continue para o Lab 2](Lab2-pt-br.md)
