@@ -23,8 +23,10 @@ No topo do diagrama está a aplicação web **Web Application** que fornece a in
 ### O que você estará construindo
 Conforme você avança no Laboratório 1, você criará, configurará e implantará os elementos descritos acima. A seguir está uma análise das etapas que você executará para obter experiência de integração e autenticação SaaS:
 * Criar o pool de usuários - neste cenário usaremos os pools de usuários do Cognito para gerenciar e lidar com a identidade do usuário. Nesta parte do laboratório, vamos guiá-lo pelas etapas de configuração do Amazon Cognito.
-* Criar e gerenciar usuários - a seguir, examinaremos o microsserviço **User Manager** afim de observar como ele fornece uma API de abstração. Vamos testar o microsserviço manualmente, usando a linha de comando. 
-* Criar e gerenciar tenants - na parte 3, examinaremos os recursos do microsserviço **Tenant Manager** afim de observar como ele mantém os dados de nível do tenant separados dos usuários. Vamos testar o microsserviço manualmente, usando a linha de comando. 
+* Criar e gerenciar usuários - a seguir, examinaremos o microsserviço **User Manager** afim de observar como ele fornece uma API de abstração. Vamos testar o microsserviço manualmente, usando a linha de comando.
+
+* Criar e gerenciar tenants - na parte 3, examinaremos os recursos do microsserviço **Tenant Manager** afim de observar como ele mantém os dados de nível do tenant separados dos usuários. Vamos testar o microsserviço manualmente, usando a linha de comando.
+
 * Integração orquestrada - Por fim, utilizando a interface web integraremos um novo tenant e seu primeiro usuário administrador. Isso reúne todas as peças e mostra como o Cognito gerencia o trabalho pesado do fluxo de autenticação. Adicionaremos um usuário não administrador ao mesmo tenant e veremos como a autorização complementa a autenticação para restringir o acesso a determinados recursos. Concluiremos examinando a tecnologia JWT usada nos tokens de segurança.
 
 ## Parte 1 - Criar o pool de usuários
@@ -276,14 +278,15 @@ Você deve ver um item na tabela contendo todos os atributos enviados por meio d
 
 **Recapitulando**: o objetivo desta seção era apenas apresentar a você o serviço gerenciador de tenants e a representação separada dos dados de tenants. O **tenant_id** nesta tabela DynamoDB será associado a um ou mais usuários por meio do atributo **tenant_id** que criamos como um atributo personalizado no pool de usuários do Cognito. Ao separar os dados de tenant de nossos atributos de usuário, temos um caminho claro para como os tenants são gerenciados e configurados.
 
-## Part 4 - The Onboarding & Authentication Application
+## Parte 4 –  O Onboarding & Aplicação de autenticação 
 
-All of the microservices are deployed and the backend infrastructure pieces are in place to support the onboarding process. Now we'll look at the application that can engage the services to onboard and authenticate tenants. We won't dig too far into the details of the web application. It's a relatively straightforward AngularJS application that is hosted on **Amazon S3**.
+Todos os microserviços estão implementados e as partes do backend da infraestrutura estão no lugar para suportar o processo de onboarding. Agora iremos nos atentar à aplicação que pode engajar os serviços para os tenants de onboard e autenticação. Não iremos nos aprofundar nos detalhes da aplicação web. É uma aplicação AngularJS relativamente elementar, hospedada no **Amazon S3**.
 
-It's important to note that the rules and mechanics of this onboarding workflow reflect the policies and settings choosen when the user pool is created in Cognito. Validation mechanisms and password policies, for example, will be enforced and orchestrated by Cognito.
+É importante notar que as regras e mecanismos deste fluxo de trabalho refletem as políticas e configurações escolhidas quando o grupo de usuários é criado no Cognito. Mecanismos de validação e políticas de senha, por exemplo, serão impostos e orquestrados pelo Cognito. 
 
-**Step 1** – Before we open up the web application, let's take a look at a sample from the UI code that will be invoking the REST services that we covered above. The code that follows is taken from the `register.js` controller found at `source/web-client/app/scripts/controllers/register.js`.
-When the registration form is filled out and the user selects the **Register** button, the system will invoke the following snippet of code:
+
+
+**Passo 1** – Antes de abrirmos a aplicação web, vamos observar uma amostra do código da interface do usuário que invocará os serviços REST que cobrimos acima. O código que segue foi extraido do controlador `register.js` encontrado em `source/web-client/app/scripts/controllers/register.js`. Quando o formulário de registro é preenchido e o usuário seleciona o botão de **Register**, o sistema chamará o seguinte trecho de código:
 
 ```javascript
 $scope.formSubmit = function () {
@@ -316,57 +319,59 @@ $scope.formSubmit = function () {
 };
 ```
 
-Notice that we copy the contents of the HTML form and construct a JSON `tenant` object that holds all the attributes of our new tenant. Then, we make the REST call that POSTs this JSON tenant data to the tenant registration service. The registration service orchestrates calls to the user manager and tenant manager to provision all the elements of the tenant footprint.
+Perceba que copiamos os conteúdos do formulário HTML e construímos um objeto JSON `tenant` que contém todos os atributos do nosso novo tenant. Então, fazemos a chamada REST que envia os dados deste JSON tenant para o serviço de registro de tenants. O serviço de registro orquestra chamadas para o gerenciador de usuários e o gerenciador de tenants para provisionar todos os elementos da área de cobertura do tenant.
 
-**Step 2** – Our web application is considered static because it uses JavaScript to modify the HTML views directly on the browser without having to reload the entire URI from the server. **Amazon S3** provides for _serverless_ hosting of static websites. To minimize geographic delay in loading your website and to offload HTTPS encryption, we've put an Amazon CloudFront distribution in front of the S3 bucket hosting our website. We need to capture the URL of our application from CloudFront.
+**Passo 2** – Nossa aplicação é considerada estática porque utiliza JavaScript para modificar visualizações de HTML diretamente no navegador sem precisar recarregar toda URL do servidor. **Amazon S3** prove hospedagem _serverless_ de sites estáticos. Para minimizar o atraso geográfico no carregamento do seu website e para descarregar a criptografia HTTPS, nós colocamos uma distribuição do Amazon CloudFront na frente do bucket S3 que está hospedando nosso website. Nós precisamos capturar a URL da nossa aplicação do CloudFront.  
 
-Navigate to the **CloudFront** service under the **Networking & Content Delivery** category in the AWS console. A distribution has been created for our web application. Copy the URL value and open it in a new web browser window or tab.
+Navegue para o serviço **CloudFront** sob a categoria **Networking & Content Delivery** no console AWS. Uma distribuição foi criada para nossa aplicação web. Copie a URL e abra em uma nova janela ou aba do navegador.
 
-**Step 3** – The landing page for the application will prompt you to login. This page is for tenants that have already registered. You don't have any tenants yet, so, you'll need to select the **Register** button (to the right of the **Login** button). Selecting this button will take you to a form where you can register your new tenant.
+**Passo 3** – A página de destino do aplicativo solicitará que você faça login. Esta página é para tenants já registrados. Você não possui tenants ainda, então, você precisará selecionar o botão **Register** (ao lado direito do botão **Login**). Ao selecionar este botão você será direcionado a um formulário onde poderá registrar seu novo tenant.
 
 <p align="center"><img src="./images/lab1/part4/registration.png" alt="Lab 1 Part 4 Step 3 Registration Form"/></p>
 
-Enter the data for your new tenant and its initial admin user. The key value here is your email address. _You must enter an email address where you can access the messages_ that will be used to complete this registration process. The remaining values can be as you choose. This will be the first tenant in your system and we will create another in the next lab.
+Insira os dados para seu novo tenant e seu usuário administrador inicial. O valor chave aqui é seu endereço de e-mail. _Você deve inserir um endereço de email onde possa acessar as mensagens_ que será utilizado para completar este processo de registro. Os valores restantes podem ser da sua escolha. Este será o primeiro tenant no seu sistema e criaremos outro no próximo lab. 
 
-The "Plan" value is simply included to convey that during onboarding is where you would capture the different tiers of your product offering.
+O valor “Plan” é incluído simplesmente para transmitir que é durante o onboarding onde você capturaria os diferentes níveis de sua oferta de produto.
 
-Once you complete the form, select the **Register** button and after a second or two you'll be presented with message indicating that you have registered and should be receiving an email to validate your identity.
+Uma vez que o formulário esteja completado, selecione o botão **Register** e depois de um segundo ou dois você será apresentado a uma mensagem indicando que você se registrou e deverá estar recebendo um email para validar sua identidade.
 
-**Step 4** – Now check your email for the validation message that was sent by Cognito. You should find a message in your inbox that includes your username (your email address) along with a temporary password (generated by Cognito). The message will be similar to the following:
+**Passo 4** – Agora cheque seu email para validação da mensagem que foi enviada pelo Cognito. Você deverá encontrr uma mensagem na sua caixa de entrada que inclui seu nome de usuário (seu endereço de email) juntamente com uma senha temporária (gerada pelo Cognito). A mensagem será similar à seguinte: 
 
 <p align="center"><img src="./images/lab1/part4/cognito_email.png" alt="Lab 1 Part 4 Step 4 Cognito Validation Email"/></p>
 
-**Step 5** – We can now login to the application using these credentials. Return to the application using the URL provided above and you will be presented with a login form. Enter the temporary credentials that were provided in the Cognito validation email and select the **Login** button.
+**Passo 5** – Agora podemos fazer login na aplicação usando essas credenciais. Retorne para a aplicação utilizando a URL provisionada acima e será apresentado o formulário de login. Insira as credenciais temporárias que foram providas no email de validação e selecione o botão **Login**.
 
 <p align="center"><img src="./images/lab1/part4/login.png" alt="Lab 1 Part 4 Step 5 Login Form"/></p>
 
-**Step 6** – Cognito will detect that this is a temporary password and indicate that you need to setup a new password for your account. To do this, the application redirects you to a new form where you'll setup your new password. Create your new password and select the **Confirm** button. Remember, your new password must conform to the policy you defined in Cognito earlier in this Lab (upper and lower letters and at least 1 number and 8 characters or more in length).
+**Passo 6** – Cognito irá detectar que esta é uma senha temporária e indicará que você precisa configurar uma nova senha para sua conta. Para fazer isso, a aplicação o redireciona para um novo formulário onde você irá configurar uma nova senha. Crie sua nova senha e selecione o botão **Confirm**. Lembre-se, sua nova senha deve estar alinhada com a política definida no Cognito anteriormente neste Lab (letras maiúsculas e minúsculas, ao menos um número e 8 caracteres ou mais).
 
 <p align="center"><img src="./images/lab1/part4/change_password.png" alt="Lab 1 Part 4 Step 6 Change Password"/></p>
 
-**Step 7** – Let's confirm that you can authenticate with your newly created account. Enter your username (email address) and the password you just confirmed. You will now be placed at the landing page of the application. (The dashboard totals are fake).
+**Passo 7** – Vamos confirmar que você pode autenticar utilizando sua conta recém criada. Insira seu usuário (endereço de email) e a senha que acabou de confirmar. Você agora será colocado na página de destino da aplicação. (O total dos painéis são falsos).
 
 <p align="center"><img src="./images/lab1/part4/home_page.png" alt="Lab 1 Part 4 Step 7 Home Page"/></p>
 
-**Step 8** – As a new tenant to the system, you are created as a **Tenant Administrator**. This gives you full control of your tenant environment. It also gives you the ability to create new users in your system. Let's try that. Navigate to the **Users** menu option at the top of the page. This will display the current list of users in your system. You'll see the initial admin user the tenant registration process created.
+**Passo 8** – Como um novo tenant no Sistema, você é criado como um 
+**Tenant Administrador**. Isto lhe dá total controle do se ambiente de tenants. Isto também lhe dá a habilidade de criar novos usuários no seus sistema. Vamos tentar isto. Navegue para a opção de menu de **Usuários** no topo da página. Isto mostrará a lista atual de usuários no seus sistema. Você verá o usuário administrador inicial que o processo de registro de novos tenants criou. 
 
 <p align="center"><img src="./images/lab1/part4/users.png" alt="Lab 1 Part 4 Step 8 Users"/></p>
 
-Now select the **Add User** button to add a new user to your system in the **Order Manager** role. Create the new user (using a different email address/username) than your tenant. Be sure to select the **Order Manager** role. Once you've entered all the data, select the **Save** button at the bottom of the form.
+Agora selecione o botão **Add User** para adicionar um novo usuário ao seu sistema no papel de **Order Manager**. Crie um novo usuário (utilizando um diferente endereço de email/nome de usuário do seu tenant). Certifique-se de selecionar a papel **Order Manager**. Uma vez que você inseriu todos os dados, selecione o botão **Save** no final do formulário.
 
-**Hint**: You can use the same email address as you used for your tenant admin but add a plus symbol (**+**) and unique string after the username but before the at (**@**) symbol (e.g. test@test.com -> test+user1@test.com). The email server should also deliver this message addressed to **test+user1** to the **test** user's inbox.
+**Dica**: Você pode utilizar o mesmo endereço de email que usou para o tenant administrador porém adicione um simbolo de soma (**+**) e uma string unica depois do usuário e antes do símbolo **@**. (e.g. test@test.com -> test+user1@test.com). O servidor de email deve entregar essa mensagem endereçada para **test+user1** para a caixa de entrada do usuário **test**.
 
 <p align="center"><img src="./images/lab1/part4/add_user.png" alt="Lab 1 Part 4 Step 8 Add User"/></p>
 
-**Step 9** – The onboarding of new users follows the same flow that was used to register a new tenant. Pressing the save button triggers Cognito's processing to generate an email that will be sent to the email address that was provided.
+**Passo 9** – O onboarding de novos usuários segue o mesmo fluxo que foi usado para registrar um novo tenant. Apertar o botão de salvar ativa o processamento do Cognito para generar um email que será enviado para o endereço de email que foi fornecido.
 
-Select the dropdown menu with your tenant name at the top right of the screen and select **Logout**. This will return you to the login page.
+Selecione o menu suspenso com o nome do seu tenant no lado superior direito da tela e selecione **Logout**. Isto lhe levará de volta para a página de login.
 
 <p align="center"><img src="./images/lab1/part4/logout.png" alt="Lab 1 Part 4 Step 9 Logout"/></p>
 
-Retrieve the email with the temporary credentials for the order manager user. Repeat the same steps you did above to set a new password and then login as the order manger user. You're now in the application with the role of "Order Manager" not "Tenant Administrator". You'll notice that the "Users" option is gone from the menu and you no longer have the ability (for this user) to create or manage users in the system.
+Recupere o email com as credenciais temporárias para o usuário gerente de pedidos. Repita os mesmos passos que realizou acima para configurar uma nova senha e então faça login com o como o usuário gerente de pedidos. Você está agora na aplicação com o papel de “Order Manager” e não "Tenant Administrator". Você irá notar que opção de "Users" não está mais no menu e que você não mais possui a habilidade (para este usuário) de criar ou gerenciar usuários no sistema.
+         
+**Recap**: Este foi o ultimo passo para verificar que todos os elementos do ciclo de vida de onboarding e autenticação estão em vigor. Nós logamos de volta no sistema como nosso usuário tenant administrador e verificamos que a senha recém definida nos permite entrar na aplicação sem problemas. Nós também criamos um usuário descendente do nosso tenant e vimos que o fluxo de onboard era o mesmo e que a aplicação restringe acesso a determinadas funcionalidades de acordo com os atributos customizados que definimos no Cognito, como papel e camada.
 
-**Recap**: This was the last step in verifying that all the elements of the onboarding and authentication lifecycle are in place. We logged back into the system as our tenant administrator user and verified that the newly set password would let us into the application un-challenged. We also created a user as a child of our tenant and saw that the onboarding flow was the same and that the application restricts access to certain functionality by the custom attributes we defined in Cognito such as role and tier.
 
 ## Part 5 - Acquiring Tenant Context
 
