@@ -314,6 +314,7 @@ module.exports.createUserPoolClient = function (poolConfig) {
             ClientName: poolConfig.ClientName, /* required */
             UserPoolId: poolConfig.UserPoolId, /* required */
             GenerateSecret: false,
+            RefreshTokenValidity: 30,
             ReadAttributes: [
                 'email',
                 'family_name',
@@ -325,10 +326,7 @@ module.exports.createUserPoolClient = function (poolConfig) {
                 'custom:company_name',
                 'custom:account_name',
                 'custom:role'
-                /* more items */
             ],
-            RefreshTokenValidity: 0
-            ,
             WriteAttributes: [
                 'email',
                 'family_name',
@@ -336,11 +334,7 @@ module.exports.createUserPoolClient = function (poolConfig) {
                 'phone_number',
                 'preferred_username',
                 'custom:tier',
-                // 'custom:company_name',
-                // 'custom:account_name',
                 'custom:role'
-
-                /* more items */
             ]
         };
 
