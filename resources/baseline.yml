@@ -3,14 +3,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: AWS SaaS Factory Bootcamp Baseline
 Parameters:
   BootcampBucket:
-    Description: S3 bucket where you uploaded the Lambda code packages for CloudFormation
+    Description: S3 bucket with workshop resources
     Type: String
-  EventEngineRole:
-    Description: IAM role ARN of the Event Engine player role if it exists
-    Type: String
-    Default: ''
-  EventEngineRoleName:
-    Description: IAM role name of the Event Engine player role
+  ParticipantAssumedRoleArn:
+    Description: Workshop Studio Participant IAM Role. Leave blank when not using Workshop Studio.
     Type: String
     Default: ''
   ArtifactBucket:
@@ -19,11 +15,8 @@ Parameters:
   WebsiteBucket:
     Description: S3 bucket to host the website
     Type: String
-  CloudTrailBucket:
-    Description: S3 bucket for CloudTrail to publish logs to
-    Type: String
 Conditions:
-  EventEngine: !Not [!Equals ['', !Ref EventEngineRole]]
+  WorkshopStudio: !Not [!Equals ['', !Ref ParticipantAssumedRoleArn]]
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -36,6 +29,7 @@ Resources:
           Value: saas-bootcamp-vpc
   InternetGateway:
     Type: AWS::EC2::InternetGateway
+    DependsOn: VPC
     Properties:
       Tags:
         - Key: Name
@@ -109,7 +103,6 @@ Resources:
           Value: saas-bootcamp-route-natA
   RouteNatA:
     Type: AWS::EC2::Route
-    DependsOn: NatGatewayA
     Properties:
       RouteTableId: !Ref RouteTableNatA
       DestinationCidrBlock: 0.0.0.0/0
@@ -150,7 +143,6 @@ Resources:
           Value: saas-bootcamp-route-natB
   RouteNatB:
     Type: AWS::EC2::Route
-    DependsOn: NatGatewayB
     Properties:
       RouteTableId: !Ref RouteTableNatB
       DestinationCidrBlock: 0.0.0.0/0
@@ -172,7 +164,7 @@ Resources:
   Cloud9:
     Type: AWS::Cloud9::EnvironmentEC2
     Properties:
-      AutomaticStopTimeMinutes: 120
+      AutomaticStopTimeMinutes: 60
       SubnetId: !Ref SubnetPublicA
       InstanceType: t3.medium
       Name: SaaS Bootcamp IDE
@@ -180,70 +172,25 @@ Resources:
         - RepositoryUrl: https://github.com/aws-samples/aws-saas-factory-bootcamp
           PathComponent: aws-saas-factory-bootcamp
       OwnerArn:
-        !If [EventEngine, !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/${EventEngineRoleName}/MasterKey", !Ref "AWS::NoValue"]
-  CloudTrailBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket:
-        Ref: CloudTrailBucket
-      PolicyDocument: 
-        Version: 2012-10-17
-        Statement:
-          - Sid: AWSCloudTrailAclCheck20150319
-            Effect: Allow
-            Principal: 
-              Service: cloudtrail.amazonaws.com
-            Action: s3:GetBucketAcl
-            Resource: !Sub arn:aws:s3:::${CloudTrailBucket}
-          - Sid: AWSCloudTrailWrite20150319
-            Effect: Allow
-            Principal: 
-              Service: cloudtrail.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub arn:aws:s3:::${CloudTrailBucket}/AWSLogs/${AWS::AccountId}/*
-            Condition: 
-              StringEquals:
-                s3:x-amz-acl: bucket-owner-full-control
-  CloudTrailForCodePipelineTrigger:
-    Type: AWS::CloudTrail::Trail
-    DependsOn: CloudTrailBucketPolicy
-    Properties:
-      TrailName: saas-bootcamp-codepipeline-trail
-      S3BucketName: !Ref CloudTrailBucket
-      IsLogging: true
-      EventSelectors:
-        - IncludeManagementEvents: false
-          ReadWriteType: WriteOnly
-          DataResources:
-            - Type: AWS::S3::Object
-              Values:
-                - !Sub arn:aws:s3:::${ArtifactBucket}/
+        !If [WorkshopStudio, !Ref ParticipantAssumedRoleArn, !Ref "AWS::NoValue"]
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: saas-bootcamp
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    DependsOn: VPC
     Properties:
       GroupName: saas-bootcamp-ecs-sg
       GroupDescription: Access to Fargate Containers
       VpcId: !Ref VPC
   ECSSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn:
-      - ECSSecurityGroup
-      - ALBSecurityGroup
     Properties:
       GroupId: !Ref ECSSecurityGroup
       SourceSecurityGroupId: !Ref ALBSecurityGroup
       IpProtocol: -1
-      Tags:
-        - Key: Name
-          Value: saas-bootcamp-ecs-sg-ingress
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    DependsOn: VPC
     Properties:
       GroupName: saas-bootcamp-alb-sg
       GroupDescription: Access to the load balancer
@@ -255,6 +202,7 @@ Resources:
           ToPort: 80
   ECSLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: AttachGateway
     Properties:
       Scheme: internet-facing
       LoadBalancerAttributes:
@@ -282,22 +230,6 @@ Resources:
           TargetGroupArn: !Ref ALBTargetGroup
       Port: 80
       Protocol: HTTP
-  ECSServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub saas-bootcamp-ecs-role-${AWS::Region}
-      Path: '/'
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ecs.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole
   LambdaCodeBuildStartBuildExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -313,7 +245,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: !Sub saas-bootcamp-cfn-codebuild-policy-${AWS::Region}
+        - PolicyName: saas-bootcamp-cfn-codebuild-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -348,15 +280,15 @@ Resources:
   LambdaCodeBuildStartBuildLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/saas-bootcamp-codebuild-start-${AWS::Region}
+      LogGroupName: /aws/lambda/saas-bootcamp-codebuild-start
       RetentionInDays: 7
   LambdaCodeBuildStartBuild:
     Type: AWS::Lambda::Function
     DependsOn: LambdaCodeBuildStartBuildLogs
     Properties:
-      FunctionName: !Sub saas-bootcamp-codebuild-start-${AWS::Region}
+      FunctionName: saas-bootcamp-codebuild-start
       Role: !GetAtt LambdaCodeBuildStartBuildExecutionRole.Arn
-      Runtime: python3.7
+      Runtime: python3.9
       Timeout: 60
       MemorySize: 512
       Handler: index.lambda_handler
@@ -384,7 +316,7 @@ Resources:
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: saas-bootcamp-codebuild-role
+      RoleName: !Sub saas-bootcamp-codebuild-role-${AWS::Region}
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -451,7 +383,7 @@ Resources:
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: saas-bootcamp-codepipeline-role
+      RoleName: !Sub saas-bootcamp-codepipeline-role-${AWS::Region}
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -497,11 +429,11 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:saas-bootcamp-update-ecs-${AWS::Region}
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:saas-bootcamp-update-ecs
   CodePipelineUpdateEcsServiceExecRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: saas-bootcamp-update-ecs-role
+      RoleName: !Sub saas-bootcamp-update-ecs-role-${AWS::Region}
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -545,15 +477,15 @@ Resources:
   CodePipelineUpdateEcsServiceLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/saas-bootcamp-update-ecs-${AWS::Region}
+      LogGroupName: /aws/lambda/saas-bootcamp-update-ecs
       RetentionInDays: 7
   CodePipelineUpdateEcsServiceLambda:
     Type: AWS::Lambda::Function
     DependsOn: CodePipelineUpdateEcsServiceLogs
     Properties:
-      FunctionName: !Sub saas-bootcamp-update-ecs-${AWS::Region}
+      FunctionName: saas-bootcamp-update-ecs
       Role: !GetAtt CodePipelineUpdateEcsServiceExecRole.Arn
-      Runtime: python3.7
+      Runtime: python3.9
       Timeout: 300
       MemorySize: 512
       Handler: index.lambda_handler
@@ -611,7 +543,7 @@ Resources:
       FunctionName: !Ref CodePipelineUpdateEcsServiceLambda
       Principal: codepipeline.amazonaws.com
       Action: lambda:InvokeFunction
-  CloudWatchEventRole:
+  CodePipelineEventRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub saas-bootcamp-event-role-${AWS::Region}
@@ -626,7 +558,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: !Sub saas-bootcamp-event-policy-${AWS::Region}
+        - PolicyName: saas-bootcamp-event-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -637,7 +569,7 @@ Resources:
   ClearEcrImagesExecRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: saas-bootcamp-clear-ecr-role
+      RoleName: !Sub saas-bootcamp-clear-ecr-role-${AWS::Region}
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -677,15 +609,15 @@ Resources:
   ClearEcrImagesLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/saas-bootcamp-clear-ecr-${AWS::Region}
+      LogGroupName: /aws/lambda/saas-bootcamp-clear-ecr
       RetentionInDays: 7
   ClearEcrImagesLambda:
     Type: AWS::Lambda::Function
     DependsOn: ClearEcrImagesLogs
     Properties:
-      FunctionName: !Sub saas-bootcamp-clear-ecr-${AWS::Region}
+      FunctionName: saas-bootcamp-clear-ecr
       Role: !GetAtt ClearEcrImagesExecRole.Arn
-      Runtime: python3.7
+      Runtime: python3.9
       Timeout: 300
       MemorySize: 512
       Handler: index.lambda_handler
@@ -735,14 +667,12 @@ Resources:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "Unknown RequestType %s" % event['RequestType']})
   ApiGateway:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ECSLoadBalancer
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/api-gateway.yml
       Parameters:
         ECSLoadBalancer: !GetAtt ECSLoadBalancer.DNSName
   UserService:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/user-service.yml
       Parameters:
@@ -750,7 +680,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -758,12 +688,10 @@ Resources:
         ECSCluster: !Ref ECSCluster
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
         ECSSecurityGroup: !Ref ECSSecurityGroup
-        ECSServiceRole: !Ref ECSServiceRole
         SubnetPrivateA: !Ref SubnetPrivateA
         SubnetPrivateB: !Ref SubnetPrivateB
   AuthService:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/auth-service.yml
       Parameters:
@@ -771,7 +699,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -779,12 +707,10 @@ Resources:
         ECSCluster: !Ref ECSCluster
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
         ECSSecurityGroup: !Ref ECSSecurityGroup
-        ECSServiceRole: !Ref ECSServiceRole
         SubnetPrivateA: !Ref SubnetPrivateA
         SubnetPrivateB: !Ref SubnetPrivateB
   TenantService:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/tenant-service.yml
       Parameters:
@@ -792,7 +718,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -800,12 +726,10 @@ Resources:
         ECSCluster: !Ref ECSCluster
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
         ECSSecurityGroup: !Ref ECSSecurityGroup
-        ECSServiceRole: !Ref ECSServiceRole
         SubnetPrivateA: !Ref SubnetPrivateA
         SubnetPrivateB: !Ref SubnetPrivateB
   RegistrationService:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/registration-service.yml
       Parameters:
@@ -813,7 +737,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -821,12 +745,10 @@ Resources:
         ECSCluster: !Ref ECSCluster
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
         ECSSecurityGroup: !Ref ECSSecurityGroup
-        ECSServiceRole: !Ref ECSServiceRole
         SubnetPrivateA: !Ref SubnetPrivateA
         SubnetPrivateB: !Ref SubnetPrivateB
   OrderService:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/order-service.yml
       Parameters:
@@ -834,7 +756,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -842,12 +764,10 @@ Resources:
         ECSCluster: !Ref ECSCluster
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
         ECSSecurityGroup: !Ref ECSSecurityGroup
-        ECSServiceRole: !Ref ECSServiceRole
         SubnetPrivateA: !Ref SubnetPrivateA
         SubnetPrivateB: !Ref SubnetPrivateB
   ProductService:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/product-service.yml
       Parameters:
@@ -855,7 +775,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -863,12 +783,10 @@ Resources:
         ECSCluster: !Ref ECSCluster
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
         ECSSecurityGroup: !Ref ECSSecurityGroup
-        ECSServiceRole: !Ref ECSServiceRole
         SubnetPrivateA: !Ref SubnetPrivateA
         SubnetPrivateB: !Ref SubnetPrivateB
   WebClient:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ApiGateway
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/web-client.yml
       Parameters:
@@ -877,4 +795,11 @@ Resources:
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         ServiceUrl: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
+Outputs:
+  ApiGatewayEndpoint:
+    Description: API Gateway Invoke URL
+    Value: !GetAtt ApiGateway.Outputs.ApiGatewayEndpoint
+  WebAppUrl:
+    Description: Web application URL
+    Value: !GetAtt WebClient.Outputs.WebAppUrl
 ...

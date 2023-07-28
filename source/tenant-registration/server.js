@@ -1,16 +1,15 @@
 'use strict';
 
-// Declare library dependencies
 const express = require('express');
 const bodyParser = require('body-parser');
 const uuidv4 = require('uuid/v4');
 const request = require('request');
 
-//Configure Environment
+// Configure Environment
 const configModule = require('../shared-modules/config-helper/config.js');
 var configuration = configModule.configure(process.env.NODE_ENV);
 
-//Configure Logging
+// Configure Logging
 const winston = require('winston');
 winston.add(new winston.transports.Console({level: configuration.loglevel}));
 
@@ -22,25 +21,22 @@ var app = express();
 
 // Configure middleware
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-    extended: false
-}));
-app.use(function (req, res, next) {
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Origin, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, Access-Control-Allow-Headers, X-Requested-With, Access-Control-Allow-Origin");
-    // intercept OPTIONS method
-    if ('OPTIONS' == req.method) {
-        res.send(200);
-    } else {
-        next();
-    }
+    res.header("Access-Control-Allow-Methods", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
+    next();
+});
+
+app.get('/reg/health', function(req, res) {
+    res.status(200).send({service: 'Tenant Registration', isAlive: true});
 });
 
 /**
  * Register a new tenant
  */
-app.post('/reg', function (req, res) {
+app.post('/reg', function(req, res) {
     var tenant = req.body;
 
     // Generate the tenant id
@@ -55,27 +51,27 @@ app.post('/reg', function (req, res) {
             winston.error("Error. Tenant already exists.");
             res.status(400).send("Error registering new tenant");
         } else {
-			// First create the tenant admin user via the
-			// User Manager Service
+            // First create the tenant admin user via the
+            // User Manager Service
             registerTenantAdmin(tenant)
-                .then(function (tenData) {
+                .then(function(tenData) {
                     // Adding Data to the Tenant Object that will be required for
-					// cleaning up all created resources for all tenants.
+                    // cleaning up all created resources for all tenants.
                     tenant.trustRole = tenData.role.trustRole;
                     tenant.systemAdminRole = tenData.role.systemAdminRole;
                     tenant.systemSupportRole = tenData.role.systemSupportRole;
                     tenant.systemAdminPolicy = tenData.policy.systemAdminPolicy;
                     tenant.systemSupportPolicy = tenData.policy.systemSupportPolicy;
-					
-					// Keep track of where all the users are for this tenant
-					tenant.UserPoolId = tenData.pool.UserPool.Id;
+                    
+                    // Keep track of where all the users are for this tenant
+                    tenant.UserPoolId = tenData.pool.UserPool.Id;
                     tenant.IdentityPoolId = tenData.identityPool.IdentityPoolId;
-					
-					// Now save the tenant attributes to our data store
-					// via the Tenant Manager Service
+                    
+                    // Now save the tenant attributes to our data store
+                    // via the Tenant Manager Service
                     saveTenantData(tenant)
                 })
-                .then(function () {
+                .then(function() {
                     winston.debug("Tenant registered: " + tenant.tenant_id);
                     res.status(200).send({
                         id: tenant.tenant_id,
@@ -84,7 +80,7 @@ app.post('/reg', function (req, res) {
                         status: tenant.status
                     });
                 })
-                .catch(function (error) {
+                .catch(function(error) {
                     winston.error("Error registering new tenant: " + error.message);
                     res.status(400).send("Error registering tenant: " + error.message);
                 });
@@ -107,7 +103,7 @@ function tenantExists(tenant, callback) {
         method: "GET",
         json: true,
         headers: {"content-type": "application/json"}
-    }, function (error, response, body) {
+    }, function(error, response, body) {
         if (error) {
             callback(false);
         } else if ((response != null) && (response.statusCode == 400)) {
@@ -154,7 +150,7 @@ function registerTenantAdmin(tenant) {
             json: true,
             headers: {"content-type": "application/json"},
             body: tenantAdminData
-        }, function (error, response, body) {
+        }, function(error, response, body) {
             if (error || (response.statusCode != 200)) {
                 reject(error)
             } else {
@@ -199,7 +195,7 @@ function saveTenantData(tenant) {
             json: true,
             headers: {"content-type": "application/json"},
             body: tenantRequestData
-        }, function (error, response, body) {
+        }, function(error, response, body) {
             if (error || (response.statusCode != 200)) {
                 reject(error);
             } else {
@@ -211,13 +207,11 @@ function saveTenantData(tenant) {
     return promise;
 }
 
-/**
- * Get the health of the service
- */
-app.get('/reg/health', function(req, res) {
-    res.status(200).send({service: 'Tenant Registration', isAlive: true});
-});
-
-// Start the servers
-app.listen(configuration.port.reg);
+// Start the server
+const server = app.listen(configuration.port.reg);
 console.log(configuration.name.reg + ' service started on port ' + configuration.port.reg);
+
+// Trap SIGTERM to speed up ECS task termination
+process.on('SIGTERM', function() {
+    server.close();
+});

@@ -32,7 +32,6 @@ Resources:
     Type: AWS::ApiGateway::Account
     DependsOn:
       - ApiGatewayApi
-      - ApiGatewayLoggingRole
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayLoggingRole.Arn
   AuthManagerAuthResource:
@@ -1632,4 +1631,4 @@ Resources:
 Outputs:
   ApiGatewayEndpoint:
     Description: API Gateway Invoke URL
-    Value: !Sub 'https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayApiStage}'
+    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayApiStage}

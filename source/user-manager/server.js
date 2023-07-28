@@ -1,41 +1,33 @@
 'use strict';
 
+const express = require('express');
+const bodyParser = require('body-parser');
+
 // Configure Environment
 const configModule = require('../shared-modules/config-helper/config.js');
 var configuration = configModule.configure(process.env.NODE_ENV);
 
+// Configure Logging
 const winston = require('winston');
 winston.add(new winston.transports.Console({level: configuration.loglevel}));
 
-// Declare dependencies
-const express = require('express');
-const bodyParser = require('body-parser');
-const AWS = require('aws-sdk');
-//const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
-const async = require('async');
-
-// Declare shared modules
+// Include Custom Modules
 const tokenManager = require('../shared-modules/token-manager/token-manager.js');
 const DynamoDBHelper = require('../shared-modules/dynamodb-helper/dynamodb-helper.js');
 const cognitoUsers = require('./cognito-user.js');
 
-// Variables that are provided through a token
+// Instantiate application
+var app = express();
 var bearerToken = '';
 var tenantId = '';
 
-// instantiate application
-var app = express();
-
-// configure middleware
+// Configure middleware
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-    extended: false
-}));
-
-app.use(function (req, res, next) {
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Origin, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, Access-Control-Allow-Headers, X-Requested-With, Access-Control-Allow-Origin");
+    res.header("Access-Control-Allow-Methods", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
     bearerToken = req.get('Authorization');
     if (bearerToken) {
         tenantId = tokenManager.getTenantId(req);
@@ -74,17 +66,17 @@ var userSchema = {
     ]
 };
 
-app.get('/user/health', function (req, res) {
-    res.status(200).send('{"service": "User Manager", "isAlive": "true}');
+app.get('/user/health', function(req, res) {
+    res.status(200).send({service: 'User Manager', isAlive: true});
 });
 
 /**
  * Lookup user pool for any user - no user data returned
  */
-app.get('/user/pool/:id', function (req, res) {
+app.get('/user/pool/:id', function(req, res) {
     winston.debug('Looking up user pool data for: ' + req.params.id);
-    tokenManager.getSystemCredentials(function (credentials) {
-        lookupUserPoolData(credentials, req.params.id, null, true, function (err, user) {
+    tokenManager.getSystemCredentials(function(credentials) {
+        lookupUserPoolData(credentials, req.params.id, null, true, function(err, user) {
             if (err) {
                 res.status(400).send('{"Error" : "Error getting user"}');
             } else {
@@ -101,9 +93,9 @@ app.get('/user/pool/:id', function (req, res) {
 /**
  * Get user attributes
  */
-app.get('/user/:id', function (req, res) {
+app.get('/user/:id', function(req, res) {
     winston.debug('Getting user id: ' + req.params.id);
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
+    tokenManager.getCredentialsFromToken(req, function(credentials) {
         // get the tenant id from the request
         var tenantId = tokenManager.getTenantId(req);
 
@@ -111,7 +103,7 @@ app.get('/user/:id', function (req, res) {
             if (err) {
                 res.status(400).send('{"Error" : "Error getting user"}');
             } else {
-                cognitoUsers.getCognitoUser(credentials, user, function (err, user) {
+                cognitoUsers.getCognitoUser(credentials, user, function(err, user) {
                     if (err) {
                         res.status(400);
                         res.json('Error lookup user user: ' + req.params.id);
@@ -127,11 +119,11 @@ app.get('/user/:id', function (req, res) {
 /**
  * Get a list of users using a tenant id to scope the list
  */
-app.get('/users', function (req, res) {
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
+app.get('/users', function(req, res) {
+    tokenManager.getCredentialsFromToken(req, function(credentials) {
         var userPoolId = getUserPoolIdFromRequest(req);
         cognitoUsers.getUsersFromPool(credentials, userPoolId, configuration.aws_region)
-            .then(function (userList) {
+            .then(function(userList) {
                 res.status(200).send(userList);
             })
             .catch(function(error) {
@@ -143,8 +135,8 @@ app.get('/users', function (req, res) {
 /**
  * Create a new user
  */
-app.post('/user', function (req, res) {
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
+app.post('/user', function(req, res) {
+    tokenManager.getCredentialsFromToken(req, function(credentials) {
         var user = req.body;
         winston.debug('Creating user: ' + user.userName);
 
@@ -176,43 +168,43 @@ app.post('/user', function (req, res) {
     });
 });
 
-app.post('/user/create', function (req, res) {
-	var newUser = req.body;
-	
-	var credentials = {};
-    tokenManager.getSystemCredentials(function (systemCredentials) {
+app.post('/user/create', function(req, res) {
+    var newUser = req.body;
+    
+    var credentials = {};
+    tokenManager.getSystemCredentials(function(systemCredentials) {
         if (systemCredentials) {
             credentials = systemCredentials;
             
             cognitoUsers.createUser(credentials, newUser, function(err, cognitoUsers) {
-				if (err) {
-					res.status(400).send('{"Error": "Error creating new user"}');
-				} else {
-					res.status(200).send(cognitoUsers);
-				}
-			});
-			
+                if (err) {
+                    res.status(400).send('{"Error": "Error creating new user"}');
+                } else {
+                    res.status(200).send(cognitoUsers);
+                }
+            });
+            
         } else {
-        	res.status(400).send('{"Error": "Could not retrieve system credentials"}');
+            res.status(400).send('{"Error": "Could not retrieve system credentials"}');
         }
-	});
+    });
 });
 
 /**
  * Provision a new system admin user
  */
-app.post('/user/system', function (req, res) {
+app.post('/user/system', function(req, res) {
     var user = req.body;
     user.tier = configuration.tier.system;
     user.role = configuration.userRole.systemAdmin;
     // get the credentials for the system user
     var credentials = {};
-    tokenManager.getSystemCredentials(function (systemCredentials) {
+    tokenManager.getSystemCredentials(function(systemCredentials) {
         if (systemCredentials) {
             credentials = systemCredentials;
             // provision the tenant admin and roles
             provisionAdminUserWithRoles(user, credentials, configuration.userRole.systemAdmin, configuration.userRole.systemUser,
-                function (err, result) {
+                function(err, result) {
                     if (err) {
                         res.status(400).send("Error provisioning system admin user");
                     } else {
@@ -228,12 +220,12 @@ app.post('/user/system', function (req, res) {
 /**
  * Provision a new tenant admin user
  */
-app.post('/user/reg', function (req, res) {
+app.post('/user/reg', function(req, res) {
     var user = req.body;
 
     // get the credentials for the system user
     var credentials = {};
-    tokenManager.getSystemCredentials(function (systemCredentials) {
+    tokenManager.getSystemCredentials(function(systemCredentials) {
         credentials = systemCredentials;
 
         // provision the tenant admin and roles
@@ -251,7 +243,7 @@ app.post('/user/reg', function (req, res) {
 /**
  * Enable a user that is currently disabled
  */
-app.put('/user/enable', function (req, res) {
+app.put('/user/enable', function(req, res) {
     updateUserEnabledStatus(req, true, function(err, result) {
         if (err) {
             res.status(400).send('Error enabling user');
@@ -265,7 +257,7 @@ app.put('/user/enable', function (req, res) {
 /**
  * Disable a user that is currently enabled
  */
-app.put('/user/disable', function (req, res) {
+app.put('/user/disable', function(req, res) {
     updateUserEnabledStatus(req, false, function(err, result) {
         if (err) {
             res.status(400).send('Error disabling user');
@@ -278,7 +270,7 @@ app.put('/user/disable', function (req, res) {
 /**
  * Update a user's attributes
  */
-app.put('/user', function (req, res) {
+app.put('/user', function(req, res) {
     var user = req.body;
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         // get the user pool id from the request
@@ -298,16 +290,16 @@ app.put('/user', function (req, res) {
 /**
  * Delete a user
  */
-app.delete('/user/:id', function (req, res) {
+app.delete('/user/:id', function(req, res) {
     var userName = req.params.id;
-    tokenManager.getCredentialsFromToken(req, function (credentials) {
+    tokenManager.getCredentialsFromToken(req, function(credentials) {
         winston.debug('Deleting user: ' + userName);
 
         // get the tenant id from the request
         var tenantId = tokenManager.getTenantId(req);
 
         // see if the user exists in the system
-        lookupUserPoolData(credentials, userName, tenantId, false, function (err, userPoolData) {
+        lookupUserPoolData(credentials, userName, tenantId, false, function(err, userPoolData) {
             var userPool = userPoolData;
             // if the user pool found, proceed
             if (err) {
@@ -315,7 +307,7 @@ app.delete('/user/:id', function (req, res) {
             } else {
                 // first delete the user from Cognito
                 cognitoUsers.deleteUser(credentials, userName, userPool.UserPoolId, configuration.aws_region)
-                    .then(function (result) {
+                    .then(function(result) {
                         winston.debug('User ' + userName + ' deleted from Cognito');
 
                         // now delete the user from the user data base
@@ -331,7 +323,7 @@ app.delete('/user/:id', function (req, res) {
                         var dynamoHelper = new DynamoDBHelper(userSchema, credentials, configuration);
 
                         // delete the user from DynamoDB
-                        dynamoHelper.deleteItem(deleteUserParams, credentials, function (err, user) {
+                        dynamoHelper.deleteItem(deleteUserParams, credentials, function(err, user) {
                             if (err) {
                                 winston.error('Error deleting DynamoDB user: ' + err.message);
                                 res.status(400).send('{"Error" : "Error deleting DynamoDB user"}');
@@ -341,7 +333,7 @@ app.delete('/user/:id', function (req, res) {
                             }
                         })
                     })
-                    .catch(function (error) {
+                    .catch(function(error) {
                         winston.error('Error deleting Cognito user: ' + err.message);
                         res.status(400).send('{"Error" : "Error deleting user"}');
                     });
@@ -392,7 +384,7 @@ function provisionAdminUserWithRoles(user, credentials, adminPolicyName, userPol
         } else {
             // create the new user
             cognitoUsers.createUserPool(user.tenant_id)
-                .then(function (poolData) {
+                .then(function(poolData) {
                     createdUserPoolData = poolData;
 
                     var clientConfigParams = {
@@ -435,7 +427,7 @@ function provisionAdminUserWithRoles(user, credentials, adminPolicyName, userPol
 
                     return cognitoUsers.createPolicy(adminPolicyParams)
                 })
-                .then(function (adminPolicy) {
+                .then(function(adminPolicy) {
                     createdAdminPolicy = adminPolicy;
                     return createNewUser(credentials, createdUserPoolData.UserPool.Id, createdIdentityPool.IdentityPoolId, createdUserPoolClient.UserPoolClient.ClientId, user.tenant_id, user);
                 })
@@ -560,7 +552,7 @@ function createNewUser(credentials, userPoolId, identityPoolId, clientId, tenant
         newUser.tenant_id = tenantId;
         newUser.email = newUser.userName;
         // cerate the user in Cognito
-        cognitoUsers.createUser(credentials, newUser, function (err, cognitoUser) {
+        cognitoUsers.createUser(credentials, newUser, function(err, cognitoUser) {
             if (err)
                 reject(err);
             else {
@@ -575,7 +567,7 @@ function createNewUser(credentials, userPoolId, identityPoolId, clientId, tenant
                 // construct the helper object
                 var dynamoHelper = new DynamoDBHelper(userSchema, credentials, configuration);
 
-                dynamoHelper.putItem(newUser, credentials, function (err, createdUser) {
+                dynamoHelper.putItem(newUser, credentials, function(err, createdUser) {
                     if (err) {
                         reject(err);
                     } else {
@@ -616,7 +608,7 @@ function lookupUserPoolData(credentials, userId, tenantId, isSystemContext, call
         };
 
         // get the item from the database
-        dynamoHelper.query(searchParams, credentials, function (err, users) {
+        dynamoHelper.query(searchParams, credentials, function(err, users) {
             if (err) {
                 winston.error('Error getting user: ' + err.message);
                 callback(err);
@@ -638,7 +630,7 @@ function lookupUserPoolData(credentials, userId, tenantId, isSystemContext, call
         }
 
         // get the item from the database
-        dynamoHelper.getItem(searchParams, credentials, function (err, user) {
+        dynamoHelper.getItem(searchParams, credentials, function(err, user) {
             if (err) {
                 winston.error('Error getting user: ' + err.message);
                 callback(err);
@@ -702,6 +694,11 @@ function getUserPoolIdFromRequest(req) {
 };
 
 
-// Start the service
-app.listen(configuration.port.user);
+// Start the server
+const server = app.listen(configuration.port.user);
 console.log(configuration.name.user + ' service started on port ' + configuration.port.user);
+
+// Trap SIGTERM to speed up ECS task termination
+process.on('SIGTERM', function() {
+    server.close();
+});

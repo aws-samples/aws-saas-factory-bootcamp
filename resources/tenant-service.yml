@@ -14,7 +14,7 @@ Parameters:
   CodePipelineRoleArn:
     Description: The CodePipeline IAM role ARN
     Type: String
-  CloudWatchEventRoleArn:
+  CodePipelineEventRoleArn:
     Description: The CloudWatch Event IAM role ARN
     Type: String
   LambdaCodeBuildStartBuildArn:
@@ -37,9 +37,6 @@ Parameters:
     Type: String
   ECSSecurityGroup:
     Description: Security Group for ECS
-    Type: String
-  ECSServiceRole:
-    Description: ECS service-linked role
     Type: String
   SubnetPrivateA:
     Description: Subnet for ECS service to place tasks in
@@ -73,7 +70,7 @@ Resources:
   CodeBuildLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: '/aws/codebuild/saas-bootcamp-tenant-svc'
+      LogGroupName: /aws/codebuild/saas-bootcamp-tenant-svc
       RetentionInDays: 7
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
@@ -92,7 +89,7 @@ Resources:
         Packaging: ZIP
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:3.0
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
         Type: LINUX_CONTAINER
         PrivilegedMode: true
         EnvironmentVariables:
@@ -109,7 +106,7 @@ Resources:
               commands:
                 - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/tenant-manager ./tenant-manager
                 - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/shared-modules ./tenant-manager/shared-modules
-                - $(aws ecr get-login --no-include-email)
+                - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
             build:
               commands:
                 - cd tenant-manager
@@ -157,7 +154,7 @@ Resources:
                 Version: 1
               RunOrder: 1
               Configuration:
-                FunctionName: !Sub saas-bootcamp-update-ecs-${AWS::Region}
+                FunctionName: saas-bootcamp-update-ecs
                 UserParameters: !Sub '{"cluster":"${ECSCluster}","service":"${ECSService}","desiredCount":1}'
             - Name: DeployAction
               ActionTypeId:
@@ -172,30 +169,29 @@ Resources:
                 FileName: imagedefinitions.json
               InputArtifacts:
                 - Name: imgdef
-  CloudWatchEventRuleForCodePipeline:
-    DependsOn: CodePipeline
+  CodePipelineEventRule:
     Type: AWS::Events::Rule
     Properties:
       EventPattern:
         source:
           - aws.s3
         detail-type:
-          - 'AWS API Call via CloudTrail'
+          - Object Created
         detail:
-          eventSource:
-            - s3.amazonaws.com
-          eventName:
+          reason:
             - CopyObject
             - PutObject
             - CompleteMultipartUpload
-          requestParameters:
-            bucketName:
+          bucket:
+            name:
               - !Ref ArtifactBucket
+          object:
             key:
-              - tenant-manager
+              - prefix: tenant-manager
+      State: ENABLED
       Targets:
         - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
-          RoleArn: !Ref CloudWatchEventRoleArn
+          RoleArn: !Ref CodePipelineEventRoleArn
           Id: saas-bootcamp-tenant-svc
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -240,7 +236,7 @@ Resources:
   ECSLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: '/ecs/saas-bootcamp-tenant-svc'
+      LogGroupName: /ecs/saas-bootcamp-tenant-svc
       RetentionInDays: 7
   ECSTaskRole:
     Type: AWS::IAM::Role
@@ -275,9 +271,6 @@ Resources:
                 Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TenantBootcamp
   ECSTaskDefinition:
     Type: AWS::ECS::TaskDefinition
-    DependsOn:
-      - ECSTaskExecutionRole
-      - ECSTaskRole
     Properties:
       Family: saas-bootcamp-tenant-svc
       ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
@@ -292,6 +285,7 @@ Resources:
           Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECSRepository}:latest
           PortMappings:
             - ContainerPort: 3003
+          StopTimeout: 2
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -311,14 +305,14 @@ Resources:
     Properties:
       Name: saas-bootcamp-tenant-svc
       HealthCheckProtocol: HTTP
-      HealthCheckPath: '/tenant/health'
-      HealthCheckIntervalSeconds: 30
-      HealthCheckTimeoutSeconds: 5
+      HealthCheckPath: /tenant/health
+      HealthCheckIntervalSeconds: 5
+      HealthCheckTimeoutSeconds: 2
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
-          Value: 10
+          Value: 5
       Port: 80
       Protocol: HTTP
       TargetType: ip
@@ -337,7 +331,6 @@ Resources:
   ECSService:
     Type: AWS::ECS::Service
     DependsOn:
-      - ECSTaskDefinition
       - ALBRule
     Properties:
       ServiceName: saas-bootcamp-tenant-svc
@@ -361,7 +354,7 @@ Resources:
     DependsOn:
       - CodeBuildProject
       - CodePipeline
-      - CloudWatchEventRuleForCodePipeline
+      - CodePipelineEventRule
     Properties:
       ServiceToken: !Ref LambdaCodeBuildStartBuildArn
       Project: saas-bootcamp-tenant-svc

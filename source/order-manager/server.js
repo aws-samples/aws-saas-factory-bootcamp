@@ -25,14 +25,14 @@ var tenantId = '';
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(function(req, res, next) {
-	res.header("Access-Control-Allow-Origin", "*");
-	res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-	res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-	bearerToken = req.get('Authorization');
-	if (bearerToken) {
-		tenantId = tokenManager.getTenantId(req);
-	}
-	next();
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
+    bearerToken = req.get('Authorization');
+    if (bearerToken) {
+        tenantId = tokenManager.getTenantId(req);
+    }
+    next();
 });
 
 // Create a schema
@@ -60,11 +60,11 @@ app.get('/order/health', function(req, res) {
 app.get('/order/:id', function(req, res) {
     winston.debug('Fetching order: ' + req.params.id);
     tokenManager.getCredentialsFromToken(req, function(credentials) {
-    	// init params structure with request params
-		var params = {
-			tenant_id: tenantId,
-			order_id: req.params.id
-		}
+        // init params structure with request params
+        var params = {
+            tenant_id: tenantId,
+            order_id: req.params.id
+        }
         // construct the helper object
         var dynamoHelper = new DynamoDBHelper(orderSchema, credentials, configuration);
         dynamoHelper.getItem(params, credentials, function(err, order) {
@@ -106,7 +106,7 @@ app.get('/orders', function(req, res) {
 app.post('/order', function(req, res) {
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         var order = req.body;
-		var guid = uuidv4();
+        var guid = uuidv4();
         order.order_id = guid;
         order.tenant_id = tenantId;
 
@@ -125,7 +125,7 @@ app.post('/order', function(req, res) {
 });
 
 app.put('/order', function(req, res) {
-	winston.debug('Updating order: ' + req.body.order_id);
+    winston.debug('Updating order: ' + req.body.order_id);
     tokenManager.getCredentialsFromToken(req, function(credentials) {
         // init the params from the request data
         var keyParams = {
@@ -181,7 +181,7 @@ app.delete('/order/:id', function(req, res) {
         };
         // construct the helper object
         var dynamoHelper = new DynamoDBHelper(orderSchema, credentials, configuration);
-        dynamoHelper.deleteItem(deleteOrderParams, credentials, function (err, order) {
+        dynamoHelper.deleteItem(deleteOrderParams, credentials, function(err, order) {
             if (err) {
                 winston.error('Error deleting order: ' + err.message);
                 res.status(400).send('{"Error" : "Error deleting order"}');
@@ -193,6 +193,11 @@ app.delete('/order/:id', function(req, res) {
     });
 });
 
-// Start the servers
-app.listen(configuration.port.order);
+// Start the server
+const server = app.listen(configuration.port.order);
 console.log(configuration.name.order + ' service started on port ' + configuration.port.order);
+
+// Trap SIGTERM to speed up ECS task termination
+process.on('SIGTERM', function() {
+    server.close();
+});

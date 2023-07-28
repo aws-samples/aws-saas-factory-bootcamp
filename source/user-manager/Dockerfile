@@ -1,4 +1,4 @@
-FROM public.ecr.aws/bitnami/node:10-prod
+FROM public.ecr.aws/docker/library/node:16-slim
 
 WORKDIR /usr/src/app
 RUN mkdir user-manager shared-modules
