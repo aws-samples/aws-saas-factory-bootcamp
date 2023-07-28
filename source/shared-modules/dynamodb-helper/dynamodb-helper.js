@@ -29,7 +29,7 @@ function DynamoDBHelper(tableDefinition, credentials, configSettings, callback) 
  * @param callback Callback function for results
  */
 DynamoDBHelper.prototype.query = function(searchParameters, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         if (!error){
             docClient.query(searchParameters, function(err, data) {
                 if (err) {
@@ -54,7 +54,7 @@ DynamoDBHelper.prototype.query = function(searchParameters, credentials, callbac
  * @param callback Callback with results
  */
 DynamoDBHelper.prototype.putItem = function(item, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         var itemParams = {
             TableName: this.tableDefinition.TableName,
             Item: item
@@ -76,7 +76,7 @@ DynamoDBHelper.prototype.putItem = function(item, credentials, callback) {
  * @param callback Callback with results
  */
 DynamoDBHelper.prototype.updateItem = function(productUpdateParams, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         docClient.update(productUpdateParams, function(err, data) {
             if (err) {
                 callback(err);
@@ -95,7 +95,7 @@ DynamoDBHelper.prototype.updateItem = function(productUpdateParams, credentials,
  * @param callback Callback with results
  */
 DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         var fetchParams = {
             TableName: this.tableDefinition.TableName,
             Key: keyParams
@@ -118,7 +118,7 @@ DynamoDBHelper.prototype.getItem = function(keyParams, credentials, callback) {
  * @param callback Callback with results
  */
 DynamoDBHelper.prototype.deleteItem = function(deleteItemParams, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         docClient.delete(deleteItemParams, function(err, data) {
             if (err) {
                 callback(err);
@@ -136,7 +136,7 @@ DynamoDBHelper.prototype.deleteItem = function(deleteItemParams, credentials, ca
  * @param callback Callback with results
  */
 DynamoDBHelper.prototype.scan = function(scanParams, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         docClient.scan(scanParams, function(err, data) {
             if (err) {
                 callback(err);
@@ -154,7 +154,7 @@ DynamoDBHelper.prototype.scan = function(scanParams, credentials, callback) {
  * @param callback Callback with results
  */
 DynamoDBHelper.prototype.batchGetItem = function(batchGetParams, credentials, callback) {
-    this.getDynamoDBDocumentClient(credentials, function (error, docClient) {
+    this.getDynamoDBDocumentClient(credentials, function(error, docClient) {
         docClient.batchGet(batchGetParams, function(err, data) {
             if (err) {
                 callback(err);
@@ -175,18 +175,18 @@ DynamoDBHelper.prototype.createTable = function(dynamodb, callback) {
    var newTable = {
        TableName: this.tableDefinition.TableName,
    };
-   dynamodb.describeTable(newTable, function (error, data) {
+   dynamodb.describeTable(newTable, function(error, data) {
        if (!error) {
            callback(null);
        } else {
            winston.debug("Table " + newTable.TableName + " does not exist. DescribeTable error: " + error);
-           dynamodb.createTable(this.tableDefinition, function (err, data) {
+           dynamodb.createTable(this.tableDefinition, function(err, data) {
                if (err) {
                    winston.error("Unable to create table: " + this.tableDefinition.TableName);
                    callback(err);
                } else {
                    var tableName = {TableName: this.tableDefinition.TableName};
-                   dynamodb.waitFor('tableExists', tableName, function (err, data) {
+                   dynamodb.waitFor('tableExists', tableName, function(err, data) {
                        if (err) {
                            callback(err);
                        } else {
@@ -207,13 +207,13 @@ DynamoDBHelper.prototype.createTable = function(dynamodb, callback) {
  * @returns {Promise} Promise with results
  */
 DynamoDBHelper.prototype.tableExists = function(tableName, credentials) {
-    var promise = new Promise(function (reject, resolve) {
+    var promise = new Promise(function(reject, resolve) {
         getDynamoDB(credentials)
-            .then(function (dynamodb) {
+            .then(function(dynamodb) {
                 var newTable = {
                     TableName: tableName,
                 };
-                dynamodb.describeTable(newTable, function (error, data) {
+                dynamodb.describeTable(newTable, function(error, data) {
                     if (error) {
                         winston.error("Error describing table: ", error)
                     } else {
@@ -221,7 +221,7 @@ DynamoDBHelper.prototype.tableExists = function(tableName, credentials) {
                     }
                 });
             })
-            .catch(function (error) {
+            .catch(function(error) {
                 winston.error("Error describing table: ", error);
                 reject(error);
             });
@@ -245,7 +245,7 @@ DynamoDBHelper.prototype.getDynamoDB = function(credentials, callback) {
 
         var ddb = new AWS.DynamoDB(creds);
         if (!this.tableExists) {
-            this.createTable(ddb, function (error) {
+            this.createTable(ddb, function(error) {
                 if (error) {
                     callback(error);
                 } else {
@@ -279,7 +279,7 @@ DynamoDBHelper.prototype.getDynamoDBDocumentClient = function(credentials, callb
         var ddb = new AWS.DynamoDB(creds)
 
         if (!this.tableExists) {
-            this.createTable(ddb, function (error) {
+            this.createTable(ddb, function(error) {
                 if (error) {
                     callback(error);
                 } else {

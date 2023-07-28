@@ -26,8 +26,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(function(req, res, next) {
 	res.header("Access-Control-Allow-Origin", "*");
-	res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-	res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+	res.header("Access-Control-Allow-Methods", "*");
+	res.header("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
 	bearerToken = req.get('Authorization');
 	if (bearerToken) {
 		tenantId = tokenManager.getTenantId(req);
@@ -195,6 +195,11 @@ app.delete('/product/:id', function(req, res) {
 	});
 });
 
-// Start the servers
-app.listen(configuration.port.product);
+// Start the server
+const server = app.listen(configuration.port.product);
 console.log(configuration.name.product + ' service started on port ' + configuration.port.product);
+
+// Trap SIGTERM to speed up ECS task termination
+process.on('SIGTERM', function() {
+    server.close();
+});

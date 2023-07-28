@@ -54,9 +54,6 @@ module.exports.configure = function(environment) {
                     // },
                     table: table,
                     userRole: prod.userRole,
-                    // role: {
-                    //     sns: process.env.SNS_ROLE_ARN
-                    // },
                     tier: prod.tier,
                     port: port,
                     loglevel: prod.log.level,
@@ -87,7 +84,6 @@ module.exports.configure = function(environment) {
                 name: name,
                 table: table,
                 userRole: dev.userRole,
-                // role: dev.role,
                 tier: dev.tier,
                 port: port,
                 loglevel: dev.log.level,

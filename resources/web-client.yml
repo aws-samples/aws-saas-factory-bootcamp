@@ -87,7 +87,7 @@ Resources:
   CodeBuildLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: '/aws/codebuild/saas-bootcamp-web-client'
+      LogGroupName: /aws/codebuild/saas-bootcamp-web-client
       RetentionInDays: 7
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
@@ -102,7 +102,7 @@ Resources:
         Type: NO_ARTIFACTS
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:3.0
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: BOOTCAMP_BUCKET
@@ -118,6 +118,7 @@ Resources:
           phases:
             pre_build:
               commands:
+                - n 16
                 - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/web-client ./web-client
                 - sed -i -e "s#DOMAIN_URL#$SERVICE_URL#g" ./web-client/app/scripts/constants.js
             build:
@@ -138,4 +139,8 @@ Resources:
     Properties:
       ServiceToken: !Ref LambdaCodeBuildStartBuildArn
       Project: saas-bootcamp-web-client
+Outputs:
+  WebAppUrl:
+    Description: Web application URL
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
 ...

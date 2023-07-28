@@ -47,7 +47,7 @@ module.exports.extractTokenData = function(req) {
     if (bearerToken) {
         bearerToken = bearerToken.substring(bearerToken.indexOf(' ') + 1);
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken){
+        if (decodedIdToken) {
             tokenData.TenantID = decodedIdToken['custom:tenant_id'];
             //Add Other Mappings Below
             //others such as sub, and non pii information
@@ -63,7 +63,7 @@ module.exports.extractTokenData = function(req) {
 module.exports.generateSessionID = function() {
     const uuidV4 = require('uuid/v4');
     var sessionID = uuidV4();
-    if(sessionID){
+    if (sessionID) {
         return sessionID;
     }
 }
@@ -79,10 +79,11 @@ module.exports.getUserRole = function(req, callback) {
     if (bearerToken) {
         bearerToken = bearerToken.substring(bearerToken.indexOf(' ') + 1);
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             callback(decodedIdToken['custom:role']);
-        else
+        } else {
             callback('unkown');
+        }
     }
 }
 
@@ -96,8 +97,9 @@ module.exports.getUserFullName = function(idToken) {
     var userFullName = '';
     if (idToken) {
         var decodedIdToken = jwtDecode(idToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             userFullName = {'firstName': decodedIdToken.given_name, 'lastName': decodedIdToken.family_name};
+        }
     }
     return userFullName;
 }
@@ -110,8 +112,9 @@ module.exports.getUserFullName = function(idToken) {
 module.exports.getRequestAuthToken = function(req) {
     authToken = '';
     var authHeader = req.get('Authorization');
-    if (authHeader)
+    if (authHeader) {
         var authToken = authHeader.substring(authHeader.indexOf(' ') + 1);
+    }
     return authToken;
 }
 
@@ -124,8 +127,9 @@ module.exports.decodeToken = function(bearerToken) {
     var resultToken = {};
     if (bearerToken) {
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             resultToken = decodedIdToken;
+        }
     }
     return resultToken;
 }
@@ -139,8 +143,9 @@ module.exports.checkRole = function(bearerToken) {
     var resultToken = {};
     if (bearerToken) {
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             var resultToken = decodedIdToken['custom:role'];
+        }
     }
     return resultToken;
 
@@ -155,8 +160,9 @@ module.exports.decodeOpenID = function(bearerToken) {
     var resultToken = {};
     if (bearerToken) {
         var decodedIdToken = jwtDecode(bearerToken);
-        if (decodedIdToken)
+        if (decodedIdToken) {
             resultToken = decodedIdToken;
+        }
     }
     return resultToken;
 }
@@ -184,14 +190,12 @@ module.exports.getCredentialsFromToken = function(req, updateCredentials) {
                 if (error) {
                     winston.error('Error fetching credentials for user')
                     updateCredentials(null);
-                }
-                else {
+                } else {
                     tokenCache[tokenValue] = results;
                     updateCredentials(results);
                 }
             });
-        }
-        else if (tokenValue in tokenCache) {
+        } else if (tokenValue in tokenCache) {
             winston.debug('Getting credentials from cache');
             updateCredentials(tokenCache[tokenValue]);
         }
@@ -213,7 +217,7 @@ module.exports.getUserPool = function(userName, callback) {
         headers: {
             "content-type": "application/json",
         }
-    }, function (error, response, body) {
+    }, function(error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(null, body);
         } else {
@@ -244,7 +248,7 @@ function getUserPoolWithParams(userName, callback) {
         headers: {
             "content-type": "application/json",
         }
-    }, function (error, response, body) {
+    }, function(error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(null, body);
         } else {
@@ -269,7 +273,7 @@ module.exports.getInfra = function(input, callback) {
         headers: {
             "content-type": "application/json",
         }
-    }, function (error, response, body) {
+    }, function(error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(null, body);
         } else {
@@ -308,7 +312,7 @@ module.exports.fireRequest = function(event, callback) {
         headers: {
             "content-type": "application/json",
         }
-    }, function (error, response, body) {
+    }, function(error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(body);
         } else {
@@ -332,7 +336,7 @@ function authenticateUserInPool(userPool, idToken, callback) {
         provider: provider,
         IdentityPoolId: userPool.IdentityPoolId
     }
-    var getIdentity = getId(params, function (ret, data) {
+    var getIdentity = getId(params, function(ret, data) {
         if (ret) {
             var params = {
                 token: idToken,
@@ -340,7 +344,7 @@ function authenticateUserInPool(userPool, idToken, callback) {
                 provider: provider
             }
             var returnedIdentity = ret;
-            var getCredentials = getCredentialsForIdentity(params, function (ret, data) {
+            var getCredentials = getCredentialsForIdentity(params, function(ret, data) {
                 if (ret) {
                     var returnedCredentials = ret;
 
@@ -363,7 +367,7 @@ function authenticateUserInPool(userPool, idToken, callback) {
  * @param callback The callback for completion
  */
 function getCredentialsForIdentity(event, callback) {
-    var cognitoidentity = new AWS.CognitoIdentity({apiVersion: '2014-06-30',region: configuration.aws_region});
+    var cognitoidentity = new AWS.CognitoIdentity({apiVersion: '2014-06-30', region: configuration.aws_region});
     var params = {
         IdentityId: event.IdentityId, /* required */
         //CustomRoleArn: 'STRING_VALUE',
@@ -372,7 +376,7 @@ function getCredentialsForIdentity(event, callback) {
             /* '<IdentityProviderName>': ... */
         }
     };
-    cognitoidentity.getCredentialsForIdentity(params, function (err, data) {
+    cognitoidentity.getCredentialsForIdentity(params, function(err, data) {
         if (err) {
             winston.debug(err, err.stack);
             callback(err);
@@ -398,7 +402,7 @@ function getId(event, callback) {
             /* '<IdentityProviderName>': ... */
         }
     };
-    cognitoidentity.getId(params, function (err, data) {
+    cognitoidentity.getId(params, function(err, data) {
         if (err) {
             winston.debug(err, err.stack);
             callback(err);
@@ -432,7 +436,7 @@ function fireRequest(event, callback) {
         headers: {
             "content-type": "application/json",
         }
-    }, function (error, response, body) {
+    }, function(error, response, body) {
         if (!error && response.statusCode === 200) {
             callback(body);
         } else {
@@ -442,27 +446,27 @@ function fireRequest(event, callback) {
 };
 
 module.exports.getSystemCredentials = function(callback) {
-        var sysCreds = '';
-        var sysConfig = new AWS.Config();
-        sysConfig.getCredentials(function(err) {
-            if (err) {
-                callback(err.stack);
-                winston.debug('Unable to Obtain Credentials');
-            } else{
-                var tempCreds = sysConfig.credentials;
-                if (tempCreds.metadata == undefined || tempCreds.metadata == null){
-                    var credentials = {"claim": tempCreds};
-                    callback(credentials);
-                } else {
-                    sysCreds = {
-                        SessionToken: tempCreds.metadata.Token,
-                        AccessKeyId: tempCreds.metadata.AccessKeyId,
-                        SecretKey: tempCreds.metadata.SecretAccessKey,
-                        Expiration: tempCreds.metadata.Expiration,
-                    }
-                    var credentials = {"claim": sysCreds};
-                    callback(credentials);
+    var sysCreds = '';
+    var sysConfig = new AWS.Config();
+    sysConfig.getCredentials(function(err) {
+        if (err) {
+            callback(err.stack);
+            winston.debug('Unable to Obtain Credentials');
+        } else{
+            var tempCreds = sysConfig.credentials;
+            if (tempCreds.metadata == undefined || tempCreds.metadata == null) {
+                var credentials = {"claim": tempCreds};
+                callback(credentials);
+            } else {
+                sysCreds = {
+                    SessionToken: tempCreds.metadata.Token,
+                    AccessKeyId: tempCreds.metadata.AccessKeyId,
+                    SecretKey: tempCreds.metadata.SecretAccessKey,
+                    Expiration: tempCreds.metadata.Expiration,
                 }
+                var credentials = {"claim": sysCreds};
+                callback(credentials);
             }
-        })
+        }
+    })
 }

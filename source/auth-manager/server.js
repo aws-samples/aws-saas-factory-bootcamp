@@ -1,6 +1,5 @@
 'use strict';
 
-// Declare library dependencies
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -30,10 +29,10 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 
-app.use(function (req, res, next) {
+app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+    res.header("Access-Control-Allow-Methods", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
     next();
 });
 
@@ -42,9 +41,9 @@ app.get('/auth/health', function(req, res) {
 });
 
 // process login request
-app.post('/auth', function (req, res) {
+app.post('/auth', function(req, res) {
     var user = req.body;
-    tokenManager.getUserPool(user.userName, function (error, userPoolLookup) {
+    tokenManager.getUserPool(user.userName, function(error, userPoolLookup) {
         if (!error) {
             // get the pool data from the response
             var poolData = {
@@ -70,7 +69,7 @@ app.post('/auth', function (req, res) {
             var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
             cognitoUser.authenticateUser(authenticationDetails, {
-                onSuccess: function (result) {
+                onSuccess: function(result) {
                     // get the ID token
                     var idToken = result.getIdToken().getJwtToken();
                     var AccessToken = result.getAccessToken().getJwtToken();
@@ -127,6 +126,11 @@ app.post('/auth', function (req, res) {
     });
 });
 
-// Start the servers
-app.listen(configuration.port.auth);
+// Start the server
+const server = app.listen(configuration.port.auth);
 console.log(configuration.name.auth + ' service started on port ' + configuration.port.auth);
+
+// Trap SIGTERM to speed up ECS task termination
+process.on('SIGTERM', function() {
+    server.close();
+});

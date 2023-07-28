@@ -1,22 +1,21 @@
 'use strict';
 
-// Declare dependencies
 const AWS = require('aws-sdk');
-const winston = require('winston');
 
 // Configure Environment
 const configModule = require('../shared-modules/config-helper/config.js');
 var configuration = configModule.configure(process.env.NODE_ENV);
 
-// Init the winston log level
-winston.level = configuration.level;
+// Configure Logging
+const winston = require('winston');
+winston.add(new winston.transports.Console({level: configuration.loglevel}));
 
 /**
  * Create a Cognito user with custom attributes
  * @param user User with attribute values
  * @param callback Callback with created user
  */
-module.exports.createUser = function (credentials, user, callback) {
+module.exports.createUser = function(credentials, user, callback) {
     // init service provider
     var cognitoidentityserviceprovider = initCognitoServiceProvider(credentials);
 
@@ -60,7 +59,7 @@ module.exports.createUser = function (credentials, user, callback) {
     };
 
     // create the user
-    cognitoidentityserviceprovider.adminCreateUser(params, function (err, cognitoUser) {
+    cognitoidentityserviceprovider.adminCreateUser(params, function(err, cognitoUser) {
         if (err) {
             winston.error(err, err.stack);
             callback(err);
@@ -76,7 +75,7 @@ module.exports.createUser = function (credentials, user, callback) {
  * @param user The user being looked up
  * @param callback Callback with user attributes populated
  */
-module.exports.getCognitoUser = function (credentials, user, callback) {
+module.exports.getCognitoUser = function(credentials, user, callback) {
     // init service provider
     var cognitoidentityserviceprovider = initCognitoServiceProvider(credentials);
 
@@ -87,7 +86,7 @@ module.exports.getCognitoUser = function (credentials, user, callback) {
     };
 
     // get user data from Cognito
-    cognitoidentityserviceprovider.adminGetUser(params, function (err, cognitoUser) {
+    cognitoidentityserviceprovider.adminGetUser(params, function(err, cognitoUser) {
         if (err) {
             winston.debug("Error getting user from Cognito: ", err);
             callback(err);
@@ -110,7 +109,7 @@ function getUserFromCognitoUser(cognitoUser, attributeList) {
         user.enabled = cognitoUser.Enabled;
         user.confirmedStatus = cognitoUser.UserStatus;
         user.dateCreated = cognitoUser.UserCreateDate;
-        attributeList.forEach(function (attribute) {
+        attributeList.forEach(function(attribute) {
             if (attribute.Name === "given_name")
                 user.firstName = attribute.Value;
             else if (attribute.Name == "family_name")
@@ -119,6 +118,7 @@ function getUserFromCognitoUser(cognitoUser, attributeList) {
                 user.role = attribute.Value;
             else if (attribute.Name == "custom:tier")
                 user.tier = attribute.Value;
+            // TODO
             else if (attribute.Name == "custom:email")
                 user.email = attribute.Value;
         });
@@ -150,7 +150,7 @@ function initCognitoServiceProvider(credentials) {
  * @param tenantId The ID of the new tenant
  * @param callback Callback with created tenant results
  */
-module.exports.createUserPool = function (tenantId) {
+module.exports.createUserPool = function(tenantId) {
     var promise = new Promise(function(resolve, reject) {
         // init the service provider and email message content
         var cognitoidentityserviceprovider = new AWS.CognitoIdentityServiceProvider({
@@ -158,7 +158,6 @@ module.exports.createUserPool = function (tenantId) {
             region: configuration.aws_region
         });
 
-        // var SnsArn = configuration.role.sns;
         //Invite Message:
         var inviteMessage = '<img src="https://d0.awsstatic.com/partner-network/logo_apn.png" alt="AWSPartner"> <br><br>Welcome to the SaaS on AWS Bootcamp. <br><br>Login to the Multi-Tenant Identity Reference Architecture. <br><br>Username: {username} <br><br>Password: {####}';
         var emailSubject = 'AWS-SaaS-Bootcamp';
@@ -170,7 +169,6 @@ module.exports.createUserPool = function (tenantId) {
                 InviteMessageTemplate: {
                     EmailMessage: inviteMessage,
                     EmailSubject: emailSubject
-                    // SMSMessage: 'STRING_VALUE'
                 },
                 UnusedAccountValidityDays: 7
             },
@@ -188,7 +186,7 @@ module.exports.createUserPool = function (tenantId) {
                     MinimumLength: 8,
                     RequireLowercase: true,
                     RequireNumbers: true,
-                    RequireSymbols: false,
+                    RequireSymbols: true,
                     RequireUppercase: true
                 }
             },
@@ -274,10 +272,6 @@ module.exports.createUserPool = function (tenantId) {
                     }
                 }
             ],
-            // SmsConfiguration: {
-            //     SnsCallerArn: SnsArn, /* required */
-            //     ExternalId: 'AWSSaaSBootcamp'
-            // },
             UserPoolTags: {
                 someKey: tenantId
                 /* anotherKey: ... */
@@ -285,7 +279,7 @@ module.exports.createUserPool = function (tenantId) {
         };
 
         // create the pool
-        cognitoidentityserviceprovider.createUserPool(params, function (err, data) {
+        cognitoidentityserviceprovider.createUserPool(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -302,7 +296,7 @@ module.exports.createUserPool = function (tenantId) {
  * @param poolConfig The configuration parameters for a newly created pool
  * @param callback Callback with client results
  */
-module.exports.createUserPoolClient = function (poolConfig) {
+module.exports.createUserPoolClient = function(poolConfig) {
     var promise = new Promise(function(resolve, reject) {
         var cognitoIdenityServiceProvider = new AWS.CognitoIdentityServiceProvider({
             apiVersion: '2016-04-18',
@@ -339,7 +333,7 @@ module.exports.createUserPoolClient = function (poolConfig) {
         };
 
         // create the Cognito client
-        cognitoIdenityServiceProvider.createUserPoolClient(params, function (err, data) {
+        cognitoIdenityServiceProvider.createUserPoolClient(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -356,7 +350,7 @@ module.exports.createUserPoolClient = function (poolConfig) {
  * @param clientConfigParams The client config params
  * @returns {Promise} A promise with the identity pools results
  */
-module.exports.createIdentityPool = function (clientConfigParams) {
+module.exports.createIdentityPool = function(clientConfigParams) {
     var promise = new Promise(function(resolve, reject) {
 
         // init identity params
@@ -379,7 +373,7 @@ module.exports.createIdentityPool = function (clientConfigParams) {
         };
 
         // create identity pool
-        cognitoIdentity.createIdentityPool(params, function (err, data) {
+        cognitoIdentity.createIdentityPool(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -788,7 +782,7 @@ function getSystemUserPolicy(policyParams) {
  * @param policyParams The policy configuration
  * @param {Promise} Results of the created policy
  */
-module.exports.createPolicy = function (policyParams) {
+module.exports.createPolicy = function(policyParams) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
 
@@ -799,7 +793,7 @@ module.exports.createPolicy = function (policyParams) {
             Description: policyParams.policyName
         };
 
-        iam.createPolicy(params, function (err, createdPolicy) {
+        iam.createPolicy(params, function(err, createdPolicy) {
             if (err) {
                 reject(err);
             } else {
@@ -816,7 +810,7 @@ module.exports.createPolicy = function (policyParams) {
  * @param roleParams The role configuration
  * @param {Promise} Results of the created role
  */
-module.exports.createRole = function (roleParams) {
+module.exports.createRole = function(roleParams) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
 
@@ -826,7 +820,7 @@ module.exports.createRole = function (roleParams) {
             RoleName: roleParams.roleName
         };
 
-        iam.createRole(params, function (err, data) {
+        iam.createRole(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -842,7 +836,7 @@ module.exports.createRole = function (roleParams) {
  * @param policyRoleParams The policy and role to be configured
  * @param {Promise} The results of the policy assignment to the role
  */
-module.exports.addPolicyToRole = function (policyRoleParams) {
+module.exports.addPolicyToRole = function(policyRoleParams) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
         var policyDoc = JSON.stringify(policyRoleParams.policyDocument);
@@ -851,7 +845,7 @@ module.exports.addPolicyToRole = function (policyRoleParams) {
             RoleName: policyRoleParams.RoleName /* required */
         };
 
-        iam.attachRolePolicy(params, function (err, data) {
+        iam.attachRolePolicy(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -867,7 +861,7 @@ module.exports.addPolicyToRole = function (policyRoleParams) {
  * @param identityPoolRoleParams The configuration of the pool and roles
  * @returns {Promise} Promise with status of assignment
  */
-module.exports.addRoleToIdentity = function (identityPoolRoleParams) {
+module.exports.addRoleToIdentity = function(identityPoolRoleParams) {
     var promise = new Promise(function(resolve, reject) {
         var cognitoidentity = new AWS.CognitoIdentity({apiVersion: '2014-06-30', region: configuration.aws_region});
         var policyDoc = JSON.stringify(identityPoolRoleParams.policyDocument);
@@ -904,7 +898,7 @@ module.exports.addRoleToIdentity = function (identityPoolRoleParams) {
         };
 
         params = JSON.parse(JSON.stringify(params).split('Provider').join(providerName));
-        cognitoidentity.setIdentityPoolRoles(params, function (err, data) {
+        cognitoidentity.setIdentityPoolRoles(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -942,7 +936,7 @@ module.exports.updateUserEnabledStatus = function(credentials, userPoolId, userN
 
         // enable/disable the Cognito user
         if (enable) {
-            cognitoIdentityServiceProvider.adminEnableUser(params, function (err, data) {
+            cognitoIdentityServiceProvider.adminEnableUser(params, function(err, data) {
                 if (err) {
                     reject(err);
                 } else {
@@ -950,7 +944,7 @@ module.exports.updateUserEnabledStatus = function(credentials, userPoolId, userN
                 }
             });
         } else {
-            cognitoIdentityServiceProvider.adminDisableUser(params, function (err, data) {
+            cognitoIdentityServiceProvider.adminDisableUser(params, function(err, data) {
                 if (err) {
                     reject(err);
                 } else {
@@ -970,7 +964,7 @@ module.exports.updateUserEnabledStatus = function(credentials, userPoolId, userN
  * @param region The region for the search
  * @returns {Promise} A collection of found users
  */
-module.exports.getUsersFromPool = function (credentials, userPoolId, region) {
+module.exports.getUsersFromPool = function(credentials, userPoolId, region) {
     var promise = new Promise(function(resolve, reject) {
 
         // init the Cognito service provider
@@ -999,12 +993,12 @@ module.exports.getUsersFromPool = function (credentials, userPoolId, region) {
         };
 
         // request the list of users from Cognito
-        cognitoIdentityServiceProvider.listUsers(searchParams, function (err, data) {
+        cognitoIdentityServiceProvider.listUsers(searchParams, function(err, data) {
             if (err) {
                 reject(err);
             } else {
                 var userList = [];
-                data.Users.forEach(function (cognitoUser) {
+                data.Users.forEach(function(cognitoUser) {
                     var user = getUserFromCognitoUser(cognitoUser, cognitoUser.Attributes);
                     userList.push(user);
                 });
@@ -1054,7 +1048,7 @@ module.exports.updateUser = function(credentials, user, userPoolId, region) {
         };
 
         // send the update to Cognito
-        cognitoIdentityServiceProvider.adminUpdateUserAttributes(params, function (err, data) {
+        cognitoIdentityServiceProvider.adminUpdateUserAttributes(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -1074,7 +1068,7 @@ module.exports.updateUser = function(credentials, user, userPoolId, region) {
  * @param region The region for the credentials
  * @returns {Promise} Results of the deletion
  */
-module.exports.deleteUser = function (credentials, userId, userPoolId, region) {
+module.exports.deleteUser = function(credentials, userId, userPoolId, region) {
     var promise = new Promise(function(resolve, reject) {
         // init the identity provider
         var cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
@@ -1092,7 +1086,7 @@ module.exports.deleteUser = function (credentials, userId, userPoolId, region) {
         };
 
         // call Cognito to delete the user
-        cognitoIdentityServiceProvider.adminDeleteUser(params, function (err, data) {
+        cognitoIdentityServiceProvider.adminDeleteUser(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -1110,7 +1104,7 @@ module.exports.deleteUser = function (credentials, userId, userPoolId, region) {
  * @param region The region for the credentials
  * @returns {Promise} Results of the deletion
  */
-module.exports.deleteUserPool = function (userPoolId, region) {
+module.exports.deleteUserPool = function(userPoolId, region) {
     var promise = new Promise(function(resolve, reject) {
         var cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
             apiVersion: '2016-04-18',
@@ -1120,7 +1114,7 @@ module.exports.deleteUserPool = function (userPoolId, region) {
             UserPoolId: userPoolId /* required */
         };
         // call Cognito to delete the user
-        cognitoIdentityServiceProvider.deleteUserPool(params, function (err, data) {
+        cognitoIdentityServiceProvider.deleteUserPool(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -1137,14 +1131,14 @@ module.exports.deleteUserPool = function (userPoolId, region) {
  * @param IdentityPoolId The client config params
  * @returns {Promise} A promise with the identity pools results
  */
-module.exports.deleteIdentityPool = function (IdentityPoolId) {
+module.exports.deleteIdentityPool = function(IdentityPoolId) {
     var promise = new Promise(function(resolve, reject) {
         var cognitoIdentity = new AWS.CognitoIdentity({apiVersion: '2014-06-30', region: configuration.aws_region});
         var params = {
             IdentityPoolId: IdentityPoolId /* required */
         };
         // delete identity pool
-        cognitoIdentity.deleteIdentityPool(params, function (err, data) {
+        cognitoIdentity.deleteIdentityPool(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -1161,13 +1155,13 @@ module.exports.deleteIdentityPool = function (IdentityPoolId) {
  * @param role The role name
  * @param {Promise} Results of the created role
  */
-module.exports.deleteRole = function (role) {
+module.exports.deleteRole = function(role) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
         var params = {
             RoleName: role /* required */
         };
-        iam.deleteRole(params, function (err, data) {
+        iam.deleteRole(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {
@@ -1183,13 +1177,13 @@ module.exports.deleteRole = function (role) {
  * @param policy The policy arn
  * @param {Promise} Results of the created policy
  */
-module.exports.deletePolicy = function (policy) {
+module.exports.deletePolicy = function(policy) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
         var params = {
             PolicyArn: policy /* required */
         };
-        iam.deletePolicy(params, function (err, deletedPolicy) {
+        iam.deletePolicy(params, function(err, deletedPolicy) {
             if (err) {
                 reject(err);
             } else {
@@ -1207,14 +1201,14 @@ module.exports.deletePolicy = function (policy) {
  * @param role The role name
  * @param {Promise} Results of the created policy
  */
-module.exports.detachRolePolicy = function (policy, role) {
+module.exports.detachRolePolicy = function(policy, role) {
     var promise = new Promise(function(resolve, reject) {
         var iam = new AWS.IAM({apiVersion: '2010-05-08'});
         var params = {
             PolicyArn: policy, /* required */
             RoleName: role /* required */
         };
-        iam.detachRolePolicy(params, function (err, detachedPolicy) {
+        iam.detachRolePolicy(params, function(err, detachedPolicy) {
             if (err) {
                 reject(err);
             } else {
@@ -1231,13 +1225,13 @@ module.exports.detachRolePolicy = function (policy, role) {
  * @param table The DynamoDB Table Name
  * @param {Promise} Results of the created policy
  */
-module.exports.deleteTable = function (table) {
+module.exports.deleteTable = function(table) {
     var promise = new Promise(function(resolve, reject) {
         var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10', region: configuration.aws_region});
         var params = {
             TableName: table /* required */
         };
-        dynamodb.deleteTable(params, function (err, data) {
+        dynamodb.deleteTable(params, function(err, data) {
             if (err) {
                 reject(err);
             } else {

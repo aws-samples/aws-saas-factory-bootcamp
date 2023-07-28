@@ -2,18 +2,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: AWS SaaS Factory Bootcamp Master Stack
 Parameters:
-  EETeamRoleArn:
-    Description: Event Engine TeamRole ARN
+  AssetsPath:
+    Description: S3 bucket path containing workshop resources.
+    Type: String
+  ParticipantAssumedRoleArn:
+    Description: Workshop Studio Participant IAM Role. Leave blank when not using Workshop Studio.
     Type: String
     Default: ''
-  SourceBucket:
-    Description: S3 bucket URL to copy objects from
-    Type: String
-    Default: aws-bootcamp-us-east-1
-  EventEngineRoleName:
-    Description: IAM role name of the Event Engine player role
-    Type: String
-    Default: TeamRole
 Resources:
   BootcampBucket:
     Type: AWS::S3::Bucket
@@ -61,7 +56,7 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: !Sub saas-bootcamp-s3-copy-policy-${AWS::Region}
+        - PolicyName: saas-bootcamp-s3-copy-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -79,7 +74,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SourceBucket}/*
+                  - !Sub arn:aws:s3:::${AssetsPath}*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
@@ -103,16 +98,16 @@ Resources:
   CopyS3ObjectsLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/saas-bootcamp-s3-copy-${AWS::Region}
+      LogGroupName: /aws/lambda/saas-bootcamp-s3-copy
       RetentionInDays: 7
   CopyS3Objects:
     Type: AWS::Lambda::Function
     DependsOn:
-      - S3ObjectsExecutionRole
+      - CopyS3ObjectsLogs
     Properties:
-      FunctionName: !Sub saas-bootcamp-s3-copy-${AWS::Region}
+      FunctionName: saas-bootcamp-s3-copy
       Role: !GetAtt S3ObjectsExecutionRole.Arn
-      Runtime: python3.7
+      Runtime: python3.9
       Timeout: 600
       MemorySize: 512
       Handler: index.lambda_handler
@@ -125,7 +120,11 @@ Resources:
           
           def lambda_handler(event, context):
               print(json.dumps(event, default=str))
-              source_bucket = event['ResourceProperties']['Source']
+              source_bucket_slash = event['ResourceProperties']['Source']
+              if source_bucket_slash.endswith ('/'):
+                source_bucket = source_bucket_slash[:-1]
+              else:
+                source_bucket = source_bucket_slash
               destination_bucket = event['ResourceProperties']['Destination']
               destination_region = event['ResourceProperties']['DestinationRegion']
               objects_to_copy = event['ResourceProperties']['Objects']
@@ -149,12 +148,10 @@ Resources:
   InvokeLambdaCopyS3Objects:
     Type: Custom::CustomResource
     DependsOn:
-      - CopyS3Objects
       - CopyS3ObjectsLogs
-      - BootcampBucket
     Properties:
       ServiceToken: !GetAtt CopyS3Objects.Arn
-      Source: !Ref SourceBucket
+      Source: !Ref AssetsPath
       Destination: !Ref BootcampBucket
       DestinationRegion: !Ref AWS::Region
       Objects:
@@ -264,14 +261,14 @@ Resources:
   ClearS3BucketLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/saas-bootcamp-s3-clear-${AWS::Region}
+      LogGroupName: /aws/lambda/saas-bootcamp-s3-clear
       RetentionInDays: 7
   ClearS3Bucket:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub saas-bootcamp-s3-clear-${AWS::Region}
+      FunctionName: saas-bootcamp-s3-clear
       Role: !GetAtt S3ObjectsExecutionRole.Arn
-      Runtime: python3.7
+      Runtime: python3.9
       Timeout: 900
       MemorySize: 512
       Handler: index.lambda_handler
@@ -349,8 +346,6 @@ Resources:
     Type: Custom::CustomResource
     DependsOn:
       - ClearS3BucketLogs
-      - ClearS3Bucket
-      - BootcampBucket
     Properties:
       ServiceToken: !GetAtt ClearS3Bucket.Arn
       Bucket: !Ref BootcampBucket
@@ -358,8 +353,6 @@ Resources:
     Type: Custom::CustomResource
     DependsOn:
       - ClearS3BucketLogs
-      - ClearS3Bucket
-      - ArtifactBucket
     Properties:
       ServiceToken: !GetAtt ClearS3Bucket.Arn
       Bucket: !Ref ArtifactBucket
@@ -367,8 +360,6 @@ Resources:
     Type: Custom::CustomResource
     DependsOn:
       - ClearS3BucketLogs
-      - ClearS3Bucket
-      - CloudTrailBucket
     Properties:
       ServiceToken: !GetAtt ClearS3Bucket.Arn
       Bucket: !Ref CloudTrailBucket
@@ -376,8 +367,6 @@ Resources:
     Type: Custom::CustomResource
     DependsOn:
       - ClearS3BucketLogs
-      - ClearS3Bucket
-      - WebsiteBucket
     Properties:
       ServiceToken: !GetAtt ClearS3Bucket.Arn
       Bucket: !Ref WebsiteBucket
@@ -387,8 +376,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/baseline.yml
       Parameters:
-        EventEngineRole: !Ref EETeamRoleArn
-        EventEngineRoleName: !Ref EventEngineRoleName
+        ParticipantAssumedRoleArn: !Ref ParticipantAssumedRoleArn
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
         CloudTrailBucket: !Ref CloudTrailBucket
@@ -397,4 +385,13 @@ Outputs:
   SaaSFactoryBootcampStack:
     Description: Saas Bootcamp CloudFormation stack
     Value: !Ref AWS::StackName
+  ApiGatewayEndpoint:
+    Description: API Gateway Invoke URL
+    Value: !GetAtt Baseline.Outputs.ApiGatewayEndpoint
+  WebAppUrl:
+    Description: Web application URL
+    Value: !GetAtt Baseline.Outputs.WebAppUrl
+  ParticipantAssumedRoleArn:
+    Description: ParticipantAssumedRoleArn
+    Value: !Ref ParticipantAssumedRoleArn
 ...
