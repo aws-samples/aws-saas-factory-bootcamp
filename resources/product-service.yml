@@ -14,14 +14,14 @@ Parameters:
   CodePipelineRoleArn:
     Description: The CodePipeline IAM role ARN
     Type: String
-  CloudWatchEventRoleArn:
+  CodePipelineEventRoleArn:
     Description: The CloudWatch Event IAM role ARN
-    Type: String
-  LambdaClearEcrImagesArn:
-    Description: The Lambda function ARN to delete the ECR images
     Type: String
   LambdaCodeBuildStartBuildArn:
     Description: The Lambda function ARN to start a CodeBuild project
+    Type: String
+  LambdaClearEcrImagesArn:
+    Description: The Lambda function ARN to delete the ECR images
     Type: String
   VPC:
     Description: The SaaS Bootcamp VPC
@@ -156,30 +156,29 @@ Resources:
                 FileName: imagedefinitions.json
               InputArtifacts:
                 - Name: imgdef
-  CloudWatchEventRuleForCodePipeline:
-    DependsOn: CodePipeline
+  CodePipelineEventRule:
     Type: AWS::Events::Rule
     Properties:
       EventPattern:
         source:
           - aws.s3
         detail-type:
-          - AWS API Call via CloudTrail
+          - Object Created
         detail:
-          eventSource:
-            - s3.amazonaws.com
-          eventName:
+          reason:
             - CopyObject
             - PutObject
             - CompleteMultipartUpload
-          requestParameters:
-            bucketName:
+          bucket:
+            name:
               - !Ref ArtifactBucket
+          object:
             key:
-              - product-manager
+              - prefix: product-manager
+      State: ENABLED
       Targets:
         - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
-          RoleArn: !Ref CloudWatchEventRoleArn
+          RoleArn: !Ref CodePipelineEventRoleArn
           Id: saas-bootcamp-product-svc
   CodePipelineExecutionStateChangeEvent:
     Type: AWS::Events::Rule
@@ -387,7 +386,7 @@ Resources:
 #    DependsOn:
 #      - CodeBuildProject
 #      - CodePipeline
-#      - CloudWatchEventRuleForCodePipeline
+#      - CodePipelineEventRule
 #    Properties:
 #      ServiceToken: !Ref LambdaCodeBuildStartBuildArn
 #      Project: saas-bootcamp-product-svc

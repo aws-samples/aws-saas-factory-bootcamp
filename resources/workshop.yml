@@ -31,15 +31,12 @@ Resources:
     Properties:
       VersioningConfiguration:
         Status: Enabled
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
       Tags:
         - Key: Name
           Value: !Sub saas-bootcamp-artifact-bucket-${AWS::Region}
-  CloudTrailBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub saas-bootcamp-cloudtrail-bucket-${AWS::Region}
   S3ObjectsExecutionRole:
     Type: AWS::IAM::Role
     DependsOn: BootcampBucket
@@ -83,7 +80,6 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BootcampBucket}
                   - !Sub arn:aws:s3:::${ArtifactBucket}
-                  - !Sub arn:aws:s3:::${CloudTrailBucket}
                   - !Sub arn:aws:s3:::${WebsiteBucket}
               - Effect: Allow
                 Action:
@@ -93,7 +89,6 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BootcampBucket}/*
                   - !Sub arn:aws:s3:::${ArtifactBucket}/*
-                  - !Sub arn:aws:s3:::${CloudTrailBucket}/*
                   - !Sub arn:aws:s3:::${WebsiteBucket}/*
   CopyS3ObjectsLogs:
     Type: AWS::Logs::LogGroup
@@ -356,13 +351,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt ClearS3Bucket.Arn
       Bucket: !Ref ArtifactBucket
-  InvokeLambdaClearCloudTrailBucket:
-    Type: Custom::CustomResource
-    DependsOn:
-      - ClearS3BucketLogs
-    Properties:
-      ServiceToken: !GetAtt ClearS3Bucket.Arn
-      Bucket: !Ref CloudTrailBucket
   InvokeLambdaClearWebsiteBucket:
     Type: Custom::CustomResource
     DependsOn:
@@ -379,7 +367,6 @@ Resources:
         ParticipantAssumedRoleArn: !Ref ParticipantAssumedRoleArn
         BootcampBucket: !Ref BootcampBucket
         ArtifactBucket: !Ref ArtifactBucket
-        CloudTrailBucket: !Ref CloudTrailBucket
         WebsiteBucket: !Ref WebsiteBucket
 Outputs:
   SaaSFactoryBootcampStack:

@@ -14,7 +14,7 @@ Parameters:
   CodePipelineRoleArn:
     Description: The CodePipeline IAM role ARN
     Type: String
-  CloudWatchEventRoleArn:
+  CodePipelineEventRoleArn:
     Description: The CloudWatch Event IAM role ARN
     Type: String
   LambdaCodeBuildStartBuildArn:
@@ -156,30 +156,29 @@ Resources:
                 FileName: imagedefinitions.json
               InputArtifacts:
                 - Name: imgdef
-  CloudWatchEventRuleForCodePipeline:
-    DependsOn: CodePipeline
+  CodePipelineEventRule:
     Type: AWS::Events::Rule
     Properties:
       EventPattern:
         source:
           - aws.s3
         detail-type:
-          - AWS API Call via CloudTrail
+          - Object Created
         detail:
-          eventSource:
-            - s3.amazonaws.com
-          eventName:
+          reason:
             - CopyObject
             - PutObject
             - CompleteMultipartUpload
-          requestParameters:
-            bucketName:
+          bucket:
+            name:
               - !Ref ArtifactBucket
+          object:
             key:
-              - auth-manager
+              - prefix: auth-manager
+      State: ENABLED
       Targets:
         - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
-          RoleArn: !Ref CloudWatchEventRoleArn
+          RoleArn: !Ref CodePipelineEventRoleArn
           Id: saas-bootcamp-auth-svc
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -325,7 +324,7 @@ Resources:
     DependsOn:
       - CodeBuildProject
       - CodePipeline
-      - CloudWatchEventRuleForCodePipeline
+      - CodePipelineEventRule
     Properties:
       ServiceToken: !Ref LambdaCodeBuildStartBuildArn
       Project: saas-bootcamp-auth-svc

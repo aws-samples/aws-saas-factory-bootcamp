@@ -15,9 +15,6 @@ Parameters:
   WebsiteBucket:
     Description: S3 bucket to host the website
     Type: String
-  CloudTrailBucket:
-    Description: S3 bucket for CloudTrail to publish logs to
-    Type: String
 Conditions:
   WorkshopStudio: !Not [!Equals ['', !Ref ParticipantAssumedRoleArn]]
 Resources:
@@ -176,43 +173,6 @@ Resources:
           PathComponent: aws-saas-factory-bootcamp
       OwnerArn:
         !If [WorkshopStudio, !Ref ParticipantAssumedRoleArn, !Ref "AWS::NoValue"]
-  CloudTrailBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket:
-        Ref: CloudTrailBucket
-      PolicyDocument: 
-        Version: 2012-10-17
-        Statement:
-          - Sid: AWSCloudTrailAclCheck20150319
-            Effect: Allow
-            Principal:
-              Service: cloudtrail.amazonaws.com
-            Action: s3:GetBucketAcl
-            Resource: !Sub arn:aws:s3:::${CloudTrailBucket}
-          - Sid: AWSCloudTrailWrite20150319
-            Effect: Allow
-            Principal:
-              Service: cloudtrail.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub arn:aws:s3:::${CloudTrailBucket}/AWSLogs/${AWS::AccountId}/*
-            Condition:
-              StringEquals:
-                s3:x-amz-acl: bucket-owner-full-control
-  CloudTrailForCodePipelineTrigger:
-    Type: AWS::CloudTrail::Trail
-    DependsOn: CloudTrailBucketPolicy
-    Properties:
-      TrailName: saas-bootcamp-codepipeline-trail
-      S3BucketName: !Ref CloudTrailBucket
-      IsLogging: true
-      EventSelectors:
-        - IncludeManagementEvents: false
-          ReadWriteType: WriteOnly
-          DataResources:
-            - Type: AWS::S3::Object
-              Values:
-                - !Sub arn:aws:s3:::${ArtifactBucket}/
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -583,7 +543,7 @@ Resources:
       FunctionName: !Ref CodePipelineUpdateEcsServiceLambda
       Principal: codepipeline.amazonaws.com
       Action: lambda:InvokeFunction
-  CloudWatchEventRole:
+  CodePipelineEventRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub saas-bootcamp-event-role-${AWS::Region}
@@ -720,7 +680,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -739,7 +699,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -758,7 +718,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -777,7 +737,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -796,7 +756,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
@@ -815,7 +775,7 @@ Resources:
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
-        CloudWatchEventRoleArn: !GetAtt CloudWatchEventRole.Arn
+        CodePipelineEventRoleArn: !GetAtt CodePipelineEventRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn
         LambdaClearEcrImagesArn: !GetAtt ClearEcrImagesLambda.Arn
         VPC: !Ref VPC
