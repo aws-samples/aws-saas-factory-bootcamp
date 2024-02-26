@@ -22,7 +22,7 @@ print_dots () {
 AWS_REGION=$(aws configure list | grep region | awk '{print $2}')
 CODEBUILD_PROJECT="saas-bootcamp-product-svc"
 CODE_PIPELINE="saas-bootcamp-product-svc"
-BOOTCAMP_BUCKET=$(aws ssm get-parameter --name "saas-bootcamp-bucket-${AWS_REGION}" | jq -r '.Parameter.Value')
+BOOTCAMP_BUCKET=$(aws ssm get-parameter --name "saas-bootcamp-bucket" | jq -r '.Parameter.Value')
 DEPLOY_MONITOR_QUEUE=$(aws ssm get-parameter --name "saas-bootcamp-ci-cd-queue-${AWS_REGION}" | jq -r '.Parameter.Value')
 
 if [ -z "$BOOTCAMP_BUCKET" ]; then
