@@ -2,9 +2,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: AWS SaaS Factory Bootcamp Order Service
 Parameters:
-  BootcampBucket:
+  WorkshopBucket:
     Description: The S3 bucket with bootcamp resources
     Type: String
+  AssetsBucketPrefix:
+    Description: S3 folder containing workshop assets. Leave blank if you did not put the assets in a subfolder.
+    Type: String
+    Default: ''
   ArtifactBucket:
     Description: The S3 bucket for CodeBuild to store built artifacts
     Type: String
@@ -91,6 +95,9 @@ Resources:
         Path: '/'
         Name: order-manager
         Packaging: ZIP
+      Cache:
+        Type: S3
+        Location: !Sub ${WorkshopBucket}/${AssetsBucketPrefix}codebuild-cache
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
@@ -99,8 +106,10 @@ Resources:
         EnvironmentVariables:
           - Name: REPOSITORY_URI
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECSRepository}
-          - Name: BOOTCAMP_BUCKET
-            Value: !Ref BootcampBucket
+          - Name: SOURCE_BUCKET
+            Value: !Ref WorkshopBucket
+          - Name: SOURCE_BUCKET_PREFIX
+            Value: !Ref AssetsBucketPrefix
       Source:
         Type: NO_SOURCE
         BuildSpec: |
@@ -108,8 +117,8 @@ Resources:
           phases:
             pre_build:
               commands:
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/order-manager ./order-manager
-                - aws s3 cp --recursive s3://$BOOTCAMP_BUCKET/source/shared-modules ./order-manager/shared-modules
+                - aws s3 cp --recursive s3://$SOURCE_BUCKET/${SOURCE_BUCKET_PREFIX}source/order-manager ./order-manager
+                - aws s3 cp --recursive s3://$SOURCE_BUCKET/${SOURCE_BUCKET_PREFIX}source/shared-modules ./order-manager/shared-modules
                 - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
             build:
               commands:
@@ -201,7 +210,7 @@ Resources:
     Type: AWS::IAM::Role
     DependsOn: ECSLogGroup
     Properties:
-      RoleName: saas-bootcamp-order-svc-exec-role
+      RoleName: !Sub saas-bootcamp-order-svc-exec-role-${AWS::Region}
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -245,7 +254,7 @@ Resources:
   ECSTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: saas-bootcamp-order-svc-task-role
+      RoleName: !Sub saas-bootcamp-order-svc-task-role-${AWS::Region}
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17

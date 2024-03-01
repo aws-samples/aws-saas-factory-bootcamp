@@ -23,7 +23,8 @@ AWS_REGION=$(aws configure list | grep region | awk '{print $2}')
 CODEBUILD_PROJECT="saas-bootcamp-product-svc"
 CODE_PIPELINE="saas-bootcamp-product-svc"
 BOOTCAMP_BUCKET=$(aws ssm get-parameter --name "saas-bootcamp-bucket" | jq -r '.Parameter.Value')
-DEPLOY_MONITOR_QUEUE=$(aws ssm get-parameter --name "saas-bootcamp-ci-cd-queue-${AWS_REGION}" | jq -r '.Parameter.Value')
+BOOTCAMP_BUCKET_PREFIX=$(aws ssm get-parameter --name "saas-bootcamp-bucket-prefix" | jq -r '.Parameter.Value')
+DEPLOY_MONITOR_QUEUE=$(aws ssm get-parameter --name "saas-bootcamp-ci-cd-queue" | jq -r '.Parameter.Value')
 
 if [ -z "$BOOTCAMP_BUCKET" ]; then
     echo "Error: Can't determine SaaS Bootcamp S3 bucket name"
@@ -34,7 +35,12 @@ if [ -z "$DEPLOY_MONITOR_QUEUE" ]; then
     exit 1
 fi
 
+if [ "N/A" == "$BOOTCAMP_BUCKET_PREFIX" ]; then
+    BOOTCAMP_BUCKET_PREFIX=""
+fi
+
 echo "SaaS Bootcamp S3 bucket: $BOOTCAMP_BUCKET"
+echo "SaaS Bootcamp S3 bucket prefix: $BOOTCAMP_BUCKET_PREFIX"
 echo "SaaS Bootcamp SQS queue: $DEPLOY_MONITOR_QUEUE"
 echo
 
@@ -43,7 +49,7 @@ aws sqs purge-queue --queue-url "$DEPLOY_MONITOR_QUEUE" > /dev/null
 
 # Upload the updated code to S3
 echo "Uploading code to S3"
-aws s3 cp server.js s3://${BOOTCAMP_BUCKET}/source/product-manager/
+aws s3 cp server.js s3://${BOOTCAMP_BUCKET}/${BOOTCAMP_BUCKET_PREFIX}source/product-manager/
 
 # Trigger a new build to create a fresh docker image with the updated code
 BUILD_PROJECT=$(aws codebuild start-build --project-name ${CODEBUILD_PROJECT})
