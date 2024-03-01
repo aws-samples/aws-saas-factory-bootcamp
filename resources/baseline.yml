@@ -2,9 +2,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: AWS SaaS Factory Bootcamp Baseline
 Parameters:
-  BootcampBucket:
+  WorkshopBucket:
     Description: S3 bucket with workshop resources
     Type: String
+  AssetsBucketPrefix:
+    Description: S3 folder containing workshop assets. Leave blank if you did not put the assets in a subfolder.
+    Type: String
+    Default: ''
   ParticipantAssumedRoleArn:
     Description: Workshop Studio Participant IAM Role. Leave blank when not using Workshop Studio.
     Type: String
@@ -167,6 +171,7 @@ Resources:
       AutomaticStopTimeMinutes: 60
       SubnetId: !Ref SubnetPublicA
       InstanceType: t3.medium
+      ImageId: amazonlinux-2-x86_64
       Name: SaaS Bootcamp IDE
       Repositories:
         - RepositoryUrl: https://github.com/aws-samples/aws-saas-factory-bootcamp
@@ -268,7 +273,7 @@ Resources:
                   - s3:ListBucketVersions
                   - s3:GetBucketVersioning
                 Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}
+                  - !Sub arn:aws:s3:::${WorkshopBucket}
               - Effect: Allow
                 Action:
                   - s3:GetObject
@@ -276,7 +281,7 @@ Resources:
                   - s3:DeleteObject
                   - s3:DeleteObjectVersion
                 Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}/*
+                  - !Sub arn:aws:s3:::${WorkshopBucket}/*
   LambdaCodeBuildStartBuildLogs:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -346,7 +351,7 @@ Resources:
                   - s3:listBucket
                   - s3:GetBucketVersioning
                 Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}
+                  - !Sub arn:aws:s3:::${WorkshopBucket}
                   - !Sub arn:aws:s3:::${ArtifactBucket}
                   - !Sub arn:aws:s3:::${WebsiteBucket}
               - Effect: Allow
@@ -357,7 +362,7 @@ Resources:
                   - s3:GetObject
                   - s3:GetObjectVersion
                 Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}/*
+                  - !Sub arn:aws:s3:::${WorkshopBucket}/*
                   - !Sub arn:aws:s3:::${ArtifactBucket}/*
                   - !Sub arn:aws:s3:::${WebsiteBucket}/*
               - Effect: Allow
@@ -668,15 +673,16 @@ Resources:
   ApiGateway:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/api-gateway.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/api-gateway.yml
       Parameters:
         ECSLoadBalancer: !GetAtt ECSLoadBalancer.DNSName
   UserService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/user-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/user-service.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
@@ -693,9 +699,10 @@ Resources:
   AuthService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/auth-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/auth-service.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
@@ -712,9 +719,10 @@ Resources:
   TenantService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/tenant-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/tenant-service.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
@@ -731,9 +739,10 @@ Resources:
   RegistrationService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/registration-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/registration-service.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
@@ -750,9 +759,10 @@ Resources:
   OrderService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/order-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/order-service.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
@@ -769,9 +779,10 @@ Resources:
   ProductService:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/product-service.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/product-service.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         CodePipelineRoleArn: !GetAtt CodePipelineRole.Arn
@@ -788,9 +799,10 @@ Resources:
   WebClient:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/web-client.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/web-client.yml
       Parameters:
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         WebsiteBucket: !Ref WebsiteBucket
         CodeBuildRoleArn: !GetAtt CodeBuildRole.Arn
         LambdaCodeBuildStartBuildArn: !GetAtt LambdaCodeBuildStartBuild.Arn

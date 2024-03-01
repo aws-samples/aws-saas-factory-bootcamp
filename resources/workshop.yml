@@ -2,44 +2,62 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: AWS SaaS Factory Bootcamp Master Stack
 Parameters:
-  AssetsPath:
-    Description: S3 bucket path containing workshop resources.
+  AssetsBucket:
+    Description: S3 bucket containing workshop assets.
     Type: String
+    Default: aws-bootcamp-us-east-1
+  AssetsBucketPrefix:
+    Description: S3 folder containing workshop assets. Leave blank if you did not put the assets in a subfolder.
+    Type: String
+    Default: ''
   ParticipantAssumedRoleArn:
     Description: Workshop Studio Participant IAM Role. Leave blank when not using Workshop Studio.
     Type: String
     Default: ''
+Conditions:
+  HasAssetBucketPrefix: !Not [!Equals ['', !Ref AssetsBucketPrefix]]
 Resources:
-  BootcampBucket:
+  WorkshopBucket:
     Type: AWS::S3::Bucket
-  BootcampBucketSsmParam:
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  WorkshopBucketSsmParam:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub saas-bootcamp-bucket-${AWS::Region}
+      Name: saas-bootcamp-bucket
       Type: String
-      Value: !Ref BootcampBucket
+      Value: !Ref WorkshopBucket
+  WorkshopBucketPrefixSsmParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: saas-bootcamp-bucket-prefix
+      Type: String
+      Value: !If [HasAssetBucketPrefix, !Ref AssetsBucketPrefix, 'N/A']
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      WebsiteConfiguration:
-        IndexDocument: index.html
-      Tags:
-        - Key: Name
-          Value: !Sub saas-bootcamp-website-bucket-${AWS::Region}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       VersioningConfiguration:
         Status: Enabled
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
-      Tags:
-        - Key: Name
-          Value: !Sub saas-bootcamp-artifact-bucket-${AWS::Region}
   S3ObjectsExecutionRole:
     Type: AWS::IAM::Role
-    DependsOn: BootcampBucket
+    DependsOn: WorkshopBucket
     Properties:
       RoleName: !Sub saas-bootcamp-s3-copy-role-${AWS::Region}
       Path: '/'
@@ -71,14 +89,14 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${AssetsPath}*
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetsBucket}/${AssetsBucketPrefix}*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
                   - s3:ListBucketVersions
                   - s3:GetBucketVersioning
                 Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}
+                  - !Sub arn:aws:s3:::${WorkshopBucket}
                   - !Sub arn:aws:s3:::${ArtifactBucket}
                   - !Sub arn:aws:s3:::${WebsiteBucket}
               - Effect: Allow
@@ -87,7 +105,7 @@ Resources:
                   - s3:DeleteObject
                   - s3:DeleteObjectVersion
                 Resource:
-                  - !Sub arn:aws:s3:::${BootcampBucket}/*
+                  - !Sub arn:aws:s3:::${WorkshopBucket}/*
                   - !Sub arn:aws:s3:::${ArtifactBucket}/*
                   - !Sub arn:aws:s3:::${WebsiteBucket}/*
   CopyS3ObjectsLogs:
@@ -114,145 +132,153 @@ Resources:
           from botocore.exceptions import ClientError
           
           def lambda_handler(event, context):
-              print(json.dumps(event, default=str))
-              source_bucket_slash = event['ResourceProperties']['Source']
-              if source_bucket_slash.endswith ('/'):
-                source_bucket = source_bucket_slash[:-1]
-              else:
-                source_bucket = source_bucket_slash
-              destination_bucket = event['ResourceProperties']['Destination']
-              destination_region = event['ResourceProperties']['DestinationRegion']
-              objects_to_copy = event['ResourceProperties']['Objects']
-              
+            print(json.dumps(event, default=str))
+            source_bucket_slash = event['ResourceProperties']['Source']
+            if source_bucket_slash.endswith ('/'):
+              source_bucket = source_bucket_slash[:-1]
+            else:
+              source_bucket = source_bucket_slash
+            source_prefix = event['ResourceProperties']['SourcePrefix']
+            destination_bucket = event['ResourceProperties']['Destination']
+            destination_region = event['ResourceProperties']['DestinationRegion']
+            objects_to_copy = event['ResourceProperties']['Objects']
+            
+            if event['RequestType'] in ['Create', 'Update']:
+              if not objects_to_copy:
+                # If we weren't given a specific list of objects to copy,
+                # just copy everything to the destination bucket
+                s3 = boto3.client('s3')
+                source_objects = s3.list_objects_v2(Bucket=source_bucket, Prefix=source_prefix)
+                objects_to_copy = list(map(lambda obj : obj['Key'], source_objects.get('Contents', [])))
+            
               print("Creating S3 client in destination region %s" % destination_region)
               s3 = boto3.client('s3', region_name=destination_region)
-              
-              if event['RequestType'] in ['Create', 'Update']:
-                  for key in objects_to_copy:
-                      print("Copying %s/%s -> %s/%s" % (source_bucket, key, destination_bucket, key))
-                      try:
-                          s3.copy_object(CopySource={'Bucket':source_bucket, 'Key':key}, Bucket=destination_bucket, Key=key)
-                      except ClientError as s3_error:
-                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": str(s3_error)})
-                          raise
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-              elif event['RequestType'] == 'Delete':
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
-              else:
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "Unknown RequestType %s" % event['RequestType']})
+              for key in objects_to_copy:
+                print("Copying %s/%s -> %s/%s" % (source_bucket, key, destination_bucket, key))
+                try:
+                    s3.copy_object(CopySource={'Bucket':source_bucket, 'Key':key}, Bucket=destination_bucket, Key=key)
+                except ClientError as s3_error:
+                    cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": str(s3_error)})
+                    raise
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+            elif event['RequestType'] == 'Delete':
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+            else:
+              cfnresponse.send(event, context, cfnresponse.FAILED, {"Reason": "Unknown RequestType %s" % event['RequestType']})
   InvokeLambdaCopyS3Objects:
     Type: Custom::CustomResource
     DependsOn:
       - CopyS3ObjectsLogs
     Properties:
       ServiceToken: !GetAtt CopyS3Objects.Arn
-      Source: !Ref AssetsPath
-      Destination: !Ref BootcampBucket
+      Source: !Ref AssetsBucket
+      SourcePrefix: !Ref AssetsBucketPrefix
+      Destination: !Ref WorkshopBucket
       DestinationRegion: !Ref AWS::Region
       Objects:
-        - resources/baseline.yml
-        - resources/api-gateway.yml
-        - resources/auth-service.yml
-        - resources/tenant-service.yml
-        - resources/user-service.yml
-        - resources/registration-service.yml
-        - resources/order-service.yml
-        - resources/product-service.yml
-        - resources/web-client.yml
-        - source/shared-modules/config-helper/config.js
-        - source/shared-modules/config-helper/package.json
-        - source/shared-modules/config-helper/config/default.json
-        - source/shared-modules/config-helper/config/development.json
-        - source/shared-modules/config-helper/config/production.json
-        - source/shared-modules/token-manager/token-manager.js
-        - source/shared-modules/token-manager/package.json
-        - source/shared-modules/dynamodb-helper/dynamodb-helper.js
-        - source/shared-modules/dynamodb-helper/package.json
-        - source/auth-manager/Dockerfile
-        - source/auth-manager/server.js
-        - source/auth-manager/package.json
-        - source/tenant-manager/Dockerfile
-        - source/tenant-manager/server.js
-        - source/tenant-manager/package.json
-        - source/user-manager/cognito-user.js
-        - source/user-manager/Dockerfile
-        - source/user-manager/server.js
-        - source/user-manager/package.json
-        - source/tenant-registration/Dockerfile
-        - source/tenant-registration/server.js
-        - source/tenant-registration/package.json
-        - source/order-manager/Dockerfile
-        - source/order-manager/server.js
-        - source/order-manager/package.json
-        - source/product-manager/Dockerfile
-        - source/product-manager/server.js
-        - source/product-manager/package.json
-        - source/web-client/Gruntfile.js
-        - source/web-client/app/404.html
-        - source/web-client/app/config.json
-        - source/web-client/app/favicon.ico
-        - source/web-client/app/images/Auctioneer2-300px.png
-        - source/web-client/app/images/chart.png
-        - source/web-client/app/images/favicon.ico
-        - source/web-client/app/images/green-circle.png
-        - source/web-client/app/images/matt-icons_package-300px.png
-        - source/web-client/app/images/matt-icons_package-800px.png
-        - source/web-client/app/images/monitor.png
-        - source/web-client/app/images/red-circle.png
-        - source/web-client/app/images/yeoman.png
-        - source/web-client/app/index.html
-        - source/web-client/app/robots.txt
-        - source/web-client/app/scripts/app.js
-        - source/web-client/app/scripts/constants.js
-        - source/web-client/app/scripts/controllers/confirm.js
-        - source/web-client/app/scripts/controllers/login.js
-        - source/web-client/app/scripts/controllers/main.js
-        - source/web-client/app/scripts/controllers/order-add.js
-        - source/web-client/app/scripts/controllers/order-delete.js
-        - source/web-client/app/scripts/controllers/order-edit.js
-        - source/web-client/app/scripts/controllers/orders.js
-        - source/web-client/app/scripts/controllers/product-add.js
-        - source/web-client/app/scripts/controllers/product-delete.js
-        - source/web-client/app/scripts/controllers/product-edit.js
-        - source/web-client/app/scripts/controllers/product-view.js
-        - source/web-client/app/scripts/controllers/products.js
-        - source/web-client/app/scripts/controllers/register.js
-        - source/web-client/app/scripts/controllers/tenant-delete.js
-        - source/web-client/app/scripts/controllers/tenant-edit.js
-        - source/web-client/app/scripts/controllers/tenants.js
-        - source/web-client/app/scripts/controllers/user-add.js
-        - source/web-client/app/scripts/controllers/user-delete.js
-        - source/web-client/app/scripts/controllers/user-edit.js
-        - source/web-client/app/scripts/controllers/user-enable.js
-        - source/web-client/app/scripts/controllers/users.js
-        - source/web-client/app/styles/main.css
-        - source/web-client/app/styles/main.scss
-        - source/web-client/app/views/confirm.html
-        - source/web-client/app/views/login.html
-        - source/web-client/app/views/main.html
-        - source/web-client/app/views/order-add.html
-        - source/web-client/app/views/order-delete.html
-        - source/web-client/app/views/order-edit.html
-        - source/web-client/app/views/order-nav.html
-        - source/web-client/app/views/orders.html
-        - source/web-client/app/views/product-add.html
-        - source/web-client/app/views/product-delete.html
-        - source/web-client/app/views/product-edit.html
-        - source/web-client/app/views/product-nav.html
-        - source/web-client/app/views/product-view.html
-        - source/web-client/app/views/products.html
-        - source/web-client/app/views/register.html
-        - source/web-client/app/views/tenant-delete.html
-        - source/web-client/app/views/tenant-edit.html
-        - source/web-client/app/views/tenants.html
-        - source/web-client/app/views/user-add.html
-        - source/web-client/app/views/user-delete.html
-        - source/web-client/app/views/user-edit.html
-        - source/web-client/app/views/user-enable.html
-        - source/web-client/app/views/user-nav.html
-        - source/web-client/app/views/users.html
-        - source/web-client/bower.json
-        - source/web-client/package.json
+        - !Sub ${AssetsBucketPrefix}resources/baseline.yml
+        - !Sub ${AssetsBucketPrefix}resources/api-gateway.yml
+        - !Sub ${AssetsBucketPrefix}resources/auth-service.yml
+        - !Sub ${AssetsBucketPrefix}resources/tenant-service.yml
+        - !Sub ${AssetsBucketPrefix}resources/user-service.yml
+        - !Sub ${AssetsBucketPrefix}resources/registration-service.yml
+        - !Sub ${AssetsBucketPrefix}resources/order-service.yml
+        - !Sub ${AssetsBucketPrefix}resources/product-service.yml
+        - !Sub ${AssetsBucketPrefix}resources/web-client.yml
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/config-helper/config.js
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/config-helper/package.json
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/config-helper/config/default.json
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/config-helper/config/development.json
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/config-helper/config/production.json
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/token-manager/token-manager.js
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/token-manager/package.json
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/dynamodb-helper/dynamodb-helper.js
+        - !Sub ${AssetsBucketPrefix}source/shared-modules/dynamodb-helper/package.json
+        - !Sub ${AssetsBucketPrefix}source/auth-manager/Dockerfile
+        - !Sub ${AssetsBucketPrefix}source/auth-manager/server.js
+        - !Sub ${AssetsBucketPrefix}source/auth-manager/package.json
+        - !Sub ${AssetsBucketPrefix}source/tenant-manager/Dockerfile
+        - !Sub ${AssetsBucketPrefix}source/tenant-manager/server.js
+        - !Sub ${AssetsBucketPrefix}source/tenant-manager/package.json
+        - !Sub ${AssetsBucketPrefix}source/user-manager/cognito-user.js
+        - !Sub ${AssetsBucketPrefix}source/user-manager/Dockerfile
+        - !Sub ${AssetsBucketPrefix}source/user-manager/server.js
+        - !Sub ${AssetsBucketPrefix}source/user-manager/package.json
+        - !Sub ${AssetsBucketPrefix}source/tenant-registration/Dockerfile
+        - !Sub ${AssetsBucketPrefix}source/tenant-registration/server.js
+        - !Sub ${AssetsBucketPrefix}source/tenant-registration/package.json
+        - !Sub ${AssetsBucketPrefix}source/order-manager/Dockerfile
+        - !Sub ${AssetsBucketPrefix}source/order-manager/server.js
+        - !Sub ${AssetsBucketPrefix}source/order-manager/package.json
+        - !Sub ${AssetsBucketPrefix}source/product-manager/Dockerfile
+        - !Sub ${AssetsBucketPrefix}source/product-manager/server.js
+        - !Sub ${AssetsBucketPrefix}source/product-manager/package.json
+        - !Sub ${AssetsBucketPrefix}source/web-client/Gruntfile.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/404.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/config.json
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/favicon.ico
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/Auctioneer2-300px.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/chart.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/favicon.ico
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/green-circle.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/matt-icons_package-300px.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/matt-icons_package-800px.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/monitor.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/red-circle.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/images/yeoman.png
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/index.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/robots.txt
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/app.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/constants.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/confirm.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/login.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/main.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/order-add.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/order-delete.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/order-edit.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/orders.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/product-add.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/product-delete.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/product-edit.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/product-view.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/products.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/register.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/tenant-delete.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/tenant-edit.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/tenants.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/user-add.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/user-delete.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/user-edit.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/user-enable.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/scripts/controllers/users.js
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/styles/main.css
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/styles/main.scss
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/confirm.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/login.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/main.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/order-add.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/order-delete.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/order-edit.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/order-nav.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/orders.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/product-add.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/product-delete.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/product-edit.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/product-nav.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/product-view.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/products.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/register.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/tenant-delete.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/tenant-edit.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/tenants.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/user-add.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/user-delete.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/user-edit.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/user-enable.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/user-nav.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/app/views/users.html
+        - !Sub ${AssetsBucketPrefix}source/web-client/bower.json
+        - !Sub ${AssetsBucketPrefix}source/web-client/package.json
   ClearS3BucketLogs:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -343,7 +369,7 @@ Resources:
       - ClearS3BucketLogs
     Properties:
       ServiceToken: !GetAtt ClearS3Bucket.Arn
-      Bucket: !Ref BootcampBucket
+      Bucket: !Ref WorkshopBucket
   InvokeLambdaClearArtifactBucket:
     Type: Custom::CustomResource
     DependsOn:
@@ -362,10 +388,11 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: InvokeLambdaCopyS3Objects
     Properties:
-      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${BootcampBucket}/resources/baseline.yml
+      TemplateURL: !Sub https://s3.${AWS::Region}.amazonaws.com/${WorkshopBucket}/${AssetsBucketPrefix}resources/baseline.yml
       Parameters:
         ParticipantAssumedRoleArn: !Ref ParticipantAssumedRoleArn
-        BootcampBucket: !Ref BootcampBucket
+        WorkshopBucket: !Ref WorkshopBucket
+        AssetsBucketPrefix: !Ref AssetsBucketPrefix
         ArtifactBucket: !Ref ArtifactBucket
         WebsiteBucket: !Ref WebsiteBucket
 Outputs:
