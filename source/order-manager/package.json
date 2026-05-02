@@ -10,7 +10,7 @@
     "body-parser": "latest",
     "config": "latest",
     "express": "latest",
-    "uuid": "3.4.0",
+    "uuid": "14.0.0",
     "winston": "latest"
   },
   "author": "Amazon Web Services",
