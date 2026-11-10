@@ -2,6 +2,35 @@
 
 ![SaaSAWS](images/SaaS-Factory.png "SaaS Factory")
 
+# Aviso de segurança — leia antes de implantar
+
+**Este bootcamp implanta deliberadamente uma API sem autorizador, e permanece assim até o final do
+Lab 3.** Implante em uma conta descartável, não coloque dados reais nela e exclua a stack do
+CloudFormation quando terminar. Os labs ensinam identidade, particionamento de dados e isolamento
+em etapas; proteger a própria superfície da API não é uma dessas etapas. **Os padrões aqui não são
+seguros para copiar para uma aplicação real.**
+
+Resumidamente:
+
+- Todos os 59 métodos do API Gateway em `resources/api-gateway.yml` usam `AuthorizationType: NONE`.
+- O token JWT nunca é verificado: `source/shared-modules/token-manager/token-manager.js` usa
+  `jwt-decode`, que apenas decodifica o payload e não confere assinatura, `iss`, `aud` nem `exp`.
+- `POST /user/create` e `POST /user/system` aceitam `tenant_id` e `role` do corpo da requisição,
+  sem ler nenhum cabeçalho `Authorization`.
+- `source/product-manager/server.js` não verifica identidade em nenhuma rota.
+
+**Se você implantou uma revisão anterior a este aviso:** o atributo `custom:role` era gravável pelo
+próprio usuário final e também selecionava a role IAM de administrador do tenant, de modo que
+qualquer usuário podia se promover a administrador com uma única chamada `UpdateUserAttributes`.
+Isso foi corrigido neste repositório, mas implantações existentes não são atualizadas
+automaticamente — revise os atributos graváveis dos seus app clients.
+
+> **A versão completa e autoritativa deste aviso está no [README em inglês](README.md).** Esta
+> tradução resume os pontos críticos; em caso de divergência, o texto em inglês prevalece.
+>
+> *Nota para mantenedores: esta tradução precisa de revisão por um falante nativo. Foi escrita junto
+> com a correção de segurança para não deixar os leitores em português sem aviso nenhum.*
+
 # Introdução
 SaaS (Software as a Service) apresenta aos desenvolvedores uma combinação única de desafios: multi-tenancy, integração/onboarding, segurança, particionamento de dados, isolamento de tenants e identidade.
 

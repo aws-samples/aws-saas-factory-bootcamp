@@ -321,14 +321,29 @@ module.exports.createUserPoolClient = function(poolConfig) {
                 'custom:account_name',
                 'custom:role'
             ],
+            // WriteAttributes controls what the END USER may change with their own access
+            // token via the standard UpdateUserAttributes API. It is deliberately narrower
+            // than ReadAttributes above.
+            //
+            // custom:role is NOT in this list, and must not be added to it. The Cognito
+            // Identity Pool RoleMapping configured below (see createIdentityPoolRoles)
+            // selects the tenant's admin IAM role by matching on the custom:role claim. If
+            // a user could write that claim, any user could call UpdateUserAttributes with
+            // their own token, set custom:role to the admin role name, re-authenticate and
+            // be handed the admin IAM role. Note that custom:tenant_id is likewise absent,
+            // and is additionally declared Mutable: false in the pool schema above.
+            //
+            // Roles are still administered: PUT /user -> cognitoUsers.updateUser() uses
+            // adminUpdateUserAttributes, which is authorized by the caller's IAM
+            // credentials and is not constrained by this list. That is why custom:role
+            // remains Mutable: true in the schema.
             WriteAttributes: [
                 'email',
                 'family_name',
                 'given_name',
                 'phone_number',
                 'preferred_username',
-                'custom:tier',
-                'custom:role'
+                'custom:tier'
             ]
         };
 

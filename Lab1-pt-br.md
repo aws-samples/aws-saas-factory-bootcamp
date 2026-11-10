@@ -120,6 +120,28 @@ O Cognito também tem a capacidade de customizar alguns dos cabeçalhos de e-mai
 
 A opção de segredo do cliente nesta tela se refere a um segredo do cliente OAuth 2.0. Isso não é usado para aplicativos "públicos" (web ou móveis) em que um usuário digitará suas credenciais.
 
+Antes de criar o cliente, role até a seção **Set attribute read and write permissions** e
+**desmarque a caixa de escrita (write) do atributo `role`**, deixando a de leitura (read) marcada.
+Deixe a caixa de escrita de `tenant_id` desmarcada também — ele já é não-mutável desde a Etapa 6.
+
+> **Por que isso importa, e por que o padrão é ao contrário do esperado.** Os atributos aos quais
+> você concede permissão de *escrita* aqui são os que o próprio usuário final pode alterar, com seu
+> próprio access token e a API comum `UpdateUserAttributes` — sem nenhum administrador envolvido.
+> Na Parte 2 vamos ligar `role` a uma regra do Identity Pool que entrega a role IAM de
+> **administrador** do tenant. Se o usuário puder gravar seu próprio `role`, qualquer usuário do
+> tenant pode se tornar administrador daquele tenant com uma única chamada de API.
+>
+> Atenção: deixar a lista de escrita **vazia não é a opção segura**. Um app client criado sem
+> nenhuma permissão de escrita especificada pode gravar **todos os atributos mutáveis, incluindo os
+> customizados**. É preciso desmarcar `role` explicitamente. (A referência da API da AWS para
+> `CreateUserPoolClient` atualmente descreve esse padrão de forma invertida; o comportamento real
+> do serviço é o descrito acima.)
+>
+> Administradores continuam podendo alterar a role de um usuário — o fluxo de "editar usuário" deste
+> bootcamp usa `AdminUpdateUserAttributes`, autorizado por credenciais IAM e não por esta lista.
+>
+> *Nota para mantenedores: tradução pendente de revisão por falante nativo; ver o `Lab1.md` em inglês.*
+
 Depois de fazer essas alterações, selecione o botão **Create app client** e, em seguida, o botão **Next step** para continuar o assistente.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step8_app_client_config.png" alt="Lab 1 Part 1 Step 12 Cognito Configure App Client"/></p>
