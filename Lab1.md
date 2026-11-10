@@ -119,6 +119,14 @@ Cognito also has the ability to customize some of the email headers for your ver
 
 The client secret option on this screen refers to an OAuth 2.0 client secret. This is not used for "public" (web or mobile) applications where a user will be entering their credentials.
 
+Before you create the client, scroll down to the **Set attribute read and write permissions** section and **clear the write checkbox for `role`** (leave its read checkbox selected). Leave the write checkbox for `tenant_id` clear as well — it is already non-mutable from Step 6, so it cannot be written in any case.
+
+> **Why this matters, and why the default is the wrong way round.** The attributes you grant *write* permission to here are the ones an end user can change for themselves, using their own access token and the ordinary `UpdateUserAttributes` API — no administrator involved. In Part 2 we will connect `role` to an Identity Pool rule that hands out the tenant's **administrator** IAM role. If a user can write their own `role`, any user of the tenant can make themselves that tenant's administrator with a single API call.
+>
+> Be aware that leaving the write list *empty* is **not** the safe option. An app client created with no write permissions specified at all can write **every mutable attribute, including custom ones**. You have to clear `role` explicitly. (The AWS API reference for `CreateUserPoolClient` currently describes this default the other way round; the behaviour above is what the service actually does.)
+>
+> Administrators can still change a user's role — the bootcamp's own "edit user" flow uses `AdminUpdateUserAttributes`, which is authorized by IAM credentials rather than by this list. That is the distinction worth taking away: this list governs what the **user** may change about themselves, while the schema's `Mutable` flag from Step 6 governs whether an attribute can **ever** change, administrators included.
+
 Once you've made these changes, select the **Create app client** button and then the **Next step** button to continue the wizard.
 
 <p align="center"><img src="./images/lab1/part1/cognito_step8_app_client_config.png" alt="Lab 1 Part 1 Step 12 Cognito Configure App Client"/></p>
