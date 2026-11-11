@@ -15,10 +15,11 @@ What that means concretely, with file references so you can verify each point ra
 word for it:
 
 - **Every API Gateway method is unauthenticated.** All 59 `AWS::ApiGateway::Method` resources in
-  `resources/api-gateway.yml` are declared `AuthorizationType: NONE`, and each integration is a bare
-  `HTTP_PROXY` to an internal load balancer. There is no Cognito authorizer and no Lambda authorizer
-  anywhere in the stack. Every microservice route is therefore reachable by anyone who has the
-  API's invoke URL.
+  `resources/api-gateway.yml` are declared `AuthorizationType: NONE`. There is no Cognito authorizer
+  and no Lambda authorizer anywhere in the stack. Of those 59, the 33 that carry an `HTTP_PROXY`
+  integration pass straight through to an internal load balancer and reach the microservices; the
+  other 26 are `MOCK` integrations serving CORS `OPTIONS` preflight and reach no backend. So every
+  microservice route is reachable by anyone who has the API's invoke URL.
 - **Tenant identity comes from an unverified token.** `source/shared-modules/token-manager/token-manager.js`
   reads claims with the `jwt-decode` library, which base64-decodes a JWT payload and checks
   nothing — no signature, no `iss` allowlist, no `aud`, no `exp`. Anyone can hand-craft a token
